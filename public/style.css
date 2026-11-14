@@ -480,15 +480,10 @@ a.plain { color: inherit; }
 .case-k { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .case-h h2 { font-size: 24px; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: -.01em; }
 .case-bull .case-k, .case-bull h2 { color: var(--pos); } .case-bear .case-k, .case-bear h2 { color: var(--neg); }
-.case-ic { flex: none; width: 54px; height: 54px; border-radius: 14px; display: grid; place-items: center; background: var(--card); border: 1px solid var(--line); --tile: var(--card); }
+.case-ic { flex: none; width: 72px; height: 72px; border-radius: 16px; display: grid; place-items: center; background: #fff; border: 1px solid var(--line); }
 .case-bull .case-ic { border-color: color-mix(in srgb, var(--pos) 35%, var(--line)); }
 .case-bear .case-ic { border-color: color-mix(in srgb, var(--neg) 35%, var(--line)); }
-.case-ic svg { width: 42px; height: 42px; overflow: visible; }
-.case-ic .ic-l { fill: none; stroke: var(--navy); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.case-ic .ic-b { fill: var(--tile); }
-.case-ic .ic-d { fill: var(--navy); }
-.case-ic .ic-n { fill: var(--navy); }
-@media (prefers-color-scheme: dark) { .case-ic .ic-l { stroke: var(--text); } .case-ic .ic-d, .case-ic .ic-n { fill: var(--text); } }
+.case-ic img { width: 60px; height: 60px; display: block; }
 .case ul { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
 .case li { line-height: 1.6; }
 .case li::marker { color: var(--muted); }

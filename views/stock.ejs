@@ -67,12 +67,12 @@
 </section>
 <div class="grid2 cases">
   <section class="card case case-bull">
-    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bull case</h2></div><span class="case-ic" aria-hidden="true"><svg viewBox="0 0 48 48"><path class="ic-l" d="M17.5 21.5C12 21.5 8 18 7.5 11.5M30.5 21.5C36 21.5 40 18 40.5 11.5"/><path class="ic-l ic-b" d="M17.6 23.2Q13 22.6 9.8 25.4Q13.6 27.4 17.9 26M30.4 23.2Q35 22.6 38.2 25.4Q34.4 27.4 30.1 26"/><path class="ic-l ic-b" d="M16.5 21Q24 17 31.5 21L30.2 32H17.8Z"/><rect class="ic-l ic-b" x="17" y="31" width="14" height="9" rx="4.5"/><path class="ic-l" d="M18.6 23.6l3.4 1.2M29.4 23.6l-3.4 1.2"/><circle class="ic-d" cx="20.6" cy="26.2" r="1.3"/><circle class="ic-d" cx="27.4" cy="26.2" r="1.3"/><circle class="ic-d" cx="21.5" cy="35.5" r="1.1"/><circle class="ic-d" cx="26.5" cy="35.5" r="1.1"/></svg></span></div>
+    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bull case</h2></div><span class="case-ic"><img src="/img/stier.webp" width="60" height="60" alt="Stier" loading="lazy"></span></div>
     <p class="small muted">Waarom beleggers positief kunnen zijn over <%= name %>:</p>
     <% if (story.bull.length) { %><ul><% story.bull.forEach(function (b) { %><li><%= b %></li><% }) %></ul><% } else { %><p class="empty">Er springen nu geen duidelijk positieve signalen uit de data.</p><% } %>
   </section>
   <section class="card case case-bear">
-    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bear case</h2></div><span class="case-ic" aria-hidden="true"><svg viewBox="0 0 48 48"><circle class="ic-l ic-b" cx="14.5" cy="16.5" r="3.8"/><circle class="ic-l ic-b" cx="33.5" cy="16.5" r="3.8"/><path class="ic-l ic-b" d="M10 27C10 19.5 16 14.5 24 14.5S38 19.5 38 27 32 39.5 24 39.5 10 34.5 10 27Z"/><ellipse class="ic-l" cx="24" cy="31.5" rx="5.5" ry="4.2"/><path class="ic-n" d="M21.6 29.4h4.8L24 32Z"/><path class="ic-l" d="M24 32v1.6"/><path class="ic-l" d="M16.8 22.2l4.6 1.8M31.2 22.2l-4.6 1.8"/><circle class="ic-d" cx="19.6" cy="26" r="1.3"/><circle class="ic-d" cx="28.4" cy="26" r="1.3"/></svg></span></div>
+    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bear case</h2></div><span class="case-ic"><img src="/img/beer.webp" width="60" height="60" alt="Beer" loading="lazy"></span></div>
     <p class="small muted">Waarom beleggers voorzichtig kunnen zijn met <%= name %>:</p>
     <% if (story.bear.length) { %><ul><% story.bear.forEach(function (b) { %><li><%= b %></li><% }) %></ul><% } else { %><p class="empty">Er springen nu geen duidelijk negatieve signalen uit de data.</p><% } %>
   </section>
