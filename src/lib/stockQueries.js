@@ -107,4 +107,44 @@ async function sitemapSymbols(limit = 5000) {
   );
 }
 
-module.exports = { indexActions, indexTable, indexCounts, benchmarkData, insiderSummary, sitemapSymbols };
+// Vergelijkbare aandelen uit dezelfde sector (grootste eerst) met hun analistenoordeel.
+async function peers(symbol, sector, limit = 8) {
+  if (!sector) return [];
+  return db.many(
+    `WITH c0 AS (SELECT symbol, name, market_cap FROM (
+                   SELECT DISTINCT ON (symbol) symbol, name, market_cap FROM (
+                     SELECT symbol, name, market_cap FROM companies WHERE sector = $1 AND NOT is_etf
+                     UNION ALL SELECT symbol, name, NULL FROM index_members WHERE sector = $1) x
+                   WHERE symbol <> $2 ORDER BY symbol, market_cap NULLS LAST) y
+                 ORDER BY market_cap DESC NULLS LAST LIMIT 40),
+     t AS (${LATEST_TARGETS.replace('%FILTER%', 'pt.symbol IN (SELECT symbol FROM c0)')}),
+     ta AS (SELECT symbol, avg(price_target)::float8 AS target, count(*)::int AS targets FROM t GROUP BY symbol),
+     r AS (SELECT DISTINCT ON (rh.symbol) rh.symbol, rh.strong_buy, rh.buy, rh.hold, rh.sell, rh.strong_sell
+           FROM rating_history rh WHERE rh.symbol IN (SELECT symbol FROM c0) AND rh.date > now() - interval '150 days'
+           ORDER BY rh.symbol, rh.date DESC)
+     SELECT c0.symbol, c0.name, c0.market_cap::float8 AS market_cap, q.price::float8 AS price, ta.target, ta.targets,
+            r.strong_buy, r.buy, r.hold, r.sell, r.strong_sell
+     FROM c0 LEFT JOIN r USING (symbol) LEFT JOIN ta USING (symbol) LEFT JOIN quotes q USING (symbol)
+     WHERE r.symbol IS NOT NULL OR ta.target IS NOT NULL
+     ORDER BY c0.market_cap DESC NULLS LAST LIMIT $3`,
+    [sector, symbol, limit]
+  );
+}
+
+// Indices waar een aandeel in zit (voor de broodkruimel).
+async function indexesOf(symbol) {
+  return (await db.many('SELECT index_key FROM index_members WHERE symbol = $1', [symbol])).map((r) => r.index_key);
+}
+
+// Winstverwachting per boekjaar uit de laatste eigen momentopname.
+async function epsOutlook(symbol) {
+  return db.many(
+    `SELECT fiscal_date::text AS fiscal_date, eps_avg::float8 AS eps, revenue_avg::float8 AS revenue, analysts
+     FROM estimate_snapshots
+     WHERE symbol = $1 AND snap_date = (SELECT max(snap_date) FROM estimate_snapshots WHERE symbol = $1)
+     ORDER BY fiscal_date`,
+    [symbol]
+  );
+}
+
+module.exports = { peers, indexesOf, epsOutlook, indexActions, indexTable, indexCounts, benchmarkData, insiderSummary, sitemapSymbols };

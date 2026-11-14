@@ -87,3 +87,30 @@ test('buildStory werkt ook met weinig data', () => {
   assert.deepStrictEqual(s.bear, []);
   assert.strictEqual(s.forecast, null);
 });
+
+test('buildStory: vragen bevatten altijd het koersdoel en de naam, plus inleidingen', () => {
+  const s = buildStory({
+    name: 'Apple', symbol: 'AAPL', sector: 'Technology', price: 300, forecastYear: 2027,
+    consensus: { target: 345, upside: 0.15, analysts: 30, low: 200, high: 450, counts: { total: 40, strong_buy: 2, buy: 25, hold: 10, sell: 3, strong_sell: 0 }, score: 3.65, verdict: 'Licht kopen', buys: 27, holds: 10, sells: 3, buyShare: 0.675, sellShare: 0.075 },
+    sectorScore: 3.4,
+    epsOutlook: { year: 2027, eps: 8.1, growth: 0.1, analysts: 30 },
+    dividend: { amount: 1.04, yield: 0.0035 },
+    highTarget: { target: 450, who: 'Erik van Morgan Stanley', upside: 0.5 },
+    lowTarget: { target: 200, who: 'DZ Bank', upside: -0.33 },
+    recentActions: { total: 6, upgrades: 1, downgrades: 1, raises: 3, cuts: 1, last: { label: 'Upgrade', firm: 'Jefferies', date: '2026-11-10' } },
+    analystFirms: ['Morgan Stanley', 'DZ Bank', 'Jefferies'],
+    peers: [{ symbol: 'MSFT', name: 'Microsoft', upside: 0.2 }, { symbol: 'NVDA', name: 'Nvidia', upside: 0.1 }],
+    monthsTrend: { monthsBack: 12, targetThen: 300, targetNow: 345, closeThen: 250, closeNow: 300, ratingsBack: 12, buyShareThen: 0.6, buyShareNow: 0.675 },
+    earningsBeats: { beats: 7, total: 8 },
+    fundamentals: { pe: 38.2, netMargin: 0.26 },
+    lastEarnings: { date: '2026-10-30', epsActual: 2.1, epsEstimated: 1.99, epsSurprise: 0.055, reaction: 0.02 },
+  });
+  assert.strictEqual(s.faq[0].q, 'Wat is het koersdoel van Apple (AAPL)?');
+  assert.ok(s.faq.length >= 10);
+  assert.ok(s.faq.some((f) => f.q.includes('2027')));
+  assert.ok(s.faq.find((f) => f.id === 'dividend').a.includes('0,4%'));
+  assert.ok(s.faq.every((f) => f.id && f.chip));
+  assert.ok(s.sections.targets.includes('mee met de markt'));
+  assert.ok(s.sections.ratings && s.sections.compare && s.sections.earnings);
+  assert.ok(s.title.startsWith('Apple (AAPL) koersdoel en verwachting 2027'));
+});

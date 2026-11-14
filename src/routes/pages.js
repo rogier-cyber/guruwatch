@@ -167,6 +167,8 @@ router.get('/fonds/:slug', wrap(async (req, res) => {
 }));
 
 // ---------- Aandeel ----------
+// "Apple Inc." -> "Apple": zo zoeken beleggers ook ("koersdoel Apple").
+const shortName = (n) => String(n || '').replace(/,?\s+(inc\.?|incorporated|corporation|corp\.?|co\.|ltd\.?|limited|plc|n\.v\.|s\.a\.|se|ag|holdings? inc\.?)$/i, '').trim() || n;
 pub.get('/aandeel/:symbol', wrap(async (req, res) => {
   const symbol = String(req.params.symbol).toUpperCase();
   if (!SYMBOL_RE.test(symbol)) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Ongeldig tickersymbool.' });
@@ -208,6 +210,11 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     safe(fmp.ratiosTtm(symbol)),
     safe(fmp.keyMetricsTtm(symbol)),
     safe(fmp.incomeQuarterly(symbol), []),
+  ]);
+  const [peerRows, epsRows, inIndexes] = await Promise.all([
+    safe(sq.peers(symbol, profile && profile.sector, 8), []),
+    safe(sq.epsOutlook(symbol), []),
+    safe(sq.indexesOf(symbol), []),
   ]);
   // Adviesverdeling door de tijd: uit de database, anders direct van FMP.
   let ratingTrend = ratingRows;
@@ -264,7 +271,7 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
   const lastE = earningsRows.length ? withReaction(earningsRows[0]) : null;
   const revs = income.map((x) => Number(x.revenue)).filter((v) => v > 0);
   const facts = {
-    name: profile ? profile.companyName : symbol,
+    name: shortName(profile ? profile.companyName : symbol),
     symbol,
     sector,
     price,
@@ -303,6 +310,60 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     funds: holders.length ? { count: holders.length, names: holders.map((h) => h.manager || h.name) } : null,
     bestAnalyst: experts[0] && experts[0].calls >= 3 ? experts[0] : null,
   };
+
+  // Extra feiten voor de vragen en de inleidingen per blok.
+  const nowD = new Date();
+  facts.forecastYear = nowD.getUTCFullYear() + (nowD.getUTCMonth() >= 9 ? 1 : 0);
+  const fyRow = epsRows.find((r) => Number(r.fiscal_date.slice(0, 4)) === facts.forecastYear) || epsRows.find((r) => r.fiscal_date > nowD.toISOString().slice(0, 10));
+  if (fyRow && Number.isFinite(fyRow.eps)) {
+    const prevRow = epsRows[epsRows.indexOf(fyRow) - 1];
+    facts.epsOutlook = { year: Number(fyRow.fiscal_date.slice(0, 4)), eps: fyRow.eps, revenue: fyRow.revenue, analysts: fyRow.analysts,
+      growth: prevRow && prevRow.eps > 0 ? fyRow.eps / prevRow.eps - 1 : null };
+  }
+  if (profile) {
+    const dv = Number(profile.lastDividend ?? profile.lastDiv) || 0;
+    facts.dividend = { amount: dv, yield: dv > 0 && price > 0 ? dv / price : null };
+  }
+  const who = (t) => (t.analyst_name && t.analyst_firm ? `${t.analyst_name} van ${t.analyst_firm}` : t.analyst_name || t.analyst_firm || 'een analist');
+  const tgtFact = (t) => (t ? { target: Number(t.price_target), who: who(t), date: t.published_at, upside: price > 0 ? Number(t.price_target) / price - 1 : null } : null);
+  facts.highTarget = tgtFact(bull);
+  facts.lowTarget = tgtFact(bear);
+  const recentActs = actions.filter((a) => recent(a.date));
+  facts.recentActions = {
+    total: recentActs.length,
+    upgrades: recentActs.filter((a) => a.action.label === 'Upgrade').length,
+    downgrades: recentActs.filter((a) => a.action.label === 'Downgrade').length,
+    raises: facts.actions.raises,
+    cuts: facts.actions.cuts,
+    last: recentActs[0] ? { label: recentActs[0].action.label, firm: recentActs[0].firm, date: recentActs[0].date } : null,
+  };
+  facts.analystFirms = [...new Set(latest.map((t) => t.analyst_firm).filter(Boolean))];
+  const beatRows = earningsRows.map(withReaction).filter((r) => r.surprise !== null && r.surprise !== undefined);
+  facts.earningsBeats = beatRows.length ? { beats: beatRows.filter((r) => r.surprise > 0).length, total: beatRows.length } : null;
+  const last13 = months.slice(-13);
+  const tIdx = last13.findIndex((m) => m.mean);
+  const rIdx = last13.findIndex((m) => m.ratings);
+  const rLast = last13.slice().reverse().find((m) => m.ratings);
+  const share = (r) => (r && r.total ? (r.strong_buy + r.buy) / r.total : null);
+  facts.monthsTrend = {
+    monthsBack: tIdx >= 0 ? last13.length - 1 - tIdx : null,
+    targetThen: tIdx >= 0 && tIdx < last13.length - 1 ? last13[tIdx].mean : null,
+    targetNow: last13.length ? last13[last13.length - 1].mean : null,
+    closeThen: tIdx >= 0 ? last13[tIdx].close : null,
+    closeNow: last13.length ? last13[last13.length - 1].close : null,
+    ratingsBack: rIdx >= 0 && rLast ? last13.indexOf(rLast) - rIdx : null,
+    buyShareThen: rIdx >= 0 && rLast && last13[rIdx] !== rLast ? share(last13[rIdx].ratings) : null,
+    buyShareNow: rLast ? share(rLast.ratings) : null,
+  };
+  facts.rotThen = rot[3] ? { verdict: rot[3].verdict && rot[3].verdict.label, target: rot[3].target } : null;
+  const peerList = peerRows.map((r) => {
+    const pc = av.counts(r);
+    const sc = av.ratingScore(pc);
+    return { symbol: r.symbol, name: r.name, price: r.price, target: r.target, upside: r.target > 0 && r.price > 0 ? r.target / r.price - 1 : null,
+      score: sc, verdict: av.ratingLabel(sc), counts: pc };
+  });
+  facts.peers = peerList;
+  const crumbIndex = inIndexes.map((k) => indexes.byKey(k)).filter(Boolean)[0] || null;
   const story = buildStory(facts);
 
   // Waaier met koersverwachting: één stip per laatste koersdoel per analist, met het advies van die bank.
@@ -331,11 +392,12 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
   const canonical = `${config.publicUrl.replace(/\/$/, '')}/aandeel/${encodeURIComponent(symbol)}`;
   const jsonld = [
     { '@context': 'https://schema.org', '@type': 'WebPage', name: `${name} (${symbol}) aandeel`, url: canonical, description: story.description, inLanguage: 'nl-NL',
-      about: { '@type': 'Corporation', name, tickerSymbol: symbol, ...(profile && profile.website ? { url: profile.website } : {}) },
+      about: { '@type': 'Corporation', name: (profile && profile.companyName) || name, tickerSymbol: symbol, ...(profile && profile.website ? { url: profile.website } : {}) },
       dateModified: new Date().toISOString() },
     { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Aandelen', item: `${config.publicUrl.replace(/\/$/, '')}/aandelen` },
-      { '@type': 'ListItem', position: 2, name: `${name} (${symbol})`, item: canonical },
+      ...(crumbIndex ? [{ '@type': 'ListItem', position: 2, name: crumbIndex.label, item: `${config.publicUrl.replace(/\/$/, '')}/aandelen?index=${crumbIndex.key}` }] : []),
+      { '@type': 'ListItem', position: crumbIndex ? 3 : 2, name: `${name} (${symbol})`, item: canonical },
     ] },
   ];
   if (story.faq.length) {
@@ -346,7 +408,10 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     ratingTrend,
     earningsHist: earningsRows.map(withReaction).reverse().map((h) => ({ ...h, label: er.quarterLabel(h.date) })),
     nextEarn,
-    title: `${name} (${symbol}) aandeel: koersdoel en analistenadviezen`,
+    title: story.title,
+    fullTitle: true,
+    peers: peerList,
+    crumbIndex,
     seo: { description: story.description, canonical, jsonld, image: profile && profile.image },
     symbol,
     name,
@@ -436,10 +501,29 @@ pub.get('/aandelen', wrap(async (req, res) => {
     medianUpside: withUp.length ? withUp.map((r) => r.upside).sort((a, b) => a - b)[Math.floor(withUp.length / 2)] : null,
     topUpside: withUp.filter((r) => r.total >= 5 && r.upside > 0).sort((a, b) => b.upside - a.upside).slice(0, 8),
   };
-  const canonical = `${config.publicUrl.replace(/\/$/, '')}/aandelen?index=${idx.key}`;
+  const base = config.publicUrl.replace(/\/$/, '');
+  const VIEW_TITLES = { alle: 'koersdoelen en analistenadviezen per aandeel', vandaag: 'analistenadviezen van vandaag', meest: 'meest aanbevolen aandelen volgens analisten', minst: 'minst aanbevolen aandelen volgens analisten', potentieel: 'aandelen met het grootste koerspotentieel' };
+  const canonical = `${base}/aandelen?index=${idx.key}${view !== 'alle' ? '&weergave=' + view : ''}`;
+  const top3 = summary.topUpside.slice(0, 3).map((r) => `${r.name || r.symbol} (${fmt.pct(r.upside)})`);
+  const intro = rows.length && summary.rated
+    ? `De ${idx.label} telt ${rows.length} aandelen, waarvan ${summary.rated} met adviezen van analisten. ${fmt.pct(summary.buyShare, false)} van alle adviezen is kopen`
+      + (summary.medianUpside !== null ? ` en het mediane aandeel heeft volgens het gemiddelde koersdoel ${fmt.pct(summary.medianUpside)} potentieel` : '')
+      + '.' + (top3.length ? ` Het meeste potentieel zien analisten bij ${top3.length > 1 ? top3.slice(0, -1).join(', ') + ' en ' + top3[top3.length - 1] : top3[0]}.` : '')
+    : null;
+  const jsonld = [
+    { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Aandelen', item: `${base}/aandelen` },
+      { '@type': 'ListItem', position: 2, name: idx.label, item: `${base}/aandelen?index=${idx.key}` },
+    ] },
+  ];
+  if (list.length && view !== 'vandaag') {
+    jsonld.push({ '@context': 'https://schema.org', '@type': 'ItemList', name: `${idx.label}: ${VIEW_TITLES[view]}`,
+      itemListElement: list.slice(0, 30).map((r, i) => ({ '@type': 'ListItem', position: i + 1, name: r.name || r.symbol, url: `${base}/aandeel/${encodeURIComponent(r.symbol)}` })) });
+  }
   res.render('stocks', {
-    title: `${idx.label}: koersdoelen en analistenadviezen per aandeel`,
-    seo: { description: `Alle aandelen uit de ${idx.label} met koers, gemiddeld koersdoel, potentieel en de verdeling van kopen, houden en verkopen van analisten.`, canonical },
+    title: `${idx.label}: ${VIEW_TITLES[view]}`,
+    intro,
+    seo: { description: intro ? intro.slice(0, 300) : `Alle aandelen uit de ${idx.label} met koers, gemiddeld koersdoel, potentieel en de verdeling van kopen, houden en verkopen van analisten.`, canonical, jsonld },
     idx, groups: indexes.GROUPS, counts, rows: list, allCount: rows.length, sort, dir, summary, view, today,
   });
 }));

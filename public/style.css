@@ -608,3 +608,31 @@ a.plain { color: inherit; }
   .acts { min-width: 600px; }
   .acts .ring { display: none; }
 }
+
+/* SEO: kruimelpad, vragenbalk, inleidingen, vragen */
+.crumbs { color: var(--muted); margin: 4px 0 6px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.crumbs a { color: var(--muted); }
+.crumbs a:hover { color: var(--accent); }
+.crumbs [aria-current] { color: var(--text); font-weight: 600; }
+.h1-k { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--red); margin-bottom: 2px; }
+.qbar { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; padding: 10px 14px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: 12px; }
+.qbar-k { font-size: 12px; font-weight: 800; color: var(--navy); white-space: nowrap; }
+.qbar-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.qbar-list a { font-size: 13px; font-weight: 600; color: var(--text); background: var(--neutral-soft); border: 1px solid var(--line); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.qbar-list a:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.qbar-list a.qbar-all { background: transparent; color: var(--accent); }
+.sec-txt { margin: 0 0 12px; line-height: 1.6; color: var(--text); max-width: 78ch; }
+.sec-lead { margin: 4px 2px 12px; }
+.faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+.faq-item { padding: 14px 0; border-top: 1px solid var(--line-2); scroll-margin-top: 80px; }
+.faq-item h3 { font-size: 15px; font-weight: 750; margin: 0 0 6px; color: var(--navy); }
+.faq-item p { margin: 0; line-height: 1.6; }
+.faq-item:target { background: var(--accent-soft); box-shadow: -10px 0 0 var(--accent-soft), 10px 0 0 var(--accent-soft); }
+@media (prefers-color-scheme: dark) { .faq-item h3, .qbar-k { color: var(--text); } }
+.peers-tbl { min-width: 560px; }
+@media (max-width: 640px) {
+  .qbar { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 12px; }
+  .qbar-list { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+  .faq-grid { grid-template-columns: 1fr; }
+  .h1-k { font-size: 11px; }
+}
