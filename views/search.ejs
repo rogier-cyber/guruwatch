@@ -18,7 +18,7 @@
     <h2 class="mt">Fondsen</h2>
     <% if (!funds.length) { %><p class="empty">Geen fondsen gevonden.</p><% } else { %>
     <table class="tbl"><tbody>
-    <% funds.forEach(function (f) { %><tr><td><a href="/fonds/<%= f.slug %>" class="strong"><%= f.manager %></a></td><td class="muted"><%= f.name %></td></tr><% }) %>
+    <% funds.forEach(function (f) { %><tr><td><a href="/guru/<%= f.slug %>" class="strong"><%= f.manager %></a></td><td class="muted"><%= f.name %></td></tr><% }) %>
     </tbody></table><% } %>
   </section>
 </div>

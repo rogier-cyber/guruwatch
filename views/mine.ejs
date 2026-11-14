@@ -22,7 +22,7 @@
 <section class="card">
   <h2>Begin met volgen</h2>
   <p>Klik op <strong>☆ Volgen</strong> bij een aandeel, analist of fonds. Dan krijg je meldingen als topanalisten bewegen, en een persoonlijke ochtendbriefing.</p>
-  <p class="small"><a href="/radar">Ontdek aandelen op de radar</a> · <a href="/analisten">Bekijk de beste analisten</a> · <a href="/fondsen">Volg een hedge fund</a></p>
+  <p class="small"><a href="/radar">Ontdek aandelen op de radar</a> · <a href="/analisten">Bekijk de beste analisten</a> · <a href="/gurus">Volg een guru</a></p>
 </section>
 <% } %>
 
@@ -70,7 +70,7 @@
       <% if (stocks.length) { %><p class="small muted mb0">Aandelen</p><div class="chips mt8"><% stocks.forEach(function (r) { %><a class="chip" href="/aandeel/<%= encodeURIComponent(r.symbol) %>"><%= r.symbol %></a><% }) %></div><% } %>
       <% if (analysts.length) { %><p class="small muted mb0 mt">Analisten</p>
         <div class="stack mt8" style="gap:8px"><% analysts.forEach(function (a) { %><a class="id-row sm" href="/analist/<%= a.slug %>" style="color:inherit"><%- charts.scoreRing(a.score, 30) %><span><strong><%= a.name %></strong> <span class="muted small"><%= a.firm %></span></span></a><% }) %></div><% } %>
-      <% if (followedFunds.length) { %><p class="small muted mb0 mt">Fondsen</p><div class="chips mt8"><% followedFunds.forEach(function (i) { var f = fundMap.get(i.ref); %><a class="chip" href="/fonds/<%= i.ref %>"><%= f ? (f.manager || f.name) : i.ref %></a><% }) %></div><% } %>
+      <% if (followedFunds.length) { %><p class="small muted mb0 mt">Guru's</p><div class="chips mt8"><% followedFunds.forEach(function (i) { var f = fundMap.get(i.ref); %><a class="chip" href="/guru/<%= i.ref %>"><%= f ? (f.manager || f.name) : i.ref %></a><% }) %></div><% } %>
       <% if (!items.length) { %><p class="empty">Nog niets.</p><% } %>
     </section>
     <section class="card brief-card">

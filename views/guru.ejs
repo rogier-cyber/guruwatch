@@ -1,0 +1,166 @@
+<%- include('partials/head') %>
+<%
+  var initials = function (n) { return String(n || '?').split(/\s+/).filter(Boolean).map(function (w) { return w.charAt(0); }).join('').slice(0, 2).toUpperCase(); };
+  var tone = function (s) { s = String(s || '').toLowerCase(); return /activist/.test(s) ? 'act' : /macro/.test(s) ? 'mac' : /growth|disrupt|tech/.test(s) ? 'gro' : /quant/.test(s) ? 'qua' : /quality/.test(s) ? 'qly' : 'val'; };
+  var kindTag = function (k, chg) {
+    if (k === 'new') return '<span class="tag pos">Nieuw</span>';
+    if (k === 'added') return '<span class="tag pos">+' + fmt.pct(chg, false) + '</span>';
+    if (k === 'reduced') return '<span class="tag neg">' + fmt.pct(chg) + '</span>';
+    if (k === 'sold') return '<span class="tag neg">Verkocht</span>';
+    return '<span class="muted">–</span>';
+  };
+%>
+<nav class="crumbs small" aria-label="Kruimelpad"><a href="/gurus">Guru's</a> <span aria-hidden="true">›</span> <span aria-current="page"><%= fund.manager || fund.name %></span></nav>
+
+<section class="gu-hero">
+  <div class="gu-hero-in">
+    <span class="gu-av gk-<%= tone(fund.style) %>"><%= initials(fund.manager || fund.name) %></span>
+    <div class="gu-id">
+      <span class="gu-k"><%= fund.style || 'Belegger' %></span>
+      <h1>Portefeuille van <%= fund.manager || fund.name %></h1>
+      <p class="gu-fund"><%= fund.name %><% if (!empty) { %> · 13F over <%= gc.qLabel(cur.period) %><% } %></p>
+      <% if (fund.bio) { %><p class="gu-bio"><%= fund.bio %></p><% } %>
+    </div>
+    <div class="gu-watch"><%- include('partials/watch', { kind: 'fund', ref: fund.slug, watched: watched }) %></div>
+  </div>
+  <% if (!empty) { %>
+  <div class="gu-kpis">
+    <div><span>Portefeuille</span><strong><%= fmt.money(curTot.value) %></strong></div>
+    <div><span>Posities</span><strong><%= curTot.positions %></strong></div>
+    <div><span>Top 10</span><strong><%= fmt.pct(top10, false) %></strong><em>van de portefeuille</em></div>
+    <div><span>Omloop</span><strong><%= mv.turnover === null ? '–' : fmt.pct(mv.turnover, false) %></strong><em>dit kwartaal verschoven</em></div>
+    <div><span>Nagebootst</span><strong class="<%= perf ? fmt.tone(perf.total - perf.benchTotal) : '' %>"><%= perf ? fmt.pct(perf.total) : '–' %></strong><em><%= perf ? 'S&P 500 ' + fmt.pct(perf.benchTotal) : 'niet beschikbaar' %></em></div>
+  </div>
+  <% } %>
+</section>
+
+<% if (empty) { %>
+  <section class="card"><p class="empty">Er is (nog) geen 13F-data voor <%= fund.name %> gevonden.</p></section>
+<% } else { %>
+
+<% if (periods.length > 1) { %>
+<nav class="gu-q" aria-label="Kies een kwartaal">
+  <span class="small muted">Kwartaal</span>
+  <div class="gu-q-list"><% periods.slice().reverse().forEach(function (p, i) { var idx = periods.length - 1 - i; %><a href="/guru/<%= fund.slug %><%= idx === periods.length - 1 ? '' : '?kwartaal=' + p %>" class="<%= idx === selIdx ? 'on' : '' %>"><%= gc.qLabel(p) %></a><% }) %></div>
+</nav>
+<% } %>
+
+<section class="card story">
+  <h2>In het kort</h2>
+  <% story.forEach(function (s) { %><p><%= s %></p><% }) %>
+</section>
+
+<div class="grid2">
+  <section class="card">
+    <div class="card-h"><h2>Waarde door de tijd</h2><span class="small muted">Amerikaanse aandelen in de 13F</span></div>
+    <% if (valueSeries.length >= 2) { %><div class="only-desk"><%- gc.valueArea(valueSeries) %></div><div class="only-phone"><%- gc.valueArea(valueSeries, { width: 360, height: 200 }) %></div><% } else { %><p class="empty">De historie wordt nog opgehaald.</p><% } %>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Sectoren</h2><span class="small muted">verdeling van de waarde</span></div>
+    <% var pz = gc.pie(sectors, { center: sectors.length ? fmt.pct(sectors[0].weight, false) : '', sub: sectors.length ? String(sectors[0].label).slice(0, 18) : '' }); %>
+    <div class="gu-pie">
+      <%- pz.svg %>
+      <ul class="gu-leg">
+        <% pz.legend.forEach(function (l) { %><li><i style="background:<%= l.color %>"></i><span><%= l.label %></span><b><%= fmt.pct(l.weight, false) %></b></li><% }) %>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-h"><h2>De portefeuille in één oogopslag</h2><span class="small muted">grootte = gewicht<%= prev ? ', kleur = wat er veranderde' : '' %></span></div>
+  <%- charts.treemap(positions.slice(0, 40).map(function (p) { return { label: p.symbol || fmt.company(p.issuer), value: p.value, sub: fmt.pct(p.weight, false) + (p.kind === 'new' ? ' · nieuw' : p.kind === 'added' ? ' · bijgekocht' : p.kind === 'reduced' ? ' · verlaagd' : ''), href: p.symbol ? '/aandeel/' + encodeURIComponent(p.symbol) : '#', tone: prev ? p.kind : '' }; }), { width: 920, height: 360 }).replace('class="treemap"', 'class="treemap only-desk"') %>
+  <div class="only-phone"><%- charts.hbars(positions.filter(function (p) { return p.symbol; }).slice(0, 12).map(function (p) { return { sym: p.symbol, name: p.name, value: p.weight, display: fmt.pct(p.weight, false), href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %></div>
+  <% if (prev) { %><div class="tm-legend"><span><i style="background:var(--navy-2)"></i>Ongewijzigd</span><span><i style="background:var(--pos)"></i>Nieuw</span><span><i style="background:#0f766e"></i>Bijgekocht</span><span><i style="background:var(--red)"></i>Verlaagd</span></div><% } %>
+</section>
+
+<% if (prev) { var maxImp = Math.max(0.001, ...mv.buys.slice(0, 10).map(function (m) { return m.impact; }), ...mv.sells.slice(0, 10).map(function (m) { return -m.impact; })); %>
+<div class="grid2">
+  <% [['Grootste aankopen', mv.buys.slice(0, 10), 'pos'], ['Grootste verkopen', mv.sells.slice(0, 10), 'neg']].forEach(function (b) { %>
+  <section class="card">
+    <div class="card-h"><h2><%= b[0] %></h2><span class="small muted">impact op de portefeuille</span></div>
+    <% if (!b[1].length) { %><p class="empty">Geen <%= b[2] === 'pos' ? 'aankopen' : 'verkopen' %> dit kwartaal.</p><% } else { %>
+    <div class="imp">
+      <% b[1].forEach(function (m) { var w = Math.abs(m.impact) / maxImp * 100; %>
+      <div class="imp-row">
+        <% if (m.symbol) { %><%- ui.stock(m.symbol, nameOf.get(m.symbol) || m.issuer) %><% } else { %><span class="sc sc-1"><span class="sc-t"><b><%= fmt.company(m.issuer) %></b></span></span><% } %>
+        <span class="imp-k"><%- kindTag(m.kind, m.change_pct) %></span>
+        <span class="imp-bar"><i class="<%= b[2] %>" style="width:<%= Math.max(3, w).toFixed(1) %>%"></i></span>
+        <span class="imp-v <%= b[2] %>"><%= (m.impact > 0 ? '+' : '−') + (Math.abs(m.impact) * 100).toFixed(2).replace('.', ',') %> pp</span>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </section>
+  <% }) %>
+</div>
+<% } %>
+
+<% if (bubbles.length >= 3) { %>
+<section class="card">
+  <div class="card-h"><h2>Kocht <%= fund.manager || 'de guru' %> wat analisten goed vinden?</h2><span class="small muted">bubbel = gewicht in de portefeuille</span></div>
+  <p class="sec-txt">Rechts staat wat er bijgekocht is, links wat er verkocht is. Hoe hoger de bubbel, hoe meer potentieel analisten zien in het gemiddelde koersdoel.</p>
+  <div class="only-desk"><%- gc.bubbles(bubbles) %></div><div class="only-phone"><%- gc.bubbles(bubbles, { width: 380, height: 340 }) %></div>
+  <p class="small bb-legend"><i class="b-buy"></i>Nieuw of bijgekocht <i class="b-sell"></i>Verlaagd <i class="b-sold"></i>Volledig verkocht <i class="b-hold"></i>Ongewijzigd</p>
+</section>
+<% } %>
+
+<% if (heat.rows.length && heat.periods.length > 1) { var hmax = Math.max.apply(null, heat.rows.map(function (r) { return Math.max.apply(null, r.cells); })); %>
+<section class="card">
+  <div class="card-h"><h2>Posities door de kwartalen heen</h2><span class="small muted">gewicht per kwartaal</span></div>
+  <div class="tbl-wrap"><table class="hm">
+    <thead><tr><th></th><% heat.periods.forEach(function (p) { %><th><%= gc.qLabel(p) %></th><% }) %></tr></thead>
+    <tbody>
+    <% heat.rows.forEach(function (r) { %>
+      <tr><th scope="row"><% if (r.symbol) { %><%- ui.stock(r.symbol, r.name) %><% } else { %><%= fmt.company(r.issuer) %><% } %></th>
+      <% r.cells.forEach(function (w, i) { var prevW = i ? r.cells[i - 1] : null; %><td style="<%= gc.heatCell(w, hmax) %>" title="<%= gc.qLabel(heat.periods[i]) %>: <%= w ? fmt.pct(w, false) : 'geen positie' %>"><%= w ? (w * 100).toFixed(w >= 0.1 ? 0 : 1).replace('.', ',') : '' %><% if (i && prevW === 0 && w) { %><sup>●</sup><% } %></td><% }) %></tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <p class="small muted">Getallen in procenten van de portefeuille. Een stip betekent een nieuwe positie in dat kwartaal.</p>
+</section>
+<% } %>
+
+<% if (perf) { %>
+<section class="card">
+  <div class="card-h"><h2>Wat als je <%= fund.manager || 'deze guru' %> had nagebootst?</h2><span class="chart-legend"><span><i class="sw-guru"></i><%= fund.manager || 'Guru' %></span><span><i class="sw-bench"></i>S&amp;P 500</span></span></div>
+  <div class="perf-kpis">
+    <div><span>Totaal sinds <%= fmt.date(perf.since) %></span><strong class="<%= fmt.tone(perf.total) %>"><%= fmt.pct(perf.total) %></strong><em>S&amp;P 500 <%= fmt.pct(perf.benchTotal) %></em></div>
+    <% if (perf.annual !== null) { %><div><span>Per jaar</span><strong class="<%= fmt.tone(perf.annual) %>"><%= fmt.pct(perf.annual) %></strong><em>S&amp;P 500 <%= fmt.pct(perf.benchAnnual) %></em></div><% } %>
+    <div><span>Verschil</span><strong class="<%= fmt.tone(perf.total - perf.benchTotal) %>"><%= fmt.pct(perf.total - perf.benchTotal) %></strong><em><%= perf.total >= perf.benchTotal ? 'beter dan de markt' : 'slechter dan de markt' %></em></div>
+  </div>
+  <div class="only-desk"><%- gc.perfLines(perf.points, { nameA: fund.manager || 'Guru' }) %></div><div class="only-phone"><%- gc.perfLines(perf.points, { width: 380, height: 240, nameA: fund.manager || 'Guru' }) %></div>
+  <p class="small muted">We kopen de 25 grootste posities op de dag dat de 13F openbaar wordt (45 dagen na het kwartaal), in dezelfde verhouding, en houden die vast tot de volgende filing. Zonder kosten en dividend. Gemiddeld <%= perf.coverage ? fmt.pct(perf.coverage, false) : '–' %> van de portefeuille had koersdata.</p>
+</section>
+<% } %>
+
+<section class="card">
+  <div class="card-h"><h2>Alle posities</h2><span class="small muted"><%= gc.qLabel(cur.period) %><%= prev ? ' t.o.v. ' + gc.qLabel(prev.period) : '' %></span></div>
+  <div class="tbl-wrap"><table class="tbl tbl-tight gu-tbl">
+    <thead><tr><th class="r">#</th><th>Aandeel</th><th>Sector</th><th>Gewicht</th><th class="r">Waarde</th><th class="r">Aantal</th><th>Wijziging</th><th class="r">Potentieel</th></tr></thead>
+    <tbody>
+    <% var wmax = positions.length ? positions[0].weight : 1; positions.forEach(function (p, i) { %>
+      <tr>
+        <td class="r muted"><%= i + 1 %></td>
+        <td><% if (p.symbol) { %><%- ui.stock(p.symbol, p.name) %><% } else { %><span class="sc sc-1"><span class="sc-t"><b><%= fmt.company(p.issuer) %></b></span></span><% } %></td>
+        <td class="muted small nowrap"><%= p.sector || '–' %></td>
+        <td class="gu-w"><span class="gu-wb"><i style="width:<%= Math.max(2, p.weight / (wmax || 1) * 100).toFixed(1) %>%"></i></span><b><%= fmt.pct(p.weight, false) %></b></td>
+        <td class="r"><%= fmt.money(p.value) %></td>
+        <td class="r muted"><%= fmt.num(p.shares) %></td>
+        <td><%- prev ? kindTag(p.kind, p.change_pct) : '' %></td>
+        <td class="r <%= fmt.tone(p.upside) %>"><%= p.upside === null || p.upside === undefined ? '–' : fmt.pct(p.upside) %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+
+<% if (sold.length) { %>
+<section class="card">
+  <div class="card-h"><h2>Volledig verkocht</h2><span class="small muted">in <%= gc.qLabel(cur.period) %></span></div>
+  <div class="sold-list"><% sold.forEach(function (m) { %><span class="sold-it"><% if (m.symbol) { %><%- ui.stock(m.symbol, m.name) %><% } else { %><%= fmt.company(m.issuer) %><% } %><em>was <%= fmt.pct(m.prev_weight, false) %></em></span><% }) %></div>
+</section>
+<% } %>
+<p class="small muted">Bron: 13F-filings bij de SEC. Alleen Amerikaanse aandelen in lange posities; opties, shorts en buitenlandse aandelen staan er niet in. Geen beleggingsadvies.</p>
+<% } %>
+<%- include('partials/foot') %>

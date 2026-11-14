@@ -19,6 +19,9 @@ const sq = require('../lib/stockQueries');
 const indexes = require('../lib/indexes');
 const { buildStory } = require('../lib/stockStory');
 const config = require('../config');
+const gq = require('../lib/guruQueries');
+const guru = require('../lib/guru');
+const guruCharts = require('../lib/guruCharts');
 
 const router = express.Router();
 
@@ -138,32 +141,152 @@ router.get('/insider/:cik', wrap(async (req, res) => {
   res.render('insider', { title: person.reporting_name, person, trades });
 }));
 
-// ---------- Hedge funds ----------
-router.get('/fondsen', wrap(async (req, res) => {
-  const [funds, popular] = await Promise.all([q.fundsList(), q.popularAmongFunds(25)]);
-  res.render('funds', { title: 'Hedge funds', funds, popular });
+// ---------- Guru's ----------
+pub.get('/fondsen', (req, res) => res.redirect(301, '/gurus'));
+pub.get('/fonds/:slug', (req, res) => res.redirect(301, `/guru/${encodeURIComponent(req.params.slug)}`));
+
+pub.get('/gurus', wrap(async (req, res) => {
+  const [funds, ov, popular, together] = await Promise.all([
+    q.fundsList(),
+    safe(gq.overview(), { series: [], tops: [] }),
+    safe(q.popularAmongFunds(10), []),
+    safe(gq.consensusMoves(10), []),
+  ]);
+  const seriesBy = new Map();
+  for (const r of ov.series) {
+    if (!seriesBy.has(r.cik)) seriesBy.set(r.cik, []);
+    seriesBy.get(r.cik).push(r);
+  }
+  const topsBy = new Map();
+  for (const r of ov.tops) {
+    if (!topsBy.has(r.cik)) topsBy.set(r.cik, []);
+    topsBy.get(r.cik).push(r);
+  }
+  const STYLES = ['Alle', 'Value', 'Activist', 'Growth', 'Macro', 'Quality', 'Quant'];
+  const style = STYLES.includes(req.query.stijl) ? req.query.stijl : 'Alle';
+  const cards = funds
+    .filter((f) => f.latest_period)
+    .map((f) => {
+      const s = seriesBy.get(f.cik) || [];
+      const yearAgo = s.length >= 5 ? s[s.length - 5].value : null;
+      return { ...f, series: s, tops: topsBy.get(f.cik) || [], growth: yearAgo && f.latest_value ? Number(f.latest_value) / yearAgo - 1 : null,
+        stale: Date.now() - new Date(f.latest_period).getTime() > 240 * 864e5 };
+    })
+    .filter((f) => style === 'Alle' || String(f.style || '').toLowerCase().includes(style.toLowerCase()));
+  const base = config.publicUrl.replace(/\/$/, '');
+  const totalValue = cards.reduce((t, f) => t + (Number(f.latest_value) || 0), 0);
+  res.render('gurus', {
+    title: "Guru's: de portefeuilles van de beste beleggers",
+    seo: {
+      description: `Bekijk wat ${cards.length} bekende beleggers zoals Warren Buffett, Bill Ackman en Mohnish Pabrai kopen en verkopen, op basis van hun 13F-filings bij de SEC.`,
+      canonical: `${base}/gurus`,
+    },
+    cards, popular, together, style, styles: STYLES, totalValue, gc: guruCharts,
+  });
 }));
 
-router.get('/fonds/:slug', wrap(async (req, res) => {
+pub.get('/guru/:slug', wrap(async (req, res) => {
   let fund = await q.fundBySlug(req.params.slug);
-  if (!fund) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Dit fonds volgen we (nog) niet.' });
-  let periods = await q.fundPeriods(fund.cik);
-  if (!periods.length) {
+  if (!fund) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Deze guru volgen we (nog) niet.' });
+  if (fund.slug !== req.params.slug) return res.redirect(301, `/guru/${fund.slug}`);
+  let totals = await gq.fundTotals(fund.cik);
+  if (!totals.length) {
     await safe(ingest.refreshFund(fund.cik));
-    fund = await q.fundBySlug(req.params.slug);
-    periods = await q.fundPeriods(fund.cik);
+    fund = await q.fundBySlug(fund.slug);
+    totals = await gq.fundTotals(fund.cik);
   }
-  const period = periods[0];
-  const { diffHoldings } = require('../lib/normalize');
-  let positions = [];
-  let sold = [];
-  if (period) {
-    const [cur, prev] = await Promise.all([q.fundHoldings(fund.cik, period), periods[1] ? q.fundHoldings(fund.cik, periods[1]) : []]);
-    ({ positions, sold } = diffHoldings(cur, prev));
-  }
-  const total = positions.reduce((s, p) => s + (p.put_call ? 0 : Number(p.value)), 0);
+  const hist = await gq.fundHistory(fund.cik, { periods: fund.quant ? 4 : 12, perPeriod: fund.quant ? 100 : 200 });
+  const quarters = guru.byPeriod(hist);
+  const base = config.publicUrl.replace(/\/$/, '');
+  const canonical = `${base}/guru/${fund.slug}`;
   const watched = await q.isWatched(req.user && req.user.id, 'fund', fund.slug);
-  res.render('fund', { title: fund.manager || fund.name, fund, period, prevPeriod: periods[1], positions, sold, total, watched });
+  const title = `${fund.manager || fund.name}: portefeuille, aankopen en verkopen`;
+  if (!quarters.length) {
+    return res.render('guru', { title, fund, empty: true, watched, seo: { description: `De portefeuille van ${fund.manager} (${fund.name}).`, canonical } });
+  }
+  const periods = quarters.map((x) => x.period);
+  const selIdx = periods.includes(req.query.kwartaal) ? periods.indexOf(req.query.kwartaal) : periods.length - 1;
+  const upto = quarters.slice(0, selIdx + 1);
+  const cur = upto[upto.length - 1];
+  const prev = upto.length > 1 ? upto[upto.length - 2] : null;
+  const mv = guru.moves(upto);
+  const tot = new Map(totals.map((t) => [t.period, t]));
+  const curTot = tot.get(cur.period) || { value: cur.rows.reduce((s, r) => s + r.value, 0), positions: cur.rows.length };
+
+  // Namen, sectoren, koersen en koersdoelen van de grootste posities.
+  const syms = [...new Set([...cur.rows.slice(0, 80), ...mv.sells.slice(0, 20)].map((r) => r.symbol).filter(Boolean))];
+  const allSyms = [...new Set(hist.map((r) => r.symbol).filter(Boolean))];
+  const [companies, qt] = await Promise.all([safe(gq.companiesFor(allSyms), []), safe(gq.quotesAndTargets(syms), [])]);
+  const sectorOf = new Map(companies.filter((c) => c.sector).map((c) => [c.symbol, c.sector]));
+  const nameOf = new Map(companies.map((c) => [c.symbol, c.name]));
+  const qtOf = new Map(qt.map((x) => [x.symbol, { ...x, upside: x.target > 0 && x.price > 0 ? x.target / x.price - 1 : null }]));
+  const pm = new Map((prev ? prev.rows : []).map((r) => [r.symbol || r.cusip, r]));
+  const positions = cur.rows.map((r) => {
+    const p = pm.get(r.symbol || r.cusip);
+    const kind = !prev ? null : !p ? 'new' : r.shares > p.shares * 1.001 ? 'added' : r.shares < p.shares * 0.999 ? 'reduced' : 'same';
+    const x = qtOf.get(r.symbol) || {};
+    return { ...r, name: nameOf.get(r.symbol) || r.issuer, sector: sectorOf.get(r.symbol) || null, kind, change_pct: p && p.shares ? r.shares / p.shares - 1 : null,
+      prev_weight: p ? p.weight : 0, price: x.price, upside: x.upside, targets: x.targets };
+  });
+  const sectors = guru.sectors(cur.rows, sectorOf);
+  const heat = guru.heatmap(upto, { top: 15, last: 8 });
+  heat.rows.forEach((r) => { r.name = nameOf.get(r.symbol) || r.issuer; });
+  const valueSeries = totals.filter((t) => t.period <= cur.period).slice(-12);
+  const top10 = cur.rows.slice(0, 10).reduce((s, r) => s + r.weight, 0);
+
+  // Bubbels: wat er bijgekocht en verkocht is tegenover het potentieel volgens analisten.
+  const bubbles = [];
+  if (prev) {
+    for (const r of positions.slice(0, 40)) {
+      if (!r.symbol || r.upside === null || r.upside === undefined) continue;
+      bubbles.push({ x: r.weight - r.prev_weight, y: r.upside, r: Math.max(r.weight, r.prev_weight), label: r.symbol, href: `/aandeel/${encodeURIComponent(r.symbol)}`,
+        tone: r.kind === 'new' || r.kind === 'added' ? 'buy' : r.kind === 'reduced' ? 'sell' : 'hold',
+        title: `${r.symbol} · ${fmt.company(r.name)}\nGewicht ${fmt.pct(r.prev_weight, false)} → ${fmt.pct(r.weight, false)}\nPotentieel volgens analisten ${fmt.pct(r.upside)}` });
+    }
+    for (const s of mv.sells.filter((m) => m.kind === 'sold').slice(0, 10)) {
+      const x = qtOf.get(s.symbol);
+      if (!x || x.upside === null) continue;
+      bubbles.push({ x: -s.prev_weight, y: x.upside, r: s.prev_weight, label: s.symbol, href: `/aandeel/${encodeURIComponent(s.symbol)}`, tone: 'sold',
+        title: `${s.symbol} · volledig verkocht (was ${fmt.pct(s.prev_weight, false)})\nPotentieel volgens analisten ${fmt.pct(x.upside)}` });
+    }
+  }
+
+  // Nagebootst rendement: elk kwartaal de 13F-portefeuille kopen op de dag dat die openbaar wordt.
+  let perf = null;
+  if (!fund.quant && quarters.length >= 2) {
+    const perfSyms = [...new Set(quarters.flatMap((x) => x.rows.filter((r) => r.symbol).slice(0, 25).map((r) => r.symbol)))];
+    const since = quarters[0].period;
+    const rows = await safe(gq.pricesFor([...perfSyms, 'SPY'], since), []);
+    const prices = new Map();
+    for (const r of rows) {
+      if (!prices.has(r.symbol)) prices.set(r.symbol, []);
+      prices.get(r.symbol).push(r);
+    }
+    perf = guru.hypothetical(quarters, prices, prices.get('SPY') || []);
+  }
+
+  const name = fund.manager || fund.name;
+  const top3 = positions.slice(0, 3).map((p) => `${fmt.company(p.name)} (${fmt.pct(p.weight, false)})`);
+  const story = [
+    `${name} beheert via ${fund.name} een Amerikaanse aandelenportefeuille van ${fmt.money(curTot.value)} verdeeld over ${curTot.positions} posities, volgens de 13F-filing over ${guruCharts.qLabel(cur.period)}.`,
+    top3.length ? `De grootste posities zijn ${top3.slice(0, -1).join(', ')}${top3.length > 1 ? ' en ' : ''}${top3[top3.length - 1]}; samen maken de tien grootste ${fmt.pct(top10, false)} van de portefeuille uit.` : '',
+    prev ? `Ten opzichte van het kwartaal ervoor ${mv.buys.filter((m) => m.kind === 'new').length === 1 ? 'kwam er 1 nieuwe positie' : `kwamen er ${mv.buys.filter((m) => m.kind === 'new').length} nieuwe posities`} bij en ${mv.sells.filter((m) => m.kind === 'sold').length === 1 ? 'werd 1 positie' : `werden ${mv.sells.filter((m) => m.kind === 'sold').length} posities`} volledig verkocht.` : '',
+    perf ? `Wie de portefeuille sinds ${fmt.date(perf.since)} elk kwartaal had nagebootst, haalde ${fmt.pct(perf.total)} rendement, tegenover ${fmt.pct(perf.benchTotal)} voor de S&P 500.` : '',
+  ].filter(Boolean);
+
+  res.render('guru', {
+    title,
+    seo: { description: story.slice(0, 2).join(' ').slice(0, 300), canonical, jsonld: [
+      { '@context': 'https://schema.org', '@type': 'ProfilePage', name: title, url: canonical, mainEntity: { '@type': 'Person', name, ...(fund.bio ? { description: fund.bio } : {}), worksFor: { '@type': 'Organization', name: fund.name } } },
+      { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+        { '@type': 'ListItem', position: 1, name: "Guru's", item: `${base}/gurus` },
+        { '@type': 'ListItem', position: 2, name, item: canonical },
+      ] },
+    ] },
+    fund, name, watched, empty: false, periods, selIdx, cur, prev, curTot, positions, sectors, heat, mv, valueSeries, top10, bubbles, perf, story, gc: guruCharts,
+    sold: mv.sells.filter((m) => m.kind === 'sold').map((m) => ({ ...m, name: nameOf.get(m.symbol) || m.issuer })),
+    nameOf,
+  });
 }));
 
 // ---------- Aandeel ----------
@@ -539,6 +662,8 @@ pub.get('/sitemap.xml', wrap(async (req, res) => {
   const syms = await safe(sq.sitemapSymbols(5000), []);
   const urls = [
     ...indexes.ALL.filter((i) => i.endpoint).map((i) => `<url><loc>${base}/aandelen?index=${i.key}</loc><changefreq>daily</changefreq></url>`),
+    `<url><loc>${base}/gurus</loc><changefreq>weekly</changefreq></url>`,
+    ...(await safe(q.fundsList(), [])).filter((f) => f.latest_period).map((f) => `<url><loc>${base}/guru/${f.slug}</loc><changefreq>weekly</changefreq></url>`),
     ...syms.map((s) => `<url><loc>${base}/aandeel/${encodeURIComponent(s.symbol)}</loc><lastmod>${new Date(s.last).toISOString().slice(0, 10)}</lastmod><changefreq>daily</changefreq></url>`),
   ];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`);
@@ -560,6 +685,46 @@ router.get('/zoek', wrap(async (req, res) => {
   const stocks = [...bySymbol, ...byName].filter((s) => s && s.symbol && !seen.has(s.symbol) && seen.add(s.symbol)).slice(0, 20);
   const funds = allFunds.filter((f) => `${f.name} ${f.manager}`.toLowerCase().includes(lower));
   res.render('search', { title: `Zoeken: ${term}`, term, stocks, analysts, funds });
+}));
+
+// Suggesties onder de zoekbalk tijdens het typen (aandelen, analisten, guru's).
+const US_EX = /^(NASDAQ|NYSE|AMEX|NYSE ?ARCA|NYSEARCA|CBOE|BATS)$/i;
+router.get('/zoek/suggesties', wrap(async (req, res) => {
+  const term = String(req.query.q || '').trim().slice(0, 40);
+  res.set('Cache-Control', 'private, max-age=60');
+  if (!term) return res.json({ stocks: [], analysts: [], gurus: [] });
+  const up = term.toUpperCase();
+  const lower = term.toLowerCase();
+  const [local, analysts, allFunds] = await Promise.all([
+    db.many(
+      `SELECT symbol, name, market_cap FROM companies
+       WHERE symbol ILIKE $1 OR name ILIKE $2
+       ORDER BY (symbol = $3) DESC, (symbol ILIKE $1) DESC, (name ILIKE $4) DESC, market_cap DESC NULLS LAST
+       LIMIT 8`,
+      [`${up}%`, `%${term}%`, up, `${term}%`]
+    ).catch(() => []),
+    q.analystSearch(term, 4).catch(() => []),
+    q.fundsList().catch(() => []),
+  ]);
+  let stocks = local.map((c) => ({ symbol: c.symbol, name: fmt.company(c.name) }));
+  if (stocks.length < 6 && term.length >= 2) {
+    const [a, b] = await Promise.all([safe(fmp.searchSymbol(term), []), safe(fmp.searchName(term), [])]);
+    const seen = new Set(stocks.map((x) => x.symbol));
+    const extra = [...a, ...b]
+      .filter((x) => x && x.symbol && !seen.has(x.symbol) && seen.add(x.symbol))
+      .sort((x, y) => (US_EX.test(y.exchangeShortName || y.exchange || '') ? 1 : 0) - (US_EX.test(x.exchangeShortName || x.exchange || '') ? 1 : 0)
+        || (y.symbol.toUpperCase() === up) - (x.symbol.toUpperCase() === up));
+    stocks = stocks.concat(extra.slice(0, 8 - stocks.length).map((x) => ({ symbol: x.symbol, name: fmt.company(x.name || ''), ex: x.exchangeShortName || x.exchange || '' })));
+  }
+  const gurus = allFunds
+    .filter((f) => `${f.name} ${f.manager || ''}`.toLowerCase().includes(lower))
+    .slice(0, 4)
+    .map((f) => ({ slug: f.slug, name: f.manager || f.name, fund: f.name }));
+  res.json({
+    stocks: stocks.slice(0, 8),
+    analysts: analysts.map((a) => ({ slug: a.slug, name: a.name, firm: a.firm })),
+    gurus,
+  });
 }));
 
 // ---------- Volglijst ----------

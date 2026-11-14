@@ -272,7 +272,7 @@
     <h2>Guru's met <%= name %> in portefeuille</h2>
     <% if (!holders.length) { %><p class="empty">Geen van de gevolgde fondsen heeft dit aandeel in de laatste 13F.</p><% } else { %>
     <table class="tbl"><thead><tr><th>Fonds</th><th class="r">Gewicht</th><th class="r">Waarde</th></tr></thead><tbody>
-    <% holders.forEach(function (h) { %><tr><td><a href="/fonds/<%= h.slug %>" class="strong"><%= h.manager %></a> <span class="muted small"><%= h.name %></span></td><td class="r"><%= fmt.pct(h.weight, false) %></td><td class="r"><%= fmt.money(h.value) %></td></tr><% }) %>
+    <% holders.forEach(function (h) { %><tr><td><a href="/guru/<%= h.slug %>" class="strong"><%= h.manager %></a> <span class="muted small"><%= h.name %></span></td><td class="r"><%= fmt.pct(h.weight, false) %></td><td class="r"><%= fmt.money(h.value) %></td></tr><% }) %>
     </tbody></table><% } %>
     <% if (profile && profile.description) { %><h2 class="mt">Over <%= profile.companyName %></h2><p class="small desc"><%= profile.description %></p><% } %>
   </section>
