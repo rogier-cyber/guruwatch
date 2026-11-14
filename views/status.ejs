@@ -1,0 +1,17 @@
+<%- include('partials/head') %>
+<h1 class="page-title">Status</h1>
+<div class="stats">
+  <div class="stat"><span>Koersdoelen</span><strong><%= fmt.num(counts.targets) %></strong></div>
+  <div class="stat"><span>Ratings</span><strong><%= fmt.num(counts.grades) %></strong></div>
+  <div class="stat"><span>Analisten</span><strong><%= fmt.num(counts.analysts) %></strong></div>
+  <div class="stat"><span>Insider trades</span><strong><%= fmt.num(counts.insiders) %></strong></div>
+  <div class="stat"><span>Fondsen geladen</span><strong><%= fmt.num(counts.funds) %></strong></div>
+</div>
+<section class="card">
+  <h2>Achtergrondtaken</h2>
+  <% if (!jobs.length) { %><p class="empty">Nog niet gedraaid.</p><% } else { %>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Taak</th><th>Laatst gelukt</th><th>Laatste fout</th><th>Info</th></tr></thead><tbody>
+  <% jobs.forEach(function (j) { %><tr><td class="strong"><%= j.job %></td><td><%= fmt.dateTime(j.last_ok_at) %></td><td class="<%= j.last_error ? 'neg' : '' %>"><%= j.last_error ? fmt.dateTime(j.last_error_at) + ': ' + j.last_error : '–' %></td><td class="small muted mono"><%= j.info ? JSON.stringify(j.info) : '' %></td></tr><% }) %>
+  </tbody></table></div><% } %>
+</section>
+<%- include('partials/foot') %>

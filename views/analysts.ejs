@@ -1,0 +1,36 @@
+<%- include('partials/head') %>
+<h1 class="page-title">Analisten</h1>
+<nav class="tabs">
+  <a href="?tab=ranglijst" class="<%= tab === 'ranglijst' ? 'on' : '' %>">Ranglijst</a>
+  <a href="?tab=koersdoelen" class="<%= tab === 'koersdoelen' ? 'on' : '' %>">Koersdoelen</a>
+  <a href="?tab=ratings" class="<%= tab === 'ratings' ? 'on' : '' %>">Up-/downgrades</a>
+  <a href="?tab=banken" class="<%= tab === 'banken' ? 'on' : '' %>">Banken</a>
+</nav>
+<section class="card">
+<% if (tab === 'ranglijst') { %>
+  <p class="small muted">Score over koersdoelen van 30 tot 365 dagen oud (minimaal 5). <strong>Goede richting</strong>: koers ging sindsdien de kant op die de analist voorspelde. <strong>Doel gehaald</strong>: koers staat nu op of voorbij het koersdoel. <strong>Gem. rendement</strong>: koersverandering sinds het advies, in de richting van het advies.</p>
+  <% if (!leaders.length) { %><p class="empty">Nog te weinig data voor een ranglijst. Dit vult zich zodra koersdoelen en koersen zijn binnengehaald.</p><% } else { %>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>#</th><th>Analist</th><th>Bank</th><th class="r">Beoordeeld</th><th class="r">Goede richting</th><th class="r">Doel gehaald</th><th class="r">Gem. rendement</th></tr></thead>
+    <tbody>
+    <% leaders.forEach(function (a, i) { %>
+      <tr><td class="muted"><%= i + 1 %></td><td><a href="/analist/<%= a.slug %>" class="strong"><%= a.name %></a></td>
+      <td><% if (a.firm) { %><a href="/bank/<%= encodeURIComponent(a.firm) %>"><%= a.firm %></a><% } %></td>
+      <td class="r"><%= a.scored %></td><td class="r"><%= fmt.pct(a.success_rate, false) %></td><td class="r"><%= fmt.pct(a.hit_rate, false) %></td>
+      <td class="r <%= fmt.tone(a.avg_return) %>"><%= fmt.pct(a.avg_return) %></td></tr>
+    <% }) %>
+    </tbody></table></div>
+  <% } %>
+<% } else if (tab === 'koersdoelen') { %>
+  <%- include('partials/targets', { rows: targets }) %>
+<% } else if (tab === 'ratings') { %>
+  <div class="filters"><a href="?tab=ratings" class="<%= !action ? 'on' : '' %>">Alle</a><a href="?tab=ratings&actie=upgrade" class="<%= action === 'upgrade' ? 'on' : '' %>">Upgrades</a><a href="?tab=ratings&actie=downgrade" class="<%= action === 'downgrade' ? 'on' : '' %>">Downgrades</a></div>
+  <%- include('partials/grades', { rows: grades }) %>
+<% } else { %>
+  <p class="small muted">Meest actieve banken in de laatste 90 dagen.</p>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Bank</th><th class="r">Ratings</th><th class="r">Upgrades</th><th class="r">Downgrades</th><th>Laatste</th></tr></thead><tbody>
+  <% firms.forEach(function (f) { %><tr><td><a href="/bank/<%= encodeURIComponent(f.firm) %>" class="strong"><%= f.firm %></a></td><td class="r"><%= f.n %></td><td class="r pos"><%= f.upgrades %></td><td class="r neg"><%= f.downgrades %></td><td class="muted"><%= fmt.ago(f.last_at) %></td></tr><% }) %>
+  </tbody></table></div>
+<% } %>
+</section>
+<%- include('partials/foot') %>

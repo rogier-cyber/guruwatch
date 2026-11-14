@@ -1,0 +1,26 @@
+<%- include('partials/head') %>
+<h1 class="page-title">Zoeken<% if (term) { %>: <%= term %><% } %></h1>
+<% if (!term) { %><p class="muted">Typ een ticker, bedrijfsnaam, analist of fondsbeheerder in de zoekbalk.</p><% } else { %>
+<div class="grid2">
+  <section class="card">
+    <h2>Aandelen</h2>
+    <% if (!stocks.length) { %><p class="empty">Geen aandelen gevonden.</p><% } else { %>
+    <table class="tbl"><tbody>
+    <% stocks.forEach(function (s) { %><tr><td><%- include('partials/sym', { s: s.symbol }) %></td><td><%= s.name %></td><td class="muted small"><%= s.exchange || s.exchangeFullName || '' %></td></tr><% }) %>
+    </tbody></table><% } %>
+  </section>
+  <section class="card">
+    <h2>Analisten</h2>
+    <% if (!analysts.length) { %><p class="empty">Geen analisten gevonden.</p><% } else { %>
+    <table class="tbl"><tbody>
+    <% analysts.forEach(function (a) { %><tr><td><a href="/analist/<%= a.slug %>" class="strong"><%= a.name %></a></td><td class="muted"><%= a.firm %></td><td class="r small"><%= a.calls %> doelen</td></tr><% }) %>
+    </tbody></table><% } %>
+    <h2 class="mt">Fondsen</h2>
+    <% if (!funds.length) { %><p class="empty">Geen fondsen gevonden.</p><% } else { %>
+    <table class="tbl"><tbody>
+    <% funds.forEach(function (f) { %><tr><td><a href="/fonds/<%= f.slug %>" class="strong"><%= f.manager %></a></td><td class="muted"><%= f.name %></td></tr><% }) %>
+    </tbody></table><% } %>
+  </section>
+</div>
+<% } %>
+<%- include('partials/foot') %>

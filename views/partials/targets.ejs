@@ -1,0 +1,17 @@
+<% if (!rows.length) { %><p class="empty">Nog geen koersdoelen.</p><% } else { %>
+<div class="tbl-wrap"><table class="tbl">
+  <thead><tr><th>Datum</th><% if (!locals.hideSymbol) { %><th>Aandeel</th><% } %><th>Analist</th><th class="r">Koersdoel</th><th class="r">Koers toen</th><th class="r">Upside</th></tr></thead>
+  <tbody>
+  <% rows.forEach(function (t) { var up = t.price_target > 0 && t.price_when_posted > 0 ? t.price_target / t.price_when_posted - 1 : null; %>
+    <tr>
+      <td class="muted nowrap"><%= fmt.date(t.published_at) %></td>
+      <% if (!locals.hideSymbol) { %><td><%- include('sym', { s: t.symbol }) %></td><% } %>
+      <td><% if (t.analyst_slug) { %><a href="/analist/<%= t.analyst_slug %>"><%= t.analyst_name %></a><% } else { %><%= t.analyst_name || '–' %><% } %><% if (t.analyst_firm) { %> <span class="muted">· <%= t.analyst_firm %></span><% } %></td>
+      <td class="r strong"><%= fmt.price(t.price_target) %></td>
+      <td class="r"><%= fmt.price(t.price_when_posted) %></td>
+      <td class="r <%= fmt.tone(up) %>"><%= fmt.pct(up) %></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table></div>
+<% } %>

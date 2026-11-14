@@ -1,0 +1,21 @@
+<%- include('partials/head') %>
+<h1 class="page-title">Hedge funds</h1>
+<p class="muted">Portefeuilles uit de 13F-filings bij de SEC. Die verschijnen tot 45 dagen na elk kwartaal en tonen alleen Amerikaanse longposities.</p>
+<div class="fund-grid">
+<% funds.forEach(function (f) { %>
+  <a class="card fund-card" href="/fonds/<%= f.slug %>">
+    <strong><%= f.manager %></strong>
+    <span><%= f.name %></span>
+    <span class="muted small"><%= f.style || '' %></span>
+    <span class="fund-meta"><% if (f.latest_period) { %><%= fmt.money(f.latest_value) %> · <%= f.latest_positions %> posities · Q t/m <%= fmt.date(f.latest_period) %><% } else { %>Nog niet geladen<% } %></span>
+  </a>
+<% }) %>
+</div>
+<section class="card mt">
+  <h2>Meest gehouden door deze fondsen</h2>
+  <% if (!popular.length) { %><p class="empty">Nog geen 13F-data.</p><% } else { %>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Aandeel</th><th>Naam</th><th class="r">Fondsen</th><th class="r">Totale waarde</th><th class="r">Gem. gewicht</th></tr></thead><tbody>
+  <% popular.forEach(function (p) { %><tr><td><%- include('partials/sym', { s: p.symbol }) %></td><td><%= p.issuer %></td><td class="r"><%= p.funds %></td><td class="r"><%= fmt.money(p.value) %></td><td class="r"><%= fmt.pct(p.avg_weight, false) %></td></tr><% }) %>
+  </tbody></table></div><% } %>
+</section>
+<%- include('partials/foot') %>

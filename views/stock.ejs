@@ -1,0 +1,51 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <div class="stock-id">
+    <img src="<%= logo %>" alt="" class="stock-logo" onerror="this.style.display='none'">
+    <div>
+      <h1 class="page-title"><%= profile ? profile.companyName : symbol %> <span class="muted"><%= symbol %></span></h1>
+      <p class="muted"><%= profile ? [profile.exchange, profile.sector, profile.industry].filter(Boolean).join(' · ') : '' %></p>
+    </div>
+  </div>
+  <%- include('partials/watch', { kind: 'stock', ref: symbol, watched: watched }) %>
+</div>
+
+<div class="stats">
+  <div class="stat"><span>Koers</span><strong><%= fmt.price(quote && quote.price) %></strong><em class="<%= fmt.tone(quote && quote.changePercentage) %>"><%= quote ? fmt.pct(quote.changePercentage / 100) : '' %></em></div>
+  <div class="stat"><span>Gem. koersdoel</span><strong><%= fmt.price(consensus && consensus.targetConsensus) %></strong><% if (consensus && quote && consensus.targetConsensus) { var up = consensus.targetConsensus / quote.price - 1; %><em class="<%= fmt.tone(up) %>"><%= fmt.pct(up) %> upside</em><% } %></div>
+  <div class="stat"><span>Spreiding doelen</span><strong><%= consensus ? fmt.price(consensus.targetLow) + ' – ' + fmt.price(consensus.targetHigh) : '–' %></strong></div>
+  <div class="stat"><span>Consensus</span><strong><%= gradesConsensus && gradesConsensus.consensus || '–' %></strong>
+    <% if (gradesConsensus) { %><em class="small"><span class="pos"><%= (gradesConsensus.strongBuy || 0) + (gradesConsensus.buy || 0) %> kopen</span> · <%= gradesConsensus.hold || 0 %> houden · <span class="neg"><%= (gradesConsensus.sell || 0) + (gradesConsensus.strongSell || 0) %> verkopen</span></em><% } %></div>
+  <div class="stat"><span>Marktwaarde</span><strong><%= fmt.money(profile && (profile.marketCap || profile.mktCap)) %></strong></div>
+</div>
+
+<% if (history.length > 1) { %>
+<section class="card chart-card">
+  <div class="card-h"><h2>Koers afgelopen jaar</h2><% if (consensus) { %><span class="small legend"><i class="lo"></i>Laagste doel <i class="mid"></i>Gemiddeld <i class="hi"></i>Hoogste doel</span><% } %></div>
+  <%- fmt.sparkline(history, { markers: consensus ? [ { value: consensus.targetLow, label: 'Laag', cls: 'lo' }, { value: consensus.targetConsensus, label: 'Gem.', cls: 'mid' }, { value: consensus.targetHigh, label: 'Hoog', cls: 'hi' } ] : [] }) %>
+</section>
+<% } %>
+
+<div class="grid2">
+  <section class="card">
+    <h2>Koersdoelen van analisten</h2>
+    <%- include('partials/targets', { rows: targets, hideSymbol: true }) %>
+  </section>
+  <section class="card">
+    <h2>Up- en downgrades</h2>
+    <%- include('partials/grades', { rows: grades, hideSymbol: true }) %>
+  </section>
+  <section class="card">
+    <h2>Insider trades</h2>
+    <%- include('partials/insiders', { rows: insiders, hideSymbol: true }) %>
+  </section>
+  <section class="card">
+    <h2>Gehouden door guru's</h2>
+    <% if (!holders.length) { %><p class="empty">Geen van de gevolgde fondsen heeft dit aandeel in de laatste 13F.</p><% } else { %>
+    <table class="tbl"><thead><tr><th>Fonds</th><th class="r">Gewicht</th><th class="r">Waarde</th></tr></thead><tbody>
+    <% holders.forEach(function (h) { %><tr><td><a href="/fonds/<%= h.slug %>" class="strong"><%= h.manager %></a> <span class="muted small"><%= h.name %></span></td><td class="r"><%= fmt.pct(h.weight, false) %></td><td class="r"><%= fmt.money(h.value) %></td></tr><% }) %>
+    </tbody></table><% } %>
+    <% if (profile && profile.description) { %><h2 class="mt">Over <%= profile.companyName %></h2><p class="small desc"><%= profile.description %></p><% } %>
+  </section>
+</div>
+<%- include('partials/foot') %>

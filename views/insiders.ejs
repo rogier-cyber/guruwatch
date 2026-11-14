@@ -1,0 +1,25 @@
+<%- include('partials/head') %>
+<h1 class="page-title">Insider trades</h1>
+<div class="grid-side">
+  <section class="card">
+    <div class="filters">
+      <a href="?type=buy<%= minValue ? '&min=' + minValue : '' %>" class="<%= type === 'buy' ? 'on' : '' %>">Aankopen</a>
+      <a href="?type=sell<%= minValue ? '&min=' + minValue : '' %>" class="<%= type === 'sell' ? 'on' : '' %>">Verkopen</a>
+      <a href="?type=all<%= minValue ? '&min=' + minValue : '' %>" class="<%= type === 'all' ? 'on' : '' %>">Alles</a>
+      <span class="sep"></span>
+      <a href="?type=<%= type %>" class="<%= !minValue ? 'on' : '' %>">Elk bedrag</a>
+      <a href="?type=<%= type %>&min=100000" class="<%= minValue === 100000 ? 'on' : '' %>">&gt; $100k</a>
+      <a href="?type=<%= type %>&min=1000000" class="<%= minValue === 1000000 ? 'on' : '' %>">&gt; $1 mln</a>
+    </div>
+    <%- include('partials/insiders', { rows: trades }) %>
+  </section>
+  <aside class="card">
+    <h2>Cluster buys</h2>
+    <p class="small muted">Meeste kopende insiders, laatste 30 dagen.</p>
+    <% if (!clusters.length) { %><p class="empty">Nog geen data.</p><% } else { %>
+    <table class="tbl"><thead><tr><th>Aandeel</th><th class="r">Insiders</th><th class="r">Waarde</th></tr></thead><tbody>
+    <% clusters.forEach(function (c) { %><tr><td><%- include('partials/sym', { s: c.symbol }) %></td><td class="r"><%= c.insiders %></td><td class="r"><%= fmt.money(c.value) %></td></tr><% }) %>
+    </tbody></table><% } %>
+  </aside>
+</div>
+<%- include('partials/foot') %>
