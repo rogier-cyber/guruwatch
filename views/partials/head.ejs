@@ -19,7 +19,7 @@
   <meta name="theme-color" content="#14213d">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="/static/style.css?v=6">
+  <link rel="stylesheet" href="/static/style.css?v=7">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/static/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
@@ -39,8 +39,12 @@
       <a href="/mijn" class="<%= path.startsWith('/mijn') ? 'on' : '' %>">Mijn GuruWatch<% if (locals.unread) { %> <span class="badge"><%= unread > 99 ? '99+' : unread %></span><% } %></a>
     </nav>
     <form class="search" action="/zoek" method="get" role="search">
-      <input name="q" placeholder="Zoek aandeel, analist of guru" value="<%= path === '/zoek' ? (query.q || '') : '' %>" aria-label="Zoeken">
+      <div class="sx">
+        <input name="q" placeholder="Zoek aandeel, analist of guru" value="<%= path === '/zoek' ? (query.q || '') : '' %>" aria-label="Zoeken" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sx-list">
+        <div class="sx-list" id="sx-list" role="listbox" hidden></div>
+      </div>
     </form>
+    <script src="/static/search.js?v=1" defer></script>
     <form action="/logout" method="post" class="logout"><button class="link" title="<%= user.email %>">Uitloggen</button></form>
     <% } else { %>
     <nav class="nav">

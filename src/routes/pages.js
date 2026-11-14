@@ -687,6 +687,46 @@ router.get('/zoek', wrap(async (req, res) => {
   res.render('search', { title: `Zoeken: ${term}`, term, stocks, analysts, funds });
 }));
 
+// Suggesties onder de zoekbalk tijdens het typen (aandelen, analisten, guru's).
+const US_EX = /^(NASDAQ|NYSE|AMEX|NYSE ?ARCA|NYSEARCA|CBOE|BATS)$/i;
+router.get('/zoek/suggesties', wrap(async (req, res) => {
+  const term = String(req.query.q || '').trim().slice(0, 40);
+  res.set('Cache-Control', 'private, max-age=60');
+  if (!term) return res.json({ stocks: [], analysts: [], gurus: [] });
+  const up = term.toUpperCase();
+  const lower = term.toLowerCase();
+  const [local, analysts, allFunds] = await Promise.all([
+    db.many(
+      `SELECT symbol, name, market_cap FROM companies
+       WHERE symbol ILIKE $1 OR name ILIKE $2
+       ORDER BY (symbol = $3) DESC, (symbol ILIKE $1) DESC, (name ILIKE $4) DESC, market_cap DESC NULLS LAST
+       LIMIT 8`,
+      [`${up}%`, `%${term}%`, up, `${term}%`]
+    ).catch(() => []),
+    q.analystSearch(term, 4).catch(() => []),
+    q.fundsList().catch(() => []),
+  ]);
+  let stocks = local.map((c) => ({ symbol: c.symbol, name: fmt.company(c.name) }));
+  if (stocks.length < 6 && term.length >= 2) {
+    const [a, b] = await Promise.all([safe(fmp.searchSymbol(term), []), safe(fmp.searchName(term), [])]);
+    const seen = new Set(stocks.map((x) => x.symbol));
+    const extra = [...a, ...b]
+      .filter((x) => x && x.symbol && !seen.has(x.symbol) && seen.add(x.symbol))
+      .sort((x, y) => (US_EX.test(y.exchangeShortName || y.exchange || '') ? 1 : 0) - (US_EX.test(x.exchangeShortName || x.exchange || '') ? 1 : 0)
+        || (y.symbol.toUpperCase() === up) - (x.symbol.toUpperCase() === up));
+    stocks = stocks.concat(extra.slice(0, 8 - stocks.length).map((x) => ({ symbol: x.symbol, name: fmt.company(x.name || ''), ex: x.exchangeShortName || x.exchange || '' })));
+  }
+  const gurus = allFunds
+    .filter((f) => `${f.name} ${f.manager || ''}`.toLowerCase().includes(lower))
+    .slice(0, 4)
+    .map((f) => ({ slug: f.slug, name: f.manager || f.name, fund: f.name }));
+  res.json({
+    stocks: stocks.slice(0, 8),
+    analysts: analysts.map((a) => ({ slug: a.slug, name: a.name, firm: a.firm })),
+    gurus,
+  });
+}));
+
 // ---------- Volglijst ----------
 // ---------- Mijn GuruWatch ----------
 router.get('/volglijst', (req, res) => res.redirect(301, '/mijn'));
