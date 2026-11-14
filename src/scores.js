@@ -39,6 +39,7 @@ async function registerSymbols() {
   await db.query(`INSERT INTO symbol_sync (symbol)
     SELECT DISTINCT symbol FROM price_targets
     UNION SELECT symbol FROM index_members
+    UNION SELECT symbol FROM member_calls
     UNION SELECT $1
     ON CONFLICT DO NOTHING`, [BENCH]);
 }
@@ -166,6 +167,46 @@ async function computeGuruScores() {
   return { calls: rows.length, analysts: analysts.length, firms: firms.length };
 }
 
+// 5. Voorspellingen van leden beoordelen (zelfde methode, na 30 dagen) en hun GuruScore.
+async function computeMemberScores() {
+  const bench = await loadSeries(BENCH);
+  const open = await db.many(
+    `SELECT id, user_id, symbol, published_at, price_target, price_when_posted
+     FROM member_calls WHERE NOT complete AND published_at < now() - interval '30 days'`
+  );
+  const bySymbol = new Map();
+  for (const c of open) {
+    if (!bySymbol.has(c.symbol)) bySymbol.set(c.symbol, []);
+    bySymbol.get(c.symbol).push(c);
+  }
+  let evaluated = 0;
+  const now = new Date();
+  for (const [symbol, calls] of bySymbol) {
+    const series = await loadSeries(symbol);
+    for (const c of calls) {
+      const r = evaluateCall(c, series, bench, now);
+      if (!r) continue;
+      await db.query(
+        `UPDATE member_calls SET hit = $2, ret = $3, excess = $4, days_to_hit = $5, horizon_end = $6, complete = $7, evaluated_at = now() WHERE id = $1`,
+        [c.id, r.hit, r.ret, r.excess, r.days_to_hit, r.horizon_end, r.complete]
+      );
+      evaluated++;
+    }
+  }
+  const rows = await db.many(
+    `SELECT user_id, published_at, hit, ret::float8 AS ret, excess::float8 AS excess FROM member_calls WHERE evaluated_at IS NOT NULL`
+  );
+  const byUser = new Map();
+  for (const r of rows) {
+    const k = String(r.user_id);
+    if (!byUser.has(k)) byUser.set(k, []);
+    byUser.get(k).push(r);
+  }
+  const members = computeScores(byUser);
+  await store.replaceGuruScores('member', members);
+  return { evaluated, members: members.length };
+}
+
 async function runPipeline({ backfill = 150, prices = 400, results = 600 } = {}) {
   await registerSymbols();
   const b = await backfillTargets(backfill);
@@ -173,7 +214,8 @@ async function runPipeline({ backfill = 150, prices = 400, results = 600 } = {})
   const p = await syncPrices(prices);
   const r = await computeResults(results);
   const s = await computeGuruScores();
-  return { backfill: b, prices: p, results: r, scores: s };
+  const m = await computeMemberScores().catch((err) => ({ error: err.message }));
+  return { backfill: b, prices: p, results: r, scores: s, members: m };
 }
 
-module.exports = { runPipeline, backfillTargets, syncPrices, computeResults, computeGuruScores, registerSymbols, BENCH };
+module.exports = { runPipeline, computeMemberScores, backfillTargets, syncPrices, computeResults, computeGuruScores, registerSymbols, BENCH };

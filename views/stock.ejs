@@ -67,12 +67,12 @@
 </section>
 <div class="grid2 cases">
   <section class="card case case-bull">
-    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bull case</h2></div><svg viewBox="0 0 64 40" class="case-ic" aria-hidden="true"><path d="M6 30c4-9 13-14 24-14h12c6 0 10-3 12-8 2 4 1 8-2 11l4 3-4 2c-2 3-6 5-10 5l-2 7h-4l-1-6h-12l-2 6h-4l-1-7c-4-1-7 0-10 1z"/><path d="M50 8c1-3 4-5 7-5"/></svg></div>
+    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bull case</h2></div><span class="case-ic"><img src="/img/stier.webp" width="60" height="60" alt="Stier" loading="lazy"></span></div>
     <p class="small muted">Waarom beleggers positief kunnen zijn over <%= name %>:</p>
     <% if (story.bull.length) { %><ul><% story.bull.forEach(function (b) { %><li><%= b %></li><% }) %></ul><% } else { %><p class="empty">Er springen nu geen duidelijk positieve signalen uit de data.</p><% } %>
   </section>
   <section class="card case case-bear">
-    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bear case</h2></div><svg viewBox="0 0 64 40" class="case-ic" aria-hidden="true"><path d="M8 30c0-9 8-16 20-16h14c7 0 12 4 14 10l4 2-2 4h-4l-2 8h-4l-1-6h-16l-2 6h-4l-1-7c-5 0-10 1-16-1z"/><circle cx="54" cy="22" r="1.5"/></svg></div>
+    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bear case</h2></div><span class="case-ic"><img src="/img/beer.webp" width="60" height="60" alt="Beer" loading="lazy"></span></div>
     <p class="small muted">Waarom beleggers voorzichtig kunnen zijn met <%= name %>:</p>
     <% if (story.bear.length) { %><ul><% story.bear.forEach(function (b) { %><li><%= b %></li><% }) %></ul><% } else { %><p class="empty">Er springen nu geen duidelijk negatieve signalen uit de data.</p><% } %>
   </section>
@@ -80,13 +80,40 @@
 <p class="small muted story-note">Deze tekst is automatisch samengesteld uit koersen, kwartaalcijfers, analistenadviezen en insidertransacties en wordt bij elk bezoek bijgewerkt. Geen beleggingsadvies.</p>
 <% } %>
 
+<% var cmUrl = user ? '/community/nieuw?aandeel=' + encodeURIComponent(symbol) : '/login?next=' + encodeURIComponent('/community/nieuw?aandeel=' + symbol); %>
+<section class="card cm-stock">
+  <div class="cm-stock-t">
+    <span class="cm-stock-k">Community</span>
+    <h2>Wat verwacht jij van <%= name %>?</h2>
+    <% if (members && members.members) { var mUp = members.avg_target && quote && quote.price ? members.avg_target / Number(quote.price) - 1 : null; %>
+    <p><b><%= members.members %></b> <%= members.members === 1 ? 'lid gaf' : 'leden gaven' %> een koersdoel: <span class="pos"><%= members.bulls %> omhoog</span>, <span class="neg"><%= members.bears %> omlaag</span><% if (mUp !== null) { %>, gemiddeld <b><%= fmt.price(members.avg_target) %></b> (<span class="<%= fmt.tone(mUp) %>"><%= fmt.pct(mUp) %></span>)<% } %>.</p>
+    <span class="cm-bb lg"><i style="width:<%= (100 * members.bulls / Math.max(1, members.members)).toFixed(0) %>%"></i></span>
+    <% } else { %>
+    <p>Nog geen enkel lid gaf een koersdoel voor <%= name %>. Wees de eerste en laat zien dat je het beter weet dan de analisten.</p>
+    <% } %>
+  </div>
+  <div class="cm-stock-a"><a class="btn btn-primary" href="<%= cmUrl %>">Geef jouw koersdoel</a><a class="small" href="/community">Bekijk de ranglijst</a></div>
+</section>
+
 <% if (story.faq.length) { %>
 <section class="card faq" id="vragen">
   <div class="card-h"><h2>Veelgestelde vragen over het aandeel <%= name %></h2><span class="small muted">bijgewerkt <%= fmt.date(new Date()) %></span></div>
-  <div class="faq-grid">
-  <% story.faq.forEach(function (f) { %><article class="faq-item" id="vraag-<%= f.id %>"><h3><%= f.q %></h3><p><%= f.a %></p></article><% }) %>
+  <div class="faq-list">
+  <% story.faq.forEach(function (f, i) { %><details class="faq-acc" id="vraag-<%= f.id %>"<%= i === 0 ? ' open' : '' %>><summary><h3><%= f.q %></h3><span class="faq-chev" aria-hidden="true"></span></summary><p><%= f.a %></p></details><% }) %>
   </div>
 </section>
+<script>
+  // Klik op een vraag-chip bovenaan: open die vraag en scroll ernaartoe.
+  (function () {
+    function openHash() {
+      var id = decodeURIComponent(location.hash.slice(1));
+      var el = id && document.getElementById(id);
+      if (el && el.tagName === 'DETAILS') { el.open = true; el.scrollIntoView({ block: 'start' }); }
+    }
+    window.addEventListener('hashchange', openHash);
+    openHash();
+  })();
+</script>
 <% } %>
 
 <% var hasCols = months.filter(function (m) { return m.ratings; }).length >= 2; var hasBand = months.filter(function (m) { return m.mean; }).length >= 3; %>
