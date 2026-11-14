@@ -1,0 +1,64 @@
+<%
+  var dateTxt = new Intl.DateTimeFormat('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' }).format(new Date());
+  var h2 = 'margin:26px 0 6px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#64748b;';
+  var row = 'padding:8px 0;border-bottom:1px solid #eef1f6;font-size:14px;';
+  var sym = 'font-family:Menlo,Consolas,monospace;font-weight:800;font-size:12.5px;background:#eef1f6;color:#14213d;padding:2px 7px;border-radius:6px;text-decoration:none;';
+%>
+<%- include('_top', { heading: 'Ochtendbriefing · ' + dateTxt }) %>
+<p style="font-size:15px;line-height:1.5;margin:18px 0 4px;">Goedemorgen. Dit gebeurde er sinds <%= fmt.dateTime(since) %> bij analisten<%= watchCount ? ', op je ' + watchCount + ' gevolgde aandelen' : '' %>.</p>
+
+<div style="<%= h2 %>">Belangrijk voor jou</div>
+<% if (!important.length) { %>
+  <p style="color:#64748b;font-size:14px;margin:6px 0;">Geen bijzondere meldingen. <% if (!watchCount) { %><a href="<%= base %>/radar" style="color:#2856d9;">Volg aandelen</a> om gerichte meldingen te krijgen.<% } %></p>
+<% } else { %>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><% important.forEach(function (a) { %><%- include('_alert', { a: a }) %><% }) %></table>
+<% } %>
+
+<% if (activity.length) { %>
+<div style="<%= h2 %>">Op je aandelen (<%= activity.length %>)</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<% activity.slice(0, 15).forEach(function (a) { var c = a.tone === 'pos' ? '#0e9f6e' : a.tone === 'neg' ? '#d32f2f' : '#64748b'; %>
+  <tr><td style="<%= row %>"><a href="<%= base %><%= a.url %>" style="color:#111827;text-decoration:none;"><%= a.title %></a> <span style="color:<%= c %>;"><%= a.body %></span></td></tr>
+<% }) %>
+</table>
+<% } %>
+
+<% if (topCalls.length) { %>
+<div style="<%= h2 %>">Wat de topanalisten deden</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<% topCalls.forEach(function (c) { var up = c.pwp > 0 ? c.t / c.pwp - 1 : null; %>
+  <tr><td style="<%= row %>"><a href="<%= base %>/aandeel/<%= encodeURIComponent(c.symbol) %>" style="<%= sym %>"><%= c.symbol %></a>
+    &nbsp;<a href="<%= base %>/analist/<%= c.slug %>" style="color:#2856d9;text-decoration:none;"><%= c.name %></a> <span style="color:#64748b;">(<%= c.firm %>, score <%= Math.round(c.score) %>)</span>
+    → <b><%= fmt.price(c.t) %></b><% if (up !== null) { %> <span style="color:<%= up >= 0 ? '#0e9f6e' : '#d32f2f' %>;"><%= fmt.pct(up) %></span><% } %></td></tr>
+<% }) %>
+</table>
+<% } %>
+
+<% if (upgrades.length) { %>
+<div style="<%= h2 %>">Up- en downgrades</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<% upgrades.forEach(function (g) { var up = g.action === 'upgrade'; %>
+  <tr><td style="<%= row %>"><a href="<%= base %>/aandeel/<%= encodeURIComponent(g.symbol) %>" style="<%= sym %>"><%= g.symbol %></a>
+    &nbsp;<span style="color:<%= up ? '#0e9f6e' : '#d32f2f' %>;font-weight:700;"><%= up ? '▲ Upgrade' : '▼ Downgrade' %></span>
+    <span style="color:#64748b;"><%= g.grading_company %>: <%= g.previous_grade || '?' %> → <%= g.new_grade || '?' %></span></td></tr>
+<% }) %>
+</table>
+<% } %>
+
+<% if (risers.length || fallers.length) { %>
+<div style="<%= h2 %>">Radar: sentiment deze week</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+  <td valign="top" width="50%" style="padding-right:8px;">
+    <div style="color:#0e9f6e;font-weight:700;font-size:13px;margin:4px 0;">▲ Verbetert</div>
+    <% risers.forEach(function (r) { %><div style="font-size:13.5px;padding:3px 0;"><a href="<%= base %>/aandeel/<%= encodeURIComponent(r.symbol) %>" style="<%= sym %>"><%= r.symbol %></a> <span style="color:#64748b;"><%= r.raises + r.ups %> omhoog</span></div><% }) %>
+  </td>
+  <td valign="top" width="50%" style="padding-left:8px;">
+    <div style="color:#d32f2f;font-weight:700;font-size:13px;margin:4px 0;">▼ Verslechtert</div>
+    <% fallers.forEach(function (r) { %><div style="font-size:13.5px;padding:3px 0;"><a href="<%= base %>/aandeel/<%= encodeURIComponent(r.symbol) %>" style="<%= sym %>"><%= r.symbol %></a> <span style="color:#64748b;"><%= r.cuts + r.downs %> omlaag</span></div><% }) %>
+  </td>
+</tr></table>
+<% } %>
+
+<p style="margin:26px 0 0;"><a href="<%= base %>/mijn" style="display:inline-block;background:#d32f2f;color:#fff;text-decoration:none;font-weight:700;padding:11px 18px;border-radius:10px;">Naar Mijn GuruWatch</a>
+&nbsp; <a href="<%= base %>/radar" style="color:#2856d9;font-weight:600;text-decoration:none;">Open de radar</a></p>
+<%- include('_bottom') %>

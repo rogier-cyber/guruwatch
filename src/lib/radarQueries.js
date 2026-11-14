@@ -182,4 +182,36 @@ async function cached(key) {
   return db.one('SELECT data, updated_at FROM kv_cache WHERE key = $1', [key]);
 }
 
-module.exports = { sectors, momentum, consensusShift, upside, ratingSnapshot, ratingHistory, cached };
+// Advies-gezondheid van gevolgde aandelen.
+async function watchHealth(symbols) {
+  if (!symbols.length) return [];
+  return db.many(
+    `WITH latest AS (
+       SELECT DISTINCT ON (symbol, ${WHO}) symbol, analyst_id, ${TARGET} AS t, published_at
+       FROM price_targets
+       WHERE symbol = ANY($1) AND published_at > now() - interval '365 days' AND ${TARGET} > 0
+       ORDER BY symbol, ${WHO}, published_at DESC
+     ),
+     agg AS (
+       SELECT l.symbol, avg(l.t)::float8 AS target, count(*)::int AS n, max(l.published_at) AS last_at,
+              avg(l.t) FILTER (WHERE gs.score >= 70)::float8 AS smart, count(gs.score) FILTER (WHERE gs.score >= 70)::int AS smart_n
+       FROM latest l LEFT JOIN guru_scores gs ON gs.kind = 'analyst' AND gs.ref = l.analyst_id::text
+       GROUP BY l.symbol
+     ),
+     rh AS (
+       SELECT DISTINCT ON (symbol) symbol, strong_buy, buy, hold, sell, strong_sell
+       FROM rating_history WHERE symbol = ANY($1) ORDER BY symbol, date DESC
+     )
+     SELECT s.symbol, c.name, c.sector, q.price::float8 AS price, q.change_pct::float8 AS change_pct,
+            a.target, a.n, a.smart, a.smart_n, a.last_at,
+            rh.strong_buy, rh.buy, rh.hold, rh.sell, rh.strong_sell
+     FROM unnest($1::text[]) AS s(symbol)
+     LEFT JOIN companies c ON c.symbol = s.symbol
+     LEFT JOIN quotes q ON q.symbol = s.symbol
+     LEFT JOIN agg a ON a.symbol = s.symbol
+     LEFT JOIN rh ON rh.symbol = s.symbol`,
+    [symbols]
+  );
+}
+
+module.exports = { watchHealth, sectors, momentum, consensusShift, upside, ratingSnapshot, ratingHistory, cached };

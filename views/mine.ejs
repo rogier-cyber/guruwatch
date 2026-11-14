@@ -1,0 +1,83 @@
+<%- include('partials/head') %>
+<%
+  const stocks = rows;
+  const avg = stocks.length ? Math.round(stocks.reduce(function (s, r) { return s + r.health; }, 0) / stocks.length) : null;
+  const tone = function (h) { return h >= 65 ? 'pos' : h < 45 ? 'neg' : ''; };
+%>
+<section class="hero hero-sm">
+  <div class="hero-in mine-hero">
+    <div>
+      <h1>Mijn <b>GuruWatch</b></h1>
+      <p>Je aandelen, analisten en fondsen op één plek, met meldingen als het ertoe doet en elke werkdag om 08:00 een ochtendbriefing.</p>
+      <div class="mine-actions"><a class="btn btn-primary" href="/mijn/meldingen">Meldingen instellen</a> <a class="btn btn-ghost" href="/mijn/briefing">Bekijk de briefing</a></div>
+    </div>
+    <div class="mine-gauge">
+      <%- avg === null ? '' : charts.scoreRing(avg, 118) %>
+      <% if (avg !== null) { %><span>advies-gezondheid<br>van je aandelen</span><% } %>
+    </div>
+  </div>
+</section>
+
+<% if (!items.length) { %>
+<section class="card">
+  <h2>Begin met volgen</h2>
+  <p>Klik op <strong>☆ Volgen</strong> bij een aandeel, analist of fonds. Dan krijg je meldingen als topanalisten bewegen, en een persoonlijke ochtendbriefing.</p>
+  <p class="small"><a href="/radar">Ontdek aandelen op de radar</a> · <a href="/analisten">Bekijk de beste analisten</a> · <a href="/fondsen">Volg een hedge fund</a></p>
+</section>
+<% } %>
+
+<div class="grid-side">
+  <div>
+    <% if (stocks.length) { %>
+    <section class="card">
+      <div class="card-h"><h2>Advies-gezondheid</h2><span class="small muted"><%= stocks.length %> aandelen</span></div>
+      <div class="tbl-wrap"><table class="tbl mine-tbl"><thead><tr>
+        <th>Aandeel</th><th title="Combinatie van koopadviezen, potentieel en momentum">Gezondheid</th><th>Koers</th><th>Potentieel</th><th title="Volgens analisten met GuruScore 70+">Slim</th><th>Verdeling</th><th title="Momentum laatste 30 dagen">Momentum</th>
+      </tr></thead><tbody>
+      <% stocks.sort(function (a, b) { return b.health - a.health; }).forEach(function (r) { %>
+        <tr>
+          <td><a class="sym" href="/aandeel/<%= encodeURIComponent(r.symbol) %>"><%= r.symbol %></a> <span class="muted small rd-name"><%= r.name || '' %></span></td>
+          <td><span class="hp <%= tone(r.health) %>"><i style="width:<%= r.health %>%"></i></span><b><%= r.health %></b></td>
+          <td><%= fmt.price(r.price) %> <span class="small <%= fmt.tone(r.change_pct) %>"><%= r.change_pct === null || r.change_pct === undefined ? '' : fmt.pct(r.change_pct / 100) %></span></td>
+          <td class="<%= fmt.tone(r.upside) %>"><%= fmt.pct(r.upside) %></td>
+          <td class="<%= fmt.tone(r.smartUpside) %>"><%= fmt.pct(r.smartUpside) %></td>
+          <td><%- charts.ratingBar(r) || '<span class="muted small">–</span>' %></td>
+          <td class="<%= r.momentum > 0 ? 'pos' : r.momentum < 0 ? 'neg' : 'muted' %>"><%= r.momentum > 0 ? '▲ ' : r.momentum < 0 ? '▼ ' : '' %><%= fmt.num(Math.abs(r.momentum)) %></td>
+        </tr>
+      <% }) %>
+      </tbody></table></div>
+      <p class="small muted">Gezondheid (0–100) weegt het aandeel koopadviezen, het potentieel tot het gemiddelde koersdoel en het momentum van de afgelopen 30 dagen.</p>
+    </section>
+    <% } %>
+
+    <section class="card">
+      <div class="card-h"><h2>Meldingen <% if (unseen) { %><span class="badge"><%= unseen %> nieuw</span><% } %></h2><a class="small" href="/mijn/meldingen">Instellen</a></div>
+      <% if (!feed.length) { %><p class="empty">Nog geen meldingen. Zodra er iets gebeurt bij je aandelen, analisten of fondsen zie je het hier.</p><% } else { %>
+      <ul class="feed">
+      <% feed.forEach(function (a) { %>
+        <li class="feed-i <%= a.tone || '' %> <%= a.seen_at ? '' : 'new' %>">
+          <a href="<%= a.url || '#' %>"><strong><%= a.title %></strong></a>
+          <% if (a.body) { %><div class="small muted"><%= a.body %></div><% } %>
+          <span class="feed-t small muted"><%= fmt.ago(a.created_at) %></span>
+        </li>
+      <% }) %>
+      </ul><% } %>
+    </section>
+  </div>
+  <aside>
+    <section class="card">
+      <h2>Je volgt</h2>
+      <% if (stocks.length) { %><p class="small muted mb0">Aandelen</p><div class="chips mt8"><% stocks.forEach(function (r) { %><a class="chip" href="/aandeel/<%= encodeURIComponent(r.symbol) %>"><%= r.symbol %></a><% }) %></div><% } %>
+      <% if (analysts.length) { %><p class="small muted mb0 mt">Analisten</p>
+        <div class="stack mt8" style="gap:8px"><% analysts.forEach(function (a) { %><a class="id-row sm" href="/analist/<%= a.slug %>" style="color:inherit"><%- charts.scoreRing(a.score, 30) %><span><strong><%= a.name %></strong> <span class="muted small"><%= a.firm %></span></span></a><% }) %></div><% } %>
+      <% if (followedFunds.length) { %><p class="small muted mb0 mt">Fondsen</p><div class="chips mt8"><% followedFunds.forEach(function (i) { var f = fundMap.get(i.ref); %><a class="chip" href="/fonds/<%= i.ref %>"><%= f ? (f.manager || f.name) : i.ref %></a><% }) %></div><% } %>
+      <% if (!items.length) { %><p class="empty">Nog niets.</p><% } %>
+    </section>
+    <section class="card brief-card">
+      <h2>Ochtendbriefing</h2>
+      <p class="small">Elke werkdag om 08:00 in je mailbox: wat analisten vannacht deden met jouw aandelen, de belangrijkste up- en downgrades en de radar.</p>
+      <a class="btn" href="/mijn/briefing">Voorbeeld bekijken</a>
+    </section>
+  </aside>
+</div>
+<%- include('partials/foot') %>

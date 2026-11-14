@@ -2,6 +2,7 @@
 
 const express = require('express');
 const q = require('../lib/queries');
+const db = require('../db');
 const fmp = require('../lib/fmp');
 const eodhd = require('../lib/eodhd');
 const ingest = require('../ingest');
@@ -11,6 +12,20 @@ const rq = require('../lib/radarQueries');
 const radar = require('../lib/radar');
 
 const router = express.Router();
+
+// Aantal ongelezen meldingen voor het menu.
+router.use(async (req, res, next) => {
+  res.locals.unread = 0;
+  if (req.user) {
+    try {
+      const r = await db.one('SELECT count(*)::int AS n FROM alerts WHERE user_id = $1 AND seen_at IS NULL', [req.user.id]);
+      res.locals.unread = r ? r.n : 0;
+    } catch (err) {
+      // Tabel bestaat nog niet tijdens een migratie: geen teller tonen.
+    }
+  }
+  next();
+});
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const SYMBOL_RE = /^[A-Z0-9.\-^]{1,15}$/;
@@ -245,18 +260,89 @@ router.get('/zoek', wrap(async (req, res) => {
 }));
 
 // ---------- Volglijst ----------
-router.get('/volglijst', wrap(async (req, res) => {
+// ---------- Mijn GuruWatch ----------
+router.get('/volglijst', (req, res) => res.redirect(301, '/mijn'));
+
+router.get('/mijn', wrap(async (req, res) => {
+  const alerts = require('../alerts');
+  await alerts.ensureDefaults(req.user.id);
   const items = await q.watchlist(req.user.id);
   const stocks = items.filter((i) => i.kind === 'stock').map((i) => i.ref);
-  const [grades, insiders, funds] = await Promise.all([
-    stocks.length ? Promise.all(stocks.map((s) => q.latestGrades({ symbol: s, limit: 5 }))).then((x) => x.flat()) : [],
-    stocks.length ? Promise.all(stocks.map((s) => q.latestInsiders({ symbol: s, limit: 5 }))).then((x) => x.flat()) : [],
+  const [health, feed, funds, mom, analysts] = await Promise.all([
+    rq.watchHealth(stocks),
+    db.many('SELECT * FROM alerts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 60', [req.user.id]),
     q.fundsList(),
+    stocks.length ? safe(rq.momentum({ days: 30 }), []) : [],
+    db.many(
+      `SELECT a.slug, a.name, a.firm, g.score FROM watchlist w JOIN analysts a ON a.slug = w.ref
+       LEFT JOIN guru_scores g ON g.kind = 'analyst' AND g.ref = a.id::text
+       WHERE w.user_id = $1 AND w.kind = 'analyst'`,
+      [req.user.id]
+    ),
   ]);
-  grades.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
-  insiders.sort((a, b) => new Date(b.filing_date) - new Date(a.filing_date));
+  const momBy = new Map(mom.map((r) => [r.symbol, radar.momentumScore(r)]));
+  const rows = health.map((h) => {
+    const share = radar.bullShare(h);
+    const upside = h.target && h.price ? h.target / h.price - 1 : null;
+    const smartUpside = h.smart && h.price && h.smart_n >= 2 ? h.smart / h.price - 1 : null;
+    const momentum = momBy.get(h.symbol) ?? 0;
+    // Advies-gezondheid 0-100: koopadviezen, potentieel en momentum.
+    let health01 = 0.5;
+    if (share.bull !== null) health01 = 0.45 * share.bull + 0.35 * Math.max(0, Math.min(1, ((upside ?? 0) + 0.1) / 0.5)) + 0.2 * Math.max(0, Math.min(1, (momentum + 5) / 10));
+    return { ...h, ...share, upside, smartUpside, momentum, health: Math.round(health01 * 100) };
+  });
   const fundMap = new Map(funds.map((f) => [f.slug, f]));
-  res.render('watchlist', { title: 'Volglijst', items, grades: grades.slice(0, 30), insiders: insiders.slice(0, 30), fundMap });
+  const unseen = feed.filter((a) => !a.seen_at).length;
+  if (unseen) await db.query('UPDATE alerts SET seen_at = now() WHERE user_id = $1 AND seen_at IS NULL', [req.user.id]);
+  res.locals.unread = 0;
+  res.render('mine', { title: 'Mijn GuruWatch', items, rows, feed, unseen, fundMap, analysts, followedFunds: items.filter((i) => i.kind === 'fund') });
+}));
+
+router.get('/mijn/meldingen', wrap(async (req, res) => {
+  const alerts = require('../alerts');
+  const { RULES, describe } = require('../lib/alertRules');
+  await alerts.ensureDefaults(req.user.id);
+  const [rules, settings] = await Promise.all([
+    db.many('SELECT * FROM alert_rules WHERE user_id = $1 ORDER BY id', [req.user.id]),
+    db.one('SELECT * FROM user_settings WHERE user_id = $1', [req.user.id]),
+  ]);
+  res.render('rules', { title: 'Meldingen', rules: rules.map((r) => ({ ...r, text: describe(r.kind, r.params), label: RULES[r.kind] ? RULES[r.kind].label : r.kind })), RULES, settings, saved: req.query.ok === '1' });
+}));
+
+router.post('/mijn/regel', wrap(async (req, res) => {
+  const { normalizeParams } = require('../lib/alertRules');
+  const params = normalizeParams(String(req.body.kind || ''), req.body);
+  if (!params) return res.status(400).send('Onbekende melding');
+  const count = await db.one('SELECT count(*)::int AS n FROM alert_rules WHERE user_id = $1', [req.user.id]);
+  if (count.n >= 40) return res.status(400).send('Maximaal 40 meldingen');
+  await db.query('INSERT INTO alert_rules (user_id, kind, params) VALUES ($1, $2, $3)', [req.user.id, req.body.kind, JSON.stringify(params)]);
+  res.redirect('/mijn/meldingen?ok=1');
+}));
+
+router.post('/mijn/regel/:id', wrap(async (req, res) => {
+  const id = Number(req.params.id);
+  const action = String(req.body.action || '');
+  if (action === 'delete') await db.query('DELETE FROM alert_rules WHERE id = $1 AND user_id = $2', [id, req.user.id]);
+  else if (action === 'toggle') await db.query('UPDATE alert_rules SET active = NOT active WHERE id = $1 AND user_id = $2', [id, req.user.id]);
+  else if (action === 'email') await db.query(`UPDATE alert_rules SET params = params || jsonb_build_object('email', CASE WHEN params->>'email' = 'briefing' THEN 'direct' ELSE 'briefing' END) WHERE id = $1 AND user_id = $2`, [id, req.user.id]);
+  res.redirect('/mijn/meldingen?ok=1');
+}));
+
+router.post('/mijn/instellingen', wrap(async (req, res) => {
+  await db.query(
+    `INSERT INTO user_settings (user_id, briefing, instant_email) VALUES ($1, $2, $3)
+     ON CONFLICT (user_id) DO UPDATE SET briefing = EXCLUDED.briefing, instant_email = EXCLUDED.instant_email`,
+    [req.user.id, req.body.briefing === 'on', req.body.instant_email === 'on']
+  );
+  res.redirect('/mijn/meldingen?ok=1');
+}));
+
+router.get('/mijn/briefing', wrap(async (req, res) => {
+  const alerts = require('../alerts');
+  await alerts.ensureDefaults(req.user.id);
+  await alerts.evaluateUser(req.user.id);
+  const { html } = await alerts.renderBriefing(req.user.id, null);
+  res.render('briefing', { title: 'Voorbeeld ochtendbriefing', html });
 }));
 
 router.post('/volg', wrap(async (req, res) => {

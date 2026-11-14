@@ -1,0 +1,63 @@
+<%- include('partials/head') %>
+<h1 class="page-title">Meldingen</h1>
+<p class="muted">Kies waarvoor je een seintje wilt. <a href="/mijn">Terug naar Mijn GuruWatch</a></p>
+<% if (saved) { %><p class="alert info">Opgeslagen.</p><% } %>
+
+<section class="card">
+  <h2>E-mail</h2>
+  <form method="post" action="/mijn/instellingen" class="settings">
+    <label class="switch"><input type="checkbox" name="briefing" <%= settings && settings.briefing ? 'checked' : '' %>><span></span> Ochtendbriefing op werkdagen om 08:00</label>
+    <label class="switch"><input type="checkbox" name="instant_email" <%= settings && settings.instant_email ? 'checked' : '' %>><span></span> Belangrijke meldingen direct mailen</label>
+    <button class="btn">Bewaren</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Je meldingen</h2>
+  <ul class="rules">
+  <% rules.forEach(function (r) { %>
+    <li class="rule <%= r.active ? '' : 'off' %>">
+      <div class="rule-t"><strong><%= r.label %></strong><div class="small muted"><%= r.text %></div></div>
+      <div class="rule-a">
+        <form method="post" action="/mijn/regel/<%= r.id %>"><input type="hidden" name="action" value="email"><button class="tag <%= (r.params.email || 'direct') === 'direct' ? 'pos' : '' %>" title="Klik om te wisselen"><%= (r.params.email || 'direct') === 'direct' ? 'Direct mailen' : 'In de briefing' %></button></form>
+        <form method="post" action="/mijn/regel/<%= r.id %>"><input type="hidden" name="action" value="toggle"><button class="btn btn-sm"><%= r.active ? 'Pauzeren' : 'Aanzetten' %></button></form>
+        <form method="post" action="/mijn/regel/<%= r.id %>"><input type="hidden" name="action" value="delete"><button class="btn btn-sm btn-x" title="Verwijderen" aria-label="Verwijderen">✕</button></form>
+      </div>
+    </li>
+  <% }) %>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>Nieuwe melding</h2>
+  <form method="post" action="/mijn/regel" class="rule-form">
+    <label>Soort
+      <select name="kind" id="rule-kind">
+        <% Object.keys(RULES).forEach(function (k) { %><option value="<%= k %>"><%= RULES[k].label %></option><% }) %>
+      </select>
+    </label>
+    <label data-f="min">Drempel <input name="min" inputmode="decimal" placeholder="bijv. 3 analisten, 25%, 100000 dollar"></label>
+    <label data-f="days">Binnen (dagen) <input name="days" inputmode="numeric" placeholder="7"></label>
+    <label data-f="minScore">Minimale GuruScore <input name="minScore" inputmode="numeric" placeholder="70"></label>
+    <label data-f="scope">Voor
+      <select name="scope"><option value="watchlist">Aandelen die ik volg</option><option value="all">Alle aandelen</option></select>
+    </label>
+    <label data-f="email">Hoe
+      <select name="email"><option value="direct">Direct mailen</option><option value="briefing">In de ochtendbriefing</option></select>
+    </label>
+    <button class="btn btn-primary">Toevoegen</button>
+  </form>
+  <p class="small muted">Lege velden krijgen de standaardwaarde.</p>
+</section>
+<script>
+  (function () {
+    var fields = <%- JSON.stringify(Object.fromEntries(Object.keys(RULES).map(function (k) { return [k, RULES[k].fields]; }))) %>;
+    var sel = document.getElementById('rule-kind');
+    function sync() {
+      var f = fields[sel.value] || [];
+      document.querySelectorAll('.rule-form [data-f]').forEach(function (el) { el.style.display = f.indexOf(el.getAttribute('data-f')) >= 0 ? '' : 'none'; });
+    }
+    sel.addEventListener('change', sync); sync();
+  })();
+</script>
+<%- include('partials/foot') %>

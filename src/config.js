@@ -27,6 +27,8 @@ module.exports = {
   eodhdKey: env.EODHD_API_KEY || '',
   resendKey: env.RESEND_API_KEY || '',
   mailFrom: env.MAIL_FROM || 'Guruwatch <onboarding@resend.dev>',
+  // Publiek adres voor links in e-mails (Render zet RENDER_EXTERNAL_URL zelf).
+  publicUrl: env.PUBLIC_URL || env.RENDER_EXTERNAL_URL || `http://localhost:${Number(env.PORT) || 3000}`,
   sessionSecret: env.SESSION_SECRET || 'dev-secret-change-me',
   allowedEmails: (env.ALLOWED_EMAILS || '')
     .split(',')
