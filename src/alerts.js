@@ -361,6 +361,8 @@ async function briefingData(userId, since) {
   ]);
   const radar = require('./lib/radar');
   const rq = require('./lib/radarQueries');
+  const eq = require('./lib/earningsQueries');
+  const upcomingEarnings = watch.stocks.length ? await eq.upcoming({ days: 7, symbols: watch.stocks }).catch(() => []) : [];
   const mom = (await rq.momentum({ days: 7 }).catch(() => [])).map((r) => ({ ...r, score: radar.momentumScore(r) })).sort((a, b) => b.score - a.score);
   return {
     since: sinceTs,
@@ -369,6 +371,7 @@ async function briefingData(userId, since) {
     activity: alerts.filter((a) => a.kind === 'watch_activity'),
     topCalls,
     upgrades,
+    upcomingEarnings,
     risers: mom.filter((r) => r.score > 0).slice(0, 5),
     fallers: mom.filter((r) => r.score < 0).slice(-5).reverse(),
   };

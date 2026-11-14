@@ -417,3 +417,27 @@ svg.scatter, svg.cols, svg.rarea { width: 100%; height: auto; display: block; }
 }
 .grid2 > *, .grid3 > *, .grid-side > * { min-width: 0; }
 @media (max-width: 900px) { .grid2, .grid-side, .grid3 { grid-template-columns: minmax(0, 1fr); } }
+.tl-mark { stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.tl-mark-l { fill: var(--red); font-size: 11.5px; font-weight: 800; font-family: inherit; }
+.pb-a.up { fill: var(--pos); } .pb-a.down { fill: var(--neg); }
+.pb-b { fill: var(--navy-3); opacity: .8; } .pb-b.down { opacity: .45; }
+@media (prefers-color-scheme: dark) { .pb-b { fill: #9fb3e6; } }
+.pb-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin: 0 4px 0 10px; vertical-align: -1px; }
+.pb-legend .a { background: var(--pos); } .pb-legend .b { background: var(--navy-3); }
+
+/* Cijfers */
+.cal { display: grid; gap: 0; }
+.row-mine { background: linear-gradient(90deg, var(--accent-soft), transparent 60%); }
+.star { color: var(--amber); font-size: 13px; }
+.next-earn { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; }
+a.plain { color: inherit; }
+.verdict h2 { margin-bottom: 6px; }
+.verdict-koers-omlaag-doelen-omhoog { border-left: 5px solid var(--pos); }
+.verdict-koers-omhoog-doelen-omlaag { border-left: 5px solid var(--neg); }
+.vs-bars { display: grid; gap: 8px; margin-top: 12px; max-width: 560px; }
+.vs-bars div { display: grid; grid-template-columns: 80px 1fr 64px; align-items: center; gap: 10px; font-size: 13px; }
+.vs-bars span { color: var(--muted); font-weight: 600; }
+.vs-bars i { display: block; height: 12px; border-radius: 6px; min-width: 3px; }
+.vs-bars i.pos { background: linear-gradient(90deg, var(--pos-soft), var(--pos)); } .vs-bars i.neg { background: linear-gradient(90deg, var(--neg-soft), var(--neg)); }
+.vs-bars b { text-align: right; font-variant-numeric: tabular-nums; }
+.cal-day .tbl { table-layout: fixed; min-width: 640px; } .cal-day .tbl th:first-child { width: 32%; }

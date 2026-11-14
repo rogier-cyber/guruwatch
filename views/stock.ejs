@@ -61,6 +61,17 @@
 <% } %>
 
 <% if (timeline) { %>
+<% if ((earningsHist && earningsHist.length) || nextEarn) { %>
+<section class="card">
+  <div class="card-h"><h2>Kwartaalcijfers</h2><span class="small pb-legend"><i class="a"></i>Winstverrassing <i class="b"></i>Koersreactie</span></div>
+  <% if (nextEarn) { %><p class="next-earn">Volgende cijfers: <b><%= fmt.date(nextEarn.date) %></b><% if (nextEarn.eps_estimated != null) { %> · verwachte winst per aandeel <b><%= fmt.price(nextEarn.eps_estimated) %></b><% } %><% if (nextEarn.revenue_estimated) { %> · omzet <b><%= fmt.money(nextEarn.revenue_estimated) %></b><% } %></p><% } %>
+  <% if (earningsHist.length) { %>
+  <%- charts.pairBars(earningsHist.map(function (h) { return { label: h.label, a: h.surprise, b: h.reaction, href: '/aandeel/' + encodeURIComponent(symbol) + '/cijfers/' + h.date }; }), { aLabel: 'Winstverrassing', bLabel: 'Koersreactie', height: 200 }) %>
+  <% var lastE = earningsHist[earningsHist.length - 1]; %>
+  <p class="small">Laatste cijfers (<%= fmt.date(lastE.date) %>): winst <span class="<%= fmt.tone(lastE.surprise) %>"><%= fmt.pct(lastE.surprise) %></span> t.o.v. verwachting, koers <span class="<%= fmt.tone(lastE.reaction) %>"><%= fmt.pct(lastE.reaction) %></span>, <span class="pos">▲<%= lastE.raises %></span> <span class="neg">▼<%= lastE.cuts %></span> koersdoelen. <a href="/aandeel/<%= encodeURIComponent(symbol) %>/cijfers/<%= lastE.date %>">Open de Earnings Reaction Monitor</a></p>
+  <% } %>
+</section>
+<% } %>
 <section class="card chart-card" id="tijdlijn">
   <div class="card-h"><h2>Koers en koersdoelen door de tijd</h2><span class="small legend"><i class="cons"></i>Gemiddeld koersdoel</span></div>
   <%- timeline.svg %>

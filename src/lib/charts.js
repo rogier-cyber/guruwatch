@@ -42,7 +42,7 @@ function rollingConsensus(targets, dates) {
  * @param prices [{date, close}] gesorteerd
  * @param targets [{published_at, target, pwp, firm}]
  */
-function targetTimeline(prices, targets, { width = 920, height = 320 } = {}) {
+function targetTimeline(prices, targets, { width = 920, height = 320, markers = [] } = {}) {
   const pts = (prices || []).filter((p) => p.close > 0);
   if (pts.length < 2) return null;
   const pad = { l: 56, r: 12, t: 12, b: 26 };
@@ -114,7 +114,13 @@ function targetTimeline(prices, targets, { width = 920, height = 320 } = {}) {
   const start = new Date(x0);
   const monthsSpan = (x1 - x0) / (30 * DAY);
   const stepM = monthsSpan > 30 ? 6 : monthsSpan > 12 ? 3 : 1;
-  for (let d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)); d.getTime() <= x1; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + stepM, 1))) {
+  if (monthsSpan < 3.5) {
+    // Korte periode: een label per week.
+    for (let t = x0 + 3 * DAY; t <= x1 - 2 * DAY; t += 7 * DAY) {
+      const d = new Date(t);
+      xTicks.push(`<text x="${sx(t).toFixed(1)}" y="${height - 6}" text-anchor="middle" class="tl-axis">${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}</text>`);
+    }
+  } else for (let d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1)); d.getTime() <= x1; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + stepM, 1))) {
     const label = d.getUTCMonth() === 0 || stepM >= 3 ? `${MONTHS[d.getUTCMonth()]} '${String(d.getUTCFullYear()).slice(2)}` : MONTHS[d.getUTCMonth()];
     xTicks.push(`<text x="${sx(d.getTime()).toFixed(1)}" y="${height - 6}" text-anchor="middle" class="tl-axis">${label}</text>`);
   }
@@ -126,8 +132,16 @@ function targetTimeline(prices, targets, { width = 920, height = 320 } = {}) {
     })
     .join('');
 
+  const marks = (markers || [])
+    .map((m) => {
+      const t = new Date(m.date).getTime();
+      if (t < x0 || t > x1) return '';
+      const x = sx(t).toFixed(1);
+      return `<line x1="${x}" x2="${x}" y1="${pad.t}" y2="${height - pad.b}" class="tl-mark"/><text x="${(Number(x) + 5).toFixed(1)}" y="${pad.t + 12}" class="tl-mark-l">${esc(m.label || '')}</text>`;
+    })
+    .join('');
   const svg = `<svg viewBox="0 0 ${width} ${height}" class="tl" role="img" aria-label="Koers en koersdoelen door de tijd">
-    ${grid}${xTicks.join('')}
+    ${grid}${xTicks.join('')}${marks}
     <path d="${consPath}" class="tl-cons"/>
     <path d="${pricePath}" class="tl-price"/>
     ${dots}
@@ -428,4 +442,35 @@ function rangeBar({ low, high, price, target }) {
   return `<span class="rng" title="Laag ${fmtPrice(low)} · hoog ${fmtPrice(high)} · koers ${fmtPrice(price)} · consensus ${fmtPrice(target)}"><span class="rng-r" style="left:${P(low)}%;width:${(P(high) - P(low)).toFixed(1)}%"></span><i class="rng-t" style="left:${P(target)}%"></i><i class="rng-p" style="left:${P(price)}%"></i></span>`;
 }
 
-module.exports = { targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, hbars, heat, scatter, columns, ratingBar, ratingArea, rangeBar };
+// Paren van staven per periode: [{label, a, b, href}] (fracties), bijv. winstverrassing en koersreactie.
+function pairBars(items, { width = 920, height = 230, aLabel = '', bLabel = '' } = {}) {
+  if (!items.length) return '';
+  const pad = { l: 44, r: 8, t: 14, b: 30 };
+  const vals = items.flatMap((x) => [x.a, x.b]).filter(Number.isFinite);
+  const m = Math.max(0.02, ...vals.map((v) => Math.min(Math.abs(v), 1))) * 1.15;
+  const W = width - pad.l - pad.r;
+  const H = height - pad.t - pad.b;
+  const cl = (v) => Math.max(-m, Math.min(m, v));
+  const Y = (v) => pad.t + (1 - (cl(v) + m) / (2 * m)) * H;
+  const gw = W / items.length;
+  const bw = Math.min(26, gw * 0.32);
+  const ticks = niceTicks(-m, m, 5).filter((t) => Math.abs(t) <= m);
+  const grid = ticks.map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="tl-grid ${t === 0 ? 'zero' : ''}"/><text x="${pad.l - 6}" y="${(Y(t) + 4).toFixed(1)}" text-anchor="end" class="tl-axis">${pctTxt(t)}</text>`).join('');
+  const bar = (v, x, cls, lbl) => {
+    if (!Number.isFinite(v)) return '';
+    const y0 = Y(0);
+    const y1 = Y(v);
+    return `<rect x="${x.toFixed(1)}" y="${Math.min(y0, y1).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1.5, Math.abs(y1 - y0)).toFixed(1)}" rx="3" class="${cls} ${v >= 0 ? 'up' : 'down'}"><title>${esc(lbl)}: ${pctTxt(v, 1)}</title></rect>`;
+  };
+  const groups = items
+    .map((x, i) => {
+      const cx = pad.l + i * gw + gw / 2;
+      const inner = `${bar(x.a, cx - bw - 1, 'pb-a', aLabel)}${bar(x.b, cx + 1, 'pb-b', bLabel)}
+        <text x="${cx.toFixed(1)}" y="${height - 10}" text-anchor="middle" class="tl-axis">${esc(x.label)}</text>`;
+      return x.href ? `<a href="${esc(x.href)}">${inner}</a>` : `<g>${inner}</g>`;
+    })
+    .join('');
+  return `<svg viewBox="0 0 ${width} ${height}" class="cols" role="img" aria-label="${esc(aLabel)} en ${esc(bLabel)}">${grid}${groups}</svg>`;
+}
+
+module.exports = { pairBars, targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, hbars, heat, scatter, columns, ratingBar, ratingArea, rangeBar };

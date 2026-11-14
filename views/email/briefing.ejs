@@ -23,6 +23,17 @@
 </table>
 <% } %>
 
+<% if (locals.upcomingEarnings && upcomingEarnings.length) { %>
+<div style="<%= h2 %>">Cijfers van je aandelen deze week</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<% upcomingEarnings.forEach(function (e) { %>
+  <tr><td style="<%= row %>"><a href="<%= base %>/aandeel/<%= encodeURIComponent(e.symbol) %>" style="<%= sym %>"><%= e.symbol %></a>
+    &nbsp;<b><%= new Intl.DateTimeFormat('nl-NL', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(e.date + 'T00:00:00Z')) %></b>
+    <% if (e.eps_estimated != null) { %><span style="color:#64748b;"> · verwachte winst per aandeel <%= fmt.price(e.eps_estimated) %></span><% } %></td></tr>
+<% }) %>
+</table>
+<% } %>
+
 <% if (topCalls.length) { %>
 <div style="<%= h2 %>">Wat de topanalisten deden</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">

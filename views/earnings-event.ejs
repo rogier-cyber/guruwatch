@@ -1,0 +1,68 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <div>
+    <p class="small muted mb0"><a href="/cijfers?tab=reacties">Cijfers</a> · Earnings Reaction Monitor</p>
+    <h1 class="page-title"><a href="/aandeel/<%= encodeURIComponent(symbol) %>" class="plain"><%= company && company.name ? company.name : symbol %></a> <span class="muted"><%= symbol %></span></h1>
+    <p class="muted">Cijfers van <%= fmt.date(date) %></p>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><span>Winst per aandeel</span><strong><%= fmt.price(ev.eps_actual) %></strong><em class="small <%= fmt.tone(ev.surprise) %>"><%= ev.surprise == null ? 'verwacht ' + fmt.price(ev.eps_estimated) : fmt.pct(ev.surprise) + ' vs ' + fmt.price(ev.eps_estimated) %></em></div>
+  <div class="stat"><span>Omzet</span><strong><%= fmt.money(ev.revenue_actual) %></strong><em class="small <%= fmt.tone(ev.revSurprise) %>"><%= ev.revSurprise == null ? '' : fmt.pct(ev.revSurprise) + ' vs verwachting' %></em></div>
+  <div class="stat"><span>Koersreactie</span><strong class="<%= fmt.tone(ev.reaction) %>"><%= fmt.pct(ev.reaction) %></strong><em class="small muted">dag ervoor tot dag erna</em></div>
+  <div class="stat"><span>Koersdoelen in 10 dagen</span><strong><span class="pos">▲<%= summary.raises %></span> <span class="neg">▼<%= summary.cuts %></span></strong><em class="small <%= fmt.tone(summary.avgChange) %>">gemiddeld <%= fmt.pct(summary.avgChange) %></em></div>
+</div>
+
+<% if (ev.verdict) { %>
+<section class="card verdict verdict-<%= ev.verdict.key %>">
+  <h2><%= ev.verdict.label %></h2>
+  <p class="mb0">De koers ging <b class="<%= fmt.tone(ev.reaction) %>"><%= fmt.pct(ev.reaction) %></b>, analisten pasten hun koersdoel gemiddeld <b class="<%= fmt.tone(summary.avgChange) %>"><%= fmt.pct(summary.avgChange) %></b> aan.</p>
+  <div class="vs-bars">
+    <div><span>Koers</span><i class="<%= ev.reaction >= 0 ? 'pos' : 'neg' %>" style="width:<%= Math.min(100, Math.abs(ev.reaction || 0) * 250).toFixed(0) %>%"></i><b><%= fmt.pct(ev.reaction) %></b></div>
+    <div><span>Koersdoel</span><i class="<%= (summary.avgChange || 0) >= 0 ? 'pos' : 'neg' %>" style="width:<%= Math.min(100, Math.abs(summary.avgChange || 0) * 250).toFixed(0) %>%"></i><b><%= fmt.pct(summary.avgChange) %></b></div>
+  </div>
+</section>
+<% } %>
+
+<% if (timeline) { %>
+<section class="card chart-card">
+  <div class="card-h"><h2>Koers en koersdoelen rond de cijfers</h2><span class="small legend"><i class="cons"></i>Gemiddeld koersdoel</span></div>
+  <%- timeline.svg %>
+  <div class="tl-legend"><% timeline.legend.forEach(function (l) { %><span><span class="dot" style="background:<%= l.color %>"></span> <%= l.label %> (<%= l.n %>)</span><% }) %></div>
+</section>
+<% } %>
+
+<div class="grid2">
+  <section class="card">
+    <h2>Wie paste als eerste aan?</h2>
+    <% if (!revisions.length) { %><p class="empty">Nog geen koersdoelen in de 10 dagen na de cijfers.</p><% } else { %>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Wanneer</th><th>Analist</th><th>Van</th><th>Naar</th><th>Wijziging</th></tr></thead><tbody>
+    <% revisions.forEach(function (r, i) { const chg = r.prev > 0 ? r.t / r.prev - 1 : null; %>
+      <tr><td><%= i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : '' %><%= fmt.dateTime(r.published_at) %></td>
+        <td><% if (r.slug) { %><a href="/analist/<%= r.slug %>"><%= r.name %></a><% } else { %><%= r.analyst_name || '–' %><% } %> <span class="muted small"><%= r.analyst_firm || '' %></span><% if (r.score != null) { %> <%- include('partials/score', { score: r.score, size: 24 }) %><% } %></td>
+        <td class="muted"><%= r.prev ? fmt.price(r.prev) : 'nieuw' %></td><td><b><%= fmt.price(r.t) %></b></td>
+        <td class="<%= fmt.tone(chg) %>"><%= fmt.pct(chg) %></td></tr>
+    <% }) %>
+    </tbody></table></div><% } %>
+  </section>
+  <section class="card">
+    <h2>Wie kent <%= symbol %> het best?</h2>
+    <p class="small muted">Analisten met het beste trackrecord op dit aandeel.</p>
+    <% if (!experts.length) { %><p class="empty">Nog te weinig afgerekende adviezen.</p><% } else { %>
+    <div class="stack" style="gap:10px">
+    <% experts.forEach(function (x) { %>
+      <a class="id-row" href="/analist/<%= x.slug %>" style="color:inherit;text-decoration:none"><%- charts.scoreRing(x.score, 38) %><div><strong><%= x.name %></strong> <span class="muted small"><%= x.firm %></span><div class="small muted"><%= x.calls %> adviezen · trefkans <%= fmt.pct(x.hit_rate, false) %> · <%= fmt.pct(x.avg_excess) %> vs S&amp;P</div></div></a>
+    <% }) %>
+    </div><% } %>
+  </section>
+</div>
+
+<% if (hist.length > 1) { %>
+<section class="card">
+  <div class="card-h"><h2>Eerdere cijfers van <%= symbol %></h2><span class="small pb-legend"><i class="a"></i>Winstverrassing <i class="b"></i>Koersreactie</span></div>
+  <%- charts.pairBars(hist.map(function (h) { return { label: h.label, a: h.surprise, b: h.reaction, href: '/aandeel/' + encodeURIComponent(symbol) + '/cijfers/' + h.date }; }), { aLabel: 'Winstverrassing', bLabel: 'Koersreactie' }) %>
+</section>
+<% } %>
+<p class="small muted">De koersreactie loopt van het slot op de handelsdag vóór de cijfers tot het slot op de handelsdag erna, zodat cijfers voor en na de opening allebei goed worden gemeten. Herzieningen tellen in de 10 dagen vanaf de cijferdatum.</p>
+<%- include('partials/foot') %>
