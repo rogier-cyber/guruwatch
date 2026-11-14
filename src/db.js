@@ -32,4 +32,4 @@ async function many(text, params) {
   return rows;
 }
 
-module.exports = { pool, query, one, many };
+module.exports = { pool, query, one, many, sslFor };

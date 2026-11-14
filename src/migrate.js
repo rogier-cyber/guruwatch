@@ -2,10 +2,16 @@
 
 const fs = require('fs');
 const path = require('path');
-const { pool } = require('./db');
+const { Client } = require('pg');
+const config = require('./config');
+const { pool, sslFor } = require('./db');
 
+// Migraties lopen over een directe (niet-gepoolde) verbinding: de sessie-advisory-lock
+// hieronder werkt niet betrouwbaar via Neons PgBouncer in transaction-mode.
 async function migrate() {
-  const client = await pool.connect();
+  const url = config.databaseUrlUnpooled;
+  const client = new Client({ connectionString: url, ssl: sslFor(url) });
+  await client.connect();
   try {
     await client.query('SELECT pg_advisory_lock(424242)');
     await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -30,7 +36,7 @@ async function migrate() {
     }
   } finally {
     await client.query('SELECT pg_advisory_unlock(424242)').catch(() => {});
-    client.release();
+    await client.end();
   }
 }
 
