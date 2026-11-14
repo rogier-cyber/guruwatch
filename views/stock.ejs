@@ -185,7 +185,7 @@
       <tr>
         <td class="muted nowrap"><%= fmt.date(a.date) %></td>
         <td><span class="act act-<%= a.action.tone %>"><%= a.action.label %></span></td>
-        <td><div class="id-row sm"><%- include('partials/score', { score: a.score }) %><div><% if (a.analyst_slug) { %><a href="/analist/<%= a.analyst_slug %>"><%= a.analyst %></a><div class="muted small"><%= a.firm %></div><% } else { %><% if (a.firm) { %><a href="/bank/<%= encodeURIComponent(a.firm) %>"><%= a.firm %></a><% } %><% if (a.analyst) { %><div class="muted small"><%= a.analyst %></div><% } %><% } %></div></div></td>
+        <td><div class="id-row sm"><%- include('partials/score', { score: a.score }) %><div><% if (a.analyst_slug) { %><a class="an-n" href="/analist/<%= a.analyst_slug %>"><%= a.analyst %></a><div class="muted small"><%= a.firm %></div><% } else { %><% if (a.firm) { %><a class="an-n" href="/bank/<%= encodeURIComponent(a.firm) %>"><%= a.firm %></a><% } %><% if (a.analyst) { %><div class="muted small"><%= a.analyst %></div><% } %><% } %></div></div></td>
         <td class="nowrap <%= gt %>"><% if (a.to_grade) { %><% if (a.from_grade) { %><span class="muted"><%= a.from_grade %></span> → <% } %><%= a.to_grade %><% } else { %><span class="muted">–</span><% } %></td>
         <td class="r nowrap"><% if (a.to_target) { %><% if (a.from_target) { %><span class="muted"><%= fmt.price(a.from_target) %></span> → <% } %><strong class="<%= a.from_target ? (a.to_target > a.from_target ? 'pos' : 'neg') : '' %>"><%= fmt.price(a.to_target) %></strong><% } else { %><span class="muted">–</span><% } %></td>
         <td class="r nowrap <%= fmt.tone(a.upside) %>"><%= a.upside === null ? '–' : (a.upside >= 0 ? '▲ ' : '▼ ') + fmt.pct(a.upside) %></td>
@@ -285,7 +285,7 @@
 <div class="grid2">
   <section class="card">
     <h2>Insider trades <%= name %></h2>
-    <%- include('partials/insiders', { rows: insiders, hideSymbol: true }) %>
+    <%- include('partials/insiders', { rows: insiders, hideSymbol: true, max: 12 }) %>
   </section>
   <section class="card">
     <h2>Wie kent <%= symbol %> het best?</h2>
