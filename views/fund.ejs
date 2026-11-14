@@ -16,6 +16,11 @@
   <div class="stat"><span>Verlaagd / verkocht</span><strong class="neg"><%= nRed %> / <%= sold.length %></strong></div>
 </div>
 <section class="card">
+  <div class="card-h"><h2>Portefeuille in één oogopslag</h2><span class="small muted">grootte = gewicht in de portefeuille</span></div>
+  <%- charts.treemap(positions.filter(function (p) { return !p.put_call; }).slice(0, 40).map(function (p) { return { label: p.symbol || p.issuer, value: Number(p.value), sub: fmt.pct(p.weight, false) + (p.change === 'new' ? ' · nieuw' : p.change === 'added' ? ' · bijgekocht' : p.change === 'reduced' ? ' · verlaagd' : ''), href: p.symbol ? '/aandeel/' + encodeURIComponent(p.symbol) : '#', tone: prevPeriod ? p.change : '' }; })) %>
+  <% if (prevPeriod) { %><div class="tm-legend"><span><i style="background:var(--navy-2)"></i>Ongewijzigd</span><span><i style="background:var(--pos)"></i>Nieuw</span><span><i style="background:#0f766e"></i>Bijgekocht</span><span><i style="background:var(--red)"></i>Verlaagd</span></div><% } %>
+</section>
+<section class="card">
   <h2>Posities<% if (prevPeriod) { %> <span class="muted small">t.o.v. <%= fmt.date(prevPeriod) %></span><% } %></h2>
   <div class="tbl-wrap"><table class="tbl">
     <thead><tr><th>Aandeel</th><th>Naam</th><th class="r">Gewicht</th><th class="r">Waarde</th><th class="r">Aantal</th><th>Wijziging</th></tr></thead>

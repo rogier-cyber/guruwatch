@@ -5,7 +5,8 @@ const q = require('../lib/queries');
 const fmp = require('../lib/fmp');
 const eodhd = require('../lib/eodhd');
 const ingest = require('../ingest');
-const { scoreTarget } = require('../lib/normalize');
+const { consensus: calcConsensus, computeScores } = require('../lib/scoring');
+const { targetTimeline } = require('../lib/charts');
 
 const router = express.Router();
 
@@ -17,54 +18,81 @@ const safe = (p, fallback = null) => p.then((v) => v ?? fallback).catch((err) =>
 });
 
 router.get('/', wrap(async (req, res) => {
-  const [grades, targets, buys, clusters, popular, counts] = await Promise.all([
-    q.latestGrades({ limit: 12 }),
-    q.latestTargets(12),
-    q.latestInsiders({ limit: 12, type: 'buy' }),
+  const [grades, activity, buys, clusters, popular, counts, gradeDays, insiderDays, revisionDays, scored] = await Promise.all([
+    q.latestGrades({ limit: 10 }),
+    q.latestTargets(10),
+    q.latestInsiders({ limit: 8, type: 'buy' }),
     q.insiderClusters(30, 8),
     q.popularAmongFunds(8),
     q.counts(),
+    q.dailyGradeCounts(30),
+    q.dailyInsiderFlows(30),
+    q.dailyTargetRevisions(30),
+    q.hasGuruScores(),
   ]);
-  res.render('home', { title: 'Overzicht', grades, targets, buys, clusters, popular, counts });
+  const top = scored ? await q.guruLeaderboard({ minCalls: 10, limit: 5 }) : [];
+  const sum = (arr, k) => arr.reduce((s, d) => s + (Number(d[k]) || 0), 0);
+  const kpi = {
+    upgrades: sum(gradeDays, 'pos'),
+    downgrades: sum(gradeDays, 'neg'),
+    raised: sum(revisionDays, 'pos'),
+    lowered: sum(revisionDays, 'neg'),
+    insiderBuy: sum(insiderDays, 'pos'),
+    insiderSell: sum(insiderDays, 'neg'),
+  };
+  res.render('home', { title: 'Overzicht', grades, activity, buys, clusters, popular, counts, gradeDays, insiderDays, revisionDays, top, kpi });
 }));
 
 // ---------- Analisten ----------
 router.get('/analisten', wrap(async (req, res) => {
   const tab = ['ranglijst', 'koersdoelen', 'ratings', 'banken'].includes(req.query.tab) ? req.query.tab : 'ranglijst';
   const action = ['upgrade', 'downgrade'].includes(req.query.actie) ? req.query.actie : undefined;
-  const data = { tab, action };
-  if (tab === 'ranglijst') data.leaders = await q.analystLeaderboard({ minCalls: 5, limit: 100 });
+  const data = { tab, action, scored: await q.hasGuruScores() };
+  if (tab === 'ranglijst') {
+    data.leaders = data.scored ? await q.guruLeaderboard({ minCalls: 5, limit: 100 }) : await q.analystLeaderboard({ minCalls: 5, limit: 100 });
+    data.dist = data.scored ? await q.scoreDistribution() : [];
+  }
   if (tab === 'koersdoelen') data.targets = await q.latestTargets(150);
   if (tab === 'ratings') data.grades = await q.latestGrades({ limit: 150, action });
-  if (tab === 'banken') data.firms = await q.firmStats(60);
+  if (tab === 'banken') {
+    data.firms = await q.firmStats(60);
+    data.firmScores = data.scored ? await q.guruLeaderboard({ kind: 'firm', minCalls: 10, limit: 60 }) : [];
+  }
   res.render('analysts', { title: 'Analisten', ...data });
 }));
 
 router.get('/analist/:slug', wrap(async (req, res) => {
   const analyst = await q.analystBySlug(req.params.slug);
   if (!analyst) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Deze analist kennen we (nog) niet.' });
-  const [score, targets, watched] = await Promise.all([
-    q.analystScore(analyst.id),
-    q.analystTargets(analyst.id),
+  const [guru, calls, bySymbol, firmScore, watched] = await Promise.all([
+    q.guruScore('analyst', analyst.id),
+    q.analystCalls(analyst.id),
+    q.analystBySymbol(analyst.id),
+    analyst.firm ? q.guruScore('firm', analyst.firm) : null,
     q.isWatched(req.user && req.user.id, 'analyst', analyst.slug),
   ]);
-  for (const t of targets) t.score = scoreTarget(t);
-  const symbols = [...new Set(targets.map((t) => t.symbol))];
-  res.render('analyst', { title: analyst.name, analyst, score, targets, symbols, watched });
+  const symbols = [...new Set(calls.map((t) => t.symbol))];
+  res.render('analyst', { title: analyst.name, analyst, guru, calls, bySymbol, firmScore, symbols, watched });
 }));
 
 router.get('/bank/:firm', wrap(async (req, res) => {
   const firm = req.params.firm;
-  const [grades, leaders] = await Promise.all([q.latestGrades({ firm, limit: 150 }), q.analystLeaderboard({ firm, minCalls: 3, limit: 50 })]);
-  res.render('firm', { title: firm, firm, grades, leaders });
+  const [grades, leaders, guru] = await Promise.all([
+    q.latestGrades({ firm, limit: 150 }),
+    q.guruLeaderboard({ firm, minCalls: 1, limit: 50 }),
+    q.guruScore('firm', firm),
+  ]);
+  res.render('firm', { title: firm, firm, grades, leaders, guru });
 }));
+
+router.get('/methode', (req, res) => res.render('method', { title: 'Hoe de GuruScore werkt' }));
 
 // ---------- Insiders ----------
 router.get('/insiders', wrap(async (req, res) => {
   const type = ['buy', 'sell', 'all'].includes(req.query.type) ? req.query.type : 'buy';
   const minValue = Number(req.query.min) > 0 ? Number(req.query.min) : undefined;
-  const [trades, clusters] = await Promise.all([q.latestInsiders({ limit: 200, type, minValue }), q.insiderClusters(30, 15)]);
-  res.render('insiders', { title: 'Insider trades', trades, clusters, type, minValue });
+  const [trades, clusters, flows] = await Promise.all([q.latestInsiders({ limit: 200, type, minValue }), q.insiderClusters(30, 15), q.dailyInsiderFlows(60)]);
+  res.render('insiders', { title: 'Insider trades', trades, clusters, type, minValue, flows });
 }));
 
 router.get('/insider/:cik', wrap(async (req, res) => {
@@ -127,6 +155,37 @@ router.get('/aandeel/:symbol', wrap(async (req, res) => {
     return res.status(404).render('error', { title: 'Niet gevonden', message: `Geen gegevens gevonden voor ${symbol}.` });
   }
   const sortedHistory = (history || []).slice().sort((a, b) => (a.date < b.date ? -1 : 1));
+
+  // Analistenkern: consensus, bulls vs bears, beste analisten, tijdlijn, activiteit.
+  const since = new Date(Date.now() - 3 * 365 * 864e5).toISOString().slice(0, 10);
+  const [latest, activity, stats, timelineTargets, dbSeries] = await Promise.all([
+    q.latestTargetPerAnalyst(symbol),
+    q.targetActivity(symbol, 25),
+    q.symbolAnalystStats(symbol),
+    q.targetTimeline(symbol, since),
+    q.priceSeries(symbol, since),
+  ]);
+  const price = quote && Number(quote.price);
+  const smart = calcConsensus(latest, price, { topScore: 70 });
+  const ranked = latest.filter((t) => Number(t.price_target) > 0).sort((a, b) => Number(b.price_target) - Number(a.price_target));
+  const bull = ranked[0] || null;
+  const bear = ranked.length > 1 ? ranked[ranked.length - 1] : null;
+
+  const groups = new Map();
+  const meta = new Map();
+  for (const r of stats) {
+    const k = String(r.analyst_id);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+    meta.set(k, { slug: r.slug, name: r.name, firm: r.firm });
+  }
+  const experts = computeScores(groups)
+    .filter((x) => x.calls >= 2)
+    .slice(0, 8)
+    .map((x) => ({ ...x, ...meta.get(x.ref) }));
+
+  const series = dbSeries.length >= 60 ? dbSeries : sortedHistory;
+  const timeline = targetTimeline(series, timelineTargets);
   res.render('stock', {
     title: profile ? `${profile.companyName} (${symbol})` : symbol,
     symbol,
@@ -135,6 +194,13 @@ router.get('/aandeel/:symbol', wrap(async (req, res) => {
     consensus,
     gradesConsensus,
     history: sortedHistory,
+    smart,
+    latest,
+    bull,
+    bear,
+    experts,
+    activity,
+    timeline,
     targets,
     grades,
     insiders,

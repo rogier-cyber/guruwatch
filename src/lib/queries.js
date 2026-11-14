@@ -239,7 +239,188 @@ async function toggleWatch(userId, kind, ref) {
   return del.rowCount === 0;
 }
 
+// ---------- GuruScore ----------
+
+async function guruLeaderboard({ kind = 'analyst', minCalls = 5, limit = 100, firm } = {}) {
+  if (kind === 'firm') {
+    return db.many(
+      `SELECT g.ref AS firm, g.* FROM guru_scores g WHERE kind = 'firm' AND calls >= $1 ORDER BY score DESC, calls DESC LIMIT $2`,
+      [minCalls, limit]
+    );
+  }
+  const params = [minCalls, limit];
+  let firmSql = '';
+  if (firm) {
+    params.push(firm.toLowerCase());
+    firmSql = `AND lower(a.firm) = $3`;
+  }
+  return db.many(
+    `SELECT a.id, a.slug, a.name, a.firm, g.calls, g.hit_rate, g.avg_return, g.avg_excess, g.success_rate, g.score, g.rank
+     FROM guru_scores g JOIN analysts a ON a.id = g.ref::bigint
+     WHERE g.kind = 'analyst' AND g.calls >= $1 ${firmSql}
+     ORDER BY g.score DESC, g.calls DESC LIMIT $2`,
+    params
+  );
+}
+
+async function guruScore(kind, ref) {
+  return db.one('SELECT * FROM guru_scores WHERE kind = $1 AND ref = $2', [kind, String(ref)]);
+}
+
+async function hasGuruScores() {
+  const r = await db.one("SELECT EXISTS (SELECT 1 FROM guru_scores WHERE kind = 'analyst') AS has");
+  return r.has;
+}
+
+// Koersdoelen van een analist met uitkomst en vorig doel op hetzelfde aandeel.
+async function analystCalls(analystId, limit = 300) {
+  return db.many(
+    `SELECT pt.id, pt.symbol, pt.published_at, pt.price_target, pt.price_when_posted, pt.news_url, pt.news_title,
+            lag(pt.price_target) OVER (PARTITION BY pt.symbol ORDER BY pt.published_at) AS prev_target,
+            cr.direction, cr.hit, cr.ret, cr.excess, cr.complete, cr.days_to_hit, cr.horizon_end,
+            q.price AS current_price
+     FROM price_targets pt
+     LEFT JOIN call_results cr ON cr.price_target_id = pt.id
+     LEFT JOIN quotes q ON q.symbol = pt.symbol
+     WHERE pt.analyst_id = $1
+     ORDER BY pt.published_at DESC LIMIT $2`,
+    [analystId, limit]
+  );
+}
+
+// Prestaties van een analist per aandeel.
+async function analystBySymbol(analystId) {
+  return db.many(
+    `SELECT symbol, count(*)::int AS calls, avg(hit::int) AS hit_rate, avg(ret) AS avg_return, avg(excess) AS avg_excess,
+            max(published_at) AS last_at
+     FROM call_results WHERE analyst_id = $1 GROUP BY symbol ORDER BY count(*) DESC, avg(excess) DESC NULLS LAST LIMIT 40`,
+    [analystId]
+  );
+}
+
+// Laatste koersdoel per analist op een aandeel (12 maanden), met score en vorig doel.
+async function latestTargetPerAnalyst(symbol) {
+  return db.many(
+    `WITH t AS (
+       SELECT pt.*, lag(pt.price_target) OVER (PARTITION BY coalesce(pt.analyst_id::text, pt.analyst_firm) ORDER BY pt.published_at) AS prev_target,
+              row_number() OVER (PARTITION BY coalesce(pt.analyst_id::text, pt.analyst_firm) ORDER BY pt.published_at DESC) AS rn
+       FROM price_targets pt WHERE pt.symbol = $1 AND pt.price_target > 0
+     )
+     SELECT t.id, t.symbol, t.published_at, t.price_target, t.prev_target, t.price_when_posted, t.analyst_name, t.analyst_firm,
+            a.slug AS analyst_slug, g.score, g.calls AS score_calls
+     FROM t LEFT JOIN analysts a ON a.id = t.analyst_id
+     LEFT JOIN guru_scores g ON g.kind = 'analyst' AND g.ref = t.analyst_id::text
+     WHERE t.rn = 1 AND t.published_at > now() - interval '365 days'
+     ORDER BY t.published_at DESC`,
+    [symbol]
+  );
+}
+
+// Recente activiteit op een aandeel: elk koersdoel met het vorige doel van dezelfde analist/bank.
+async function targetActivity(symbol, limit = 40) {
+  return db.many(
+    `SELECT * FROM (
+       SELECT pt.id, pt.published_at, pt.price_target, pt.price_when_posted, pt.analyst_name, pt.analyst_firm, pt.news_url,
+              a.slug AS analyst_slug, g.score,
+              lag(pt.price_target) OVER (PARTITION BY coalesce(pt.analyst_id::text, pt.analyst_firm) ORDER BY pt.published_at) AS prev_target
+       FROM price_targets pt LEFT JOIN analysts a ON a.id = pt.analyst_id
+       LEFT JOIN guru_scores g ON g.kind = 'analyst' AND g.ref = pt.analyst_id::text
+       WHERE pt.symbol = $1
+     ) x ORDER BY published_at DESC LIMIT $2`,
+    [symbol, limit]
+  );
+}
+
+// Wie kent dit aandeel het best? Prestaties per analist op dit aandeel.
+async function symbolAnalystStats(symbol) {
+  return db.many(
+    `SELECT cr.analyst_id, a.slug, a.name, a.firm, cr.published_at, cr.hit, cr.ret::float8 AS ret, cr.excess::float8 AS excess
+     FROM call_results cr JOIN analysts a ON a.id = cr.analyst_id WHERE cr.symbol = $1`,
+    [symbol]
+  );
+}
+
+// Alle koersdoelen op een aandeel voor de tijdlijn.
+async function targetTimeline(symbol, since) {
+  return db.many(
+    `SELECT published_at, price_target::float8 AS target, price_when_posted::float8 AS pwp, coalesce(analyst_firm, 'Onbekend') AS firm, analyst_name
+     FROM price_targets WHERE symbol = $1 AND published_at >= $2 AND price_target > 0 ORDER BY published_at`,
+    [symbol, since]
+  );
+}
+
+async function priceSeries(symbol, since) {
+  return db.many(
+    'SELECT date::text AS date, close::float8 AS close FROM prices WHERE symbol = $1 AND date >= $2 ORDER BY date',
+    [symbol, since]
+  );
+}
+
+// Up- en downgrades per dag (laatste N dagen), aangevuld met lege dagen.
+async function dailyGradeCounts(days = 30) {
+  return db.many(
+    `SELECT d::date::text AS date,
+            count(g.*) FILTER (WHERE lower(g.action) = 'upgrade')::int AS pos,
+            count(g.*) FILTER (WHERE lower(g.action) = 'downgrade')::int AS neg
+     FROM generate_series(current_date - ($1::int - 1), current_date, interval '1 day') d
+     LEFT JOIN grades g ON g.published_at >= d AND g.published_at < d + interval '1 day'
+     GROUP BY d ORDER BY d`,
+    [days]
+  );
+}
+
+// Insider-aankopen en -verkopen (waarde) per dag.
+async function dailyInsiderFlows(days = 30) {
+  return db.many(
+    `SELECT d::date::text AS date,
+            coalesce(sum(t.securities_transacted * t.price) FILTER (WHERE t.transaction_type ILIKE 'P-%'), 0)::float8 AS pos,
+            coalesce(sum(t.securities_transacted * t.price) FILTER (WHERE t.transaction_type ILIKE 'S-%'), 0)::float8 AS neg
+     FROM generate_series(current_date - ($1::int - 1), current_date, interval '1 day') d
+     LEFT JOIN insider_trades t ON t.transaction_date = d::date AND t.price > 0
+     GROUP BY d ORDER BY d`,
+    [days]
+  );
+}
+
+// Koersdoelen per dag: verhoogd vs verlaagd t.o.v. vorig doel van dezelfde analist/bank.
+async function dailyTargetRevisions(days = 30) {
+  return db.many(
+    `WITH t AS (
+       SELECT published_at, price_target,
+              lag(price_target) OVER (PARTITION BY symbol, coalesce(analyst_id::text, analyst_firm) ORDER BY published_at) AS prev
+       FROM price_targets WHERE published_at > now() - interval '2 years'
+     )
+     SELECT d::date::text AS date,
+            count(t.*) FILTER (WHERE t.price_target > t.prev)::int AS pos,
+            count(t.*) FILTER (WHERE t.price_target < t.prev)::int AS neg
+     FROM generate_series(current_date - ($1::int - 1), current_date, interval '1 day') d
+     LEFT JOIN t ON t.published_at >= d AND t.published_at < d + interval '1 day'
+     GROUP BY d ORDER BY d`,
+    [days]
+  );
+}
+
+async function scoreDistribution() {
+  return db.many(
+    `SELECT width_bucket(score, 0, 100.0001, 10) AS b, count(*)::int AS n FROM guru_scores WHERE kind = 'analyst' AND calls >= 5 GROUP BY 1 ORDER BY 1`
+  );
+}
+
 module.exports = {
+  dailyGradeCounts,
+  dailyInsiderFlows,
+  dailyTargetRevisions,
+  scoreDistribution,
+  guruLeaderboard,
+  guruScore,
+  hasGuruScores,
+  analystCalls,
+  analystBySymbol,
+  latestTargetPerAnalyst,
+  targetActivity,
+  symbolAnalystStats,
+  targetTimeline,
+  priceSeries,
   analystLeaderboard,
   analystBySlug,
   analystScore,

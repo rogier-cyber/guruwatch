@@ -8,6 +8,7 @@ const db = require('./db');
 const { migrate } = require('./migrate');
 const auth = require('./auth');
 const fmt = require('./lib/format');
+const charts = require('./lib/charts');
 const pages = require('./routes/pages');
 const ingest = require('./ingest');
 
@@ -27,6 +28,8 @@ app.use('/static', express.static(path.join(__dirname, '..', 'public'), { maxAge
 app.use(express.urlencoded({ extended: false, limit: '20kb' }));
 app.use(cookieParser());
 
+app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'favicon.ico'), { maxAge: '7d' }));
+
 app.get('/health', async (req, res) => {
   try {
     await db.query('SELECT 1');
@@ -39,6 +42,7 @@ app.get('/health', async (req, res) => {
 app.use(auth.loadUser);
 app.use((req, res, next) => {
   res.locals.fmt = fmt;
+  res.locals.charts = charts;
   res.locals.path = req.path;
   res.locals.query = req.query;
   res.locals.title = 'Guruwatch';
