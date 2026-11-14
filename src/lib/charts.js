@@ -196,30 +196,42 @@ function donut(segments, { size = 120, thickness = 18, center = '', sub = '' } =
 }
 
 // Dagelijkse staafjes boven/onder de nullijn: [{date, pos, neg}].
-function divergingBars(days, { width = 560, height = 150, fmt = (v) => String(v), posLabel = '', negLabel = '' } = {}) {
+function divergingBars(days, { width = 560, height = 150, fmt = (v) => String(v), posLabel = '', negLabel = '', sqrt = false } = {}) {
   if (!days.length) return '';
-  const pad = { l: 4, r: 4, t: 10, b: 18 };
+  const pad = { l: 4, r: 4, t: 26, b: 20 };
+  const f = sqrt ? Math.sqrt : (v) => v;
   const max = Math.max(1, ...days.map((d) => Math.max(d.pos || 0, d.neg || 0)));
   const bw = (width - pad.l - pad.r) / days.length;
   const mid = pad.t + (height - pad.t - pad.b) / 2;
   const half = (height - pad.t - pad.b) / 2;
+  const h = (v) => (f(v || 0) / f(max)) * half;
+  const dl = (d) => new Date(d).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', timeZone: 'UTC' });
   const bars = days
     .map((d, i) => {
-      const x = pad.l + i * bw + bw * 0.15;
-      const w = bw * 0.7;
-      const hp = ((d.pos || 0) / max) * half;
-      const hn = ((d.neg || 0) / max) * half;
-      const lbl = new Date(d.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
-      return `<g><title>${lbl}: ${posLabel} ${fmt(d.pos || 0)} · ${negLabel} ${fmt(d.neg || 0)}</title>
-        <rect x="${x.toFixed(1)}" y="${(mid - hp).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(hp, d.pos ? 1.5 : 0).toFixed(1)}" rx="2" class="bar-pos"/>
-        <rect x="${x.toFixed(1)}" y="${mid.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(hn, d.neg ? 1.5 : 0).toFixed(1)}" rx="2" class="bar-neg"/></g>`;
+      const x = pad.l + i * bw + bw * 0.14;
+      const w = Math.max(1, bw * 0.72);
+      const hp = h(d.pos);
+      const hn = h(d.neg);
+      return `<g class="db-col"><title>${dl(d.date)}: ${posLabel} ${fmt(d.pos || 0)} · ${negLabel} ${fmt(d.neg || 0)}</title>
+        <rect x="${(pad.l + i * bw).toFixed(1)}" y="${pad.t}" width="${bw.toFixed(1)}" height="${(height - pad.t - pad.b).toFixed(1)}" class="db-hit"/>
+        ${d.pos ? `<rect x="${x.toFixed(1)}" y="${(mid - Math.max(hp, 1.5)).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(hp, 1.5).toFixed(1)}" rx="${Math.min(2.5, w / 2).toFixed(1)}" class="bar-pos"/>` : ''}
+        ${d.neg ? `<rect x="${x.toFixed(1)}" y="${(mid + 1).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(hn, 1.5).toFixed(1)}" rx="${Math.min(2.5, w / 2).toFixed(1)}" class="bar-neg"/>` : ''}</g>`;
     })
     .join('');
-  const first = new Date(days[0].date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
-  const last = new Date(days[days.length - 1].date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
-  return `<svg viewBox="0 0 ${width} ${height}" class="dbars" role="img">
-    <line x1="0" x2="${width}" y1="${mid}" y2="${mid}" class="tl-grid"/>${bars}
-    <text x="${pad.l}" y="${height - 4}" class="tl-axis">${first}</text><text x="${width - pad.r}" y="${height - 4}" text-anchor="end" class="tl-axis">${last}</text>
+  const totP = days.reduce((t, d) => t + (d.pos || 0), 0);
+  const totN = days.reduce((t, d) => t + (d.neg || 0), 0);
+  const share = totP + totN ? totP / (totP + totN) : 0.5;
+  const sw = 90;
+  return `<svg viewBox="0 0 ${width} ${height}" class="dbars" role="img" aria-label="${esc(posLabel)} ${esc(fmt(totP))}, ${esc(negLabel)} ${esc(fmt(totN))}">
+    <text x="${pad.l}" y="13" class="db-tot pos">▲ ${esc(fmt(totP))}</text>
+    <text x="${pad.l + 8 + String(fmt(totP)).length * 7.2 + 14}" y="13" class="db-tot neg">▼ ${esc(fmt(totN))}</text>
+    <rect x="${width - pad.r - sw}" y="6" width="${sw}" height="6" rx="3" class="db-share-n"/>
+    <rect x="${width - pad.r - sw}" y="6" width="${(sw * share).toFixed(1)}" height="6" rx="3" class="db-share-p"/>
+    <line x1="0" x2="${width}" y1="${(mid - half).toFixed(1)}" y2="${(mid - half).toFixed(1)}" class="tl-grid faint"/>
+    <line x1="0" x2="${width}" y1="${(mid + half).toFixed(1)}" y2="${(mid + half).toFixed(1)}" class="tl-grid faint"/>
+    ${bars}
+    <line x1="0" x2="${width}" y1="${mid.toFixed(1)}" y2="${mid.toFixed(1)}" class="db-zero"/>
+    <text x="${pad.l}" y="${height - 4}" class="tl-axis">${dl(days[0].date)}</text><text x="${width - pad.r}" y="${height - 4}" text-anchor="end" class="tl-axis">${dl(days[days.length - 1].date)}</text>
   </svg>`;
 }
 
@@ -286,21 +298,25 @@ function treemap(items, { width = 920, height = 420, label = 'Verdeling van de p
     .map((n, i) => {
       const big = n.w > 70 && n.h > 38;
       const mid = n.w > 40 && n.h > 20;
+      const fit = (t, px) => { const max = Math.max(2, Math.floor((n.w - 14) / px)); return t.length > max ? t.slice(0, max - 1).trimEnd() + '…' : t; };
       const shade = n.fill ? 1 : Math.max(0.35, 1 - i * 0.025);
       const style = n.fill ? `fill:${n.fill}` : `opacity:${shade.toFixed(2)}`;
       return `<a href="${esc(n.href || '#')}"><g class="tm ${n.tone || ''}"><rect x="${(n.x + 1).toFixed(1)}" y="${(n.y + 1).toFixed(1)}" width="${Math.max(0, n.w - 2).toFixed(1)}" height="${Math.max(0, n.h - 2).toFixed(1)}" rx="4" style="${style}"><title>${esc(n.label)}${n.sub ? ' · ' + esc(n.sub) : ''}</title></rect>
-        ${mid ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 18).toFixed(1)}" class="tm-l">${esc(n.label)}</text>` : ''}
-        ${big && n.sub ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 34).toFixed(1)}" class="tm-s">${esc(n.sub)}</text>` : ''}</g></a>`;
+        ${mid ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 18).toFixed(1)}" class="tm-l">${esc(fit(String(n.label), 7.4))}</text>` : ''}
+        ${big && n.sub ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 34).toFixed(1)}" class="tm-s">${esc(fit(String(n.sub), 6.2))}</text>` : ''}</g></a>`;
     })
     .join('');
   return `<svg viewBox="0 0 ${width} ${height}" class="treemap" role="img" aria-label="${esc(label)}">${cells}</svg>`;
 }
 
 // Horizontale staven [{label, value, display, href}].
+// Met `sym` (en eventueel `name`) wordt het label een aandeel met logo, ticker en naam eronder.
 function hbars(items, { max, cls = '' } = {}) {
+  const ui = require('./ui');
   const m = max || Math.max(1, ...items.map((x) => x.value));
-  return `<div class="hbars ${cls}">${items
-    .map((x) => `<a class="hb" href="${esc(x.href || '#')}"><span class="hb-l">${esc(x.label)}</span><span class="hb-t"><span class="hb-f" style="width:${((x.value / m) * 100).toFixed(1)}%"></span></span><span class="hb-v">${esc(x.display ?? x.value)}</span></a>`)
+  const stocky = items.some((x) => x.sym);
+  return `<div class="hbars ${stocky ? 'hbars-stock ' : ''}${cls}">${items
+    .map((x) => `<a class="hb" href="${esc(x.href || '#')}"><span class="hb-l">${x.sym ? ui.stock(x.sym, x.name, { href: false }) : esc(x.label)}</span><span class="hb-t"><span class="hb-f" style="width:${Math.max(1.5, (x.value / m) * 100).toFixed(1)}%"></span></span><span class="hb-v">${esc(x.display ?? x.value)}</span></a>`)
     .join('')}</div>`;
 }
 
@@ -310,8 +326,11 @@ const pctTxt = (v, d = 0) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(d).replace(
 // Kleur van rood (-1) via neutraal (0) naar groen (+1), voor heatmaps.
 function heat(v) {
   const t = Math.max(-1, Math.min(1, v || 0));
-  const a = 0.3 + Math.abs(t) * 0.7;
-  return t >= 0 ? `rgba(14,159,110,${a.toFixed(2)})` : `rgba(211,47,47,${a.toFixed(2)})`;
+  const from = [92, 106, 138];
+  const to = t >= 0 ? [5, 150, 105] : [211, 47, 47];
+  const k = Math.pow(Math.abs(t), 0.75);
+  const c = from.map((f, i) => Math.round(f + (to[i] - f) * k));
+  return `rgb(${c.join(',')})`;
 }
 
 // Spreidingsdiagram met vier kwadranten: [{x, y, label, href, tone, r}] (x en y als fractie).

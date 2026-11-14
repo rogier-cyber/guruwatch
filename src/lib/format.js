@@ -17,7 +17,43 @@ function num(v, digits = 0) {
 }
 
 function price(v) {
-  return isNum(v) ? `$${n2.format(Number(v))}` : '–';
+  if (!isNum(v)) return '–';
+  const x = Number(v);
+  return `${x < 0 ? '−' : ''}$${n2.format(Math.abs(x))}`;
+}
+
+// "Apple Inc." -> "Apple", "Deckers Outdoor Corporation" -> "Deckers Outdoor".
+function company(n) {
+  const s = String(n || '').trim();
+  return s.replace(/,?\s+(inc\.?|incorporated|corporation|corp\.?|co\.|ltd\.?|limited|plc|n\.v\.|s\.a\.|se|ag|l\.p\.|lp)$/i, '').trim() || s;
+}
+
+// SEC-namen staan vaak in hoofdletters ("WANG CHUN KAI"): maak er "Wang Chun Kai" van.
+function person(n) {
+  const s = String(n || '').trim();
+  if (!s || s !== s.toUpperCase()) return s;
+  return s.toLowerCase().replace(/(^|[\s\-'.])([a-z])/g, (m, a, b) => a + b.toUpperCase());
+}
+
+// Functie van een insider kort en in het Nederlands: "director, officer: Chief Executive Officer" -> "CEO · commissaris".
+function role(t) {
+  const s = String(t || '').toLowerCase();
+  if (!s) return '';
+  const out = [];
+  const add = (x) => { if (!out.includes(x)) out.push(x); };
+  if (/chief executive|\bceo\b/.test(s)) add('CEO');
+  if (/chief financial|\bcfo\b/.test(s)) add('CFO');
+  if (/chief operating|\bcoo\b/.test(s)) add('COO');
+  if (/chief technology|\bcto\b/.test(s)) add('CTO');
+  if (/chief medical/.test(s)) add('medisch directeur');
+  if (/chief legal|general counsel/.test(s)) add('jurist');
+  if (/chair/.test(s)) add('voorzitter');
+  if (/president/.test(s) && !out.length) add('president');
+  if (/\bevp\b|executive vice|\bsvp\b|senior vice|\bvp\b|vice president/.test(s) && !out.length) add('vicepresident');
+  if (/officer/.test(s) && !out.length) add('directie');
+  if (/director/.test(s)) add('commissaris');
+  if (/10\s*percent|10%/.test(s)) add('grootaandeelhouder');
+  return out.slice(0, 2).join(' · ') || String(t);
 }
 
 // Grote bedragen compact: $1,2 mld / $340 mln.
@@ -68,10 +104,15 @@ function gradeTone(grade) {
   return 'neutral';
 }
 
-const ACTIONS = { upgrade: 'Upgrade', downgrade: 'Downgrade', maintain: 'Gehandhaafd', hold: 'Gehandhaafd', init: 'Gestart', initiate: 'Gestart', reiterate: 'Herhaald' };
 function action(a) {
   if (!a) return '–';
-  return ACTIONS[String(a).toLowerCase()] || a;
+  const x = String(a).toLowerCase();
+  if (x.startsWith('up')) return 'Upgrade';
+  if (x.startsWith('down')) return 'Downgrade';
+  if (x.startsWith('init')) return 'Gestart';
+  if (x.startsWith('reit')) return 'Herhaald';
+  if (x.startsWith('main') || x === 'hold') return 'Gehandhaafd';
+  return a.charAt(0).toUpperCase() + a.slice(1);
 }
 function actionTone(a) {
   const x = String(a || '').toLowerCase();
@@ -123,4 +164,4 @@ function sparkline(points, { width = 640, height = 160, markers = [] } = {}) {
   return `<svg class="spark ${up ? 'up' : 'down'}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Koersverloop">${lines}<path d="${d}" fill="none" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
-module.exports = { num, price, money, pct, date, dateTime, ago, gradeTone, action, actionTone, txType, txTone, tone, sparkline, isNum };
+module.exports = { company, person, role, num, price, money, pct, date, dateTime, ago, gradeTone, action, actionTone, txType, txTone, tone, sparkline, isNum };

@@ -636,3 +636,59 @@ a.plain { color: inherit; }
   .faq-grid { grid-template-columns: 1fr; }
   .h1-k { font-size: 11px; }
 }
+
+/* ===== Designpass: aandeelcel, persoonscel, strakke tabellen ===== */
+.sym { font-family: inherit; font-weight: 800; font-size: 12px; letter-spacing: .02em; }
+.lg { position: relative; flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, var(--navy-2), var(--navy-3)); color: #fff; font-weight: 800; font-size: 11px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(20,33,61,.08); }
+.lg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; padding: 3px; box-sizing: border-box; }
+.lg-xs { width: 20px; height: 20px; border-radius: 6px; font-size: 9px; }
+.sc { display: inline-flex; align-items: center; gap: 9px; min-width: 0; max-width: 100%; color: var(--text); vertical-align: middle; }
+a.sc:hover { text-decoration: none; }
+a.sc:hover b { color: var(--accent); }
+.sc-t { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.sc-t b { font-weight: 800; font-size: 13px; letter-spacing: .01em; white-space: nowrap; }
+.sc-t em { font-style: normal; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; margin-top: 1px; }
+.who { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.who-n { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.who-s { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; margin-top: 1px; }
+.cell-firm a, .cell-firm { white-space: nowrap; }
+.cell-firm a { display: inline-block; max-width: 150px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.cell-grade { line-height: 1.2; white-space: nowrap; }
+.cell-grade .grade { font-weight: 700; display: block; }
+.cell-grade .was { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
+.tbl-tight td { padding: 8px 6px; }
+.tbl td.r, .tbl th.r { white-space: nowrap; }
+.tbl td .tag { white-space: nowrap; }
+
+/* Staafdiagrammen met aandelen */
+.hbars-stock { gap: 4px; }
+.hbars-stock .hb { grid-template-columns: minmax(0, 210px) 1fr auto; padding: 5px 6px; margin: 0 -6px; border-radius: 10px; }
+.hbars-stock .hb:hover { background: var(--line-2); }
+.hbars-stock .hb-l { font-family: inherit; font-weight: inherit; font-size: inherit; min-width: 0; }
+.hbars-stock .hb-t { height: 8px; }
+.hbars-stock .hb-v { font-size: 12px; font-weight: 600; }
+.hb-f { box-shadow: 0 1px 2px rgba(20,33,61,.15); }
+@media (max-width: 640px) {
+  .hbars-stock .hb { grid-template-columns: minmax(0, 140px) 1fr auto; gap: 8px; }
+  .sc-t em { max-width: 110px; }
+  .who-n, .who-s { max-width: 150px; }
+  .cell-firm a { max-width: 110px; }
+}
+.db-tot { font-size: 12px; font-weight: 800; font-family: inherit; }
+.db-tot.pos { fill: var(--pos); } .db-tot.neg { fill: var(--neg); }
+.db-share-n { fill: var(--neg); opacity: .8; } .db-share-p { fill: var(--pos); }
+.db-zero { stroke: var(--muted); stroke-opacity: .45; stroke-width: 1; }
+.tl-grid.faint { stroke-dasharray: 2 4; stroke-opacity: .7; }
+.db-hit { fill: transparent; }
+.db-col:hover .db-hit { fill: var(--line-2); }
+.tm rect { stroke: var(--card); stroke-width: 0; }
+.tm:hover rect { filter: brightness(1.12) saturate(1.1); }
+.tm-l { font-size: 12.5px; letter-spacing: .01em; }
+.tbl-fixed { table-layout: fixed; }
+.tbl-fixed td { overflow: hidden; text-overflow: ellipsis; }
+.cal-tbl col.c-stock { width: 34%; }
+.cal-tbl .sc-t em { max-width: 260px; }
+@media (max-width: 640px) { .cal-tbl { min-width: 620px; } .cal-tbl col.c-stock { width: 30%; } }
+.lg img { opacity: 0; transition: opacity .2s; }
+.lg img.ok { opacity: 1; }
+@media (max-width: 640px) { .stats > .stat:last-child:nth-child(odd) { grid-column: 1 / -1; } }

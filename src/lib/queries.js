@@ -150,7 +150,8 @@ async function latestInsiders({ limit = 100, type, symbol, cik, minValue } = {})
 // Aandelen waar insiders de afgelopen N dagen het meest kochten (cluster buys).
 async function insiderClusters(days = 30, limit = 20) {
   return db.many(
-    `SELECT symbol, count(DISTINCT reporting_cik)::int AS insiders, count(*)::int AS trades,
+    `SELECT symbol, (SELECT c.name FROM companies c WHERE c.symbol = insider_trades.symbol) AS name,
+            count(DISTINCT reporting_cik)::int AS insiders, count(*)::int AS trades,
             sum(securities_transacted * price) AS value, max(transaction_date) AS last_date
      FROM insider_trades
      WHERE transaction_type ILIKE 'P-%' AND transaction_date > current_date - $1::int AND price > 0
@@ -199,7 +200,7 @@ async function fundsHolding(symbol) {
 // Meest gehouden aandelen onder de gevolgde fondsen.
 async function popularAmongFunds(limit = 20) {
   return db.many(
-    `SELECT h.symbol, max(h.issuer) AS issuer, count(DISTINCT h.cik)::int AS funds, sum(h.value) AS value, avg(h.weight) AS avg_weight
+    `SELECT h.symbol, max(h.issuer) AS issuer, coalesce((SELECT c.name FROM companies c WHERE c.symbol = h.symbol), initcap(max(h.issuer))) AS name, count(DISTINCT h.cik)::int AS funds, sum(h.value) AS value, avg(h.weight) AS avg_weight
      FROM funds f JOIN fund_holdings h ON h.cik = f.cik AND h.period = f.latest_period
      WHERE h.symbol IS NOT NULL AND h.put_call = ''
      GROUP BY h.symbol ORDER BY count(DISTINCT h.cik) DESC, sum(h.value) DESC LIMIT $1`,

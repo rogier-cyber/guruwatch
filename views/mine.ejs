@@ -36,7 +36,7 @@
       </tr></thead><tbody>
       <% stocks.sort(function (a, b) { return b.health - a.health; }).forEach(function (r) { %>
         <tr>
-          <td><a class="sym" href="/aandeel/<%= encodeURIComponent(r.symbol) %>"><%= r.symbol %></a> <span class="muted small rd-name"><%= r.name || '' %></span></td>
+          <td><%- ui.stock(r.symbol, r.name) %></td>
           <td><span class="hp <%= tone(r.health) %>"><i style="width:<%= r.health %>%"></i></span><b><%= r.health %></b></td>
           <td><%= fmt.price(r.price) %> <span class="small <%= fmt.tone(r.change_pct) %>"><%= r.change_pct === null || r.change_pct === undefined ? '' : fmt.pct(r.change_pct / 100) %></span></td>
           <td class="<%= fmt.tone(r.upside) %>"><%= fmt.pct(r.upside) %></td>

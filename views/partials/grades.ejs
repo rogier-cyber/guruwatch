@@ -1,15 +1,15 @@
 <% if (!rows.length) { %><p class="empty">Nog geen ratings.</p><% } else { %>
-<div class="tbl-wrap"><table class="tbl">
-  <thead><tr><th>Datum</th><% if (!locals.hideSymbol) { %><th>Aandeel</th><% } %><% if (!locals.hideFirm) { %><th>Bank</th><% } %><th>Actie</th><th>Rating</th><th class="r">Koers toen</th></tr></thead>
+<div class="tbl-wrap"><table class="tbl tbl-tight">
+  <thead><tr><th>Datum</th><% if (!locals.hideSymbol) { %><th>Aandeel</th><% } %><% if (!locals.hideFirm) { %><th>Bank</th><% } %><th>Actie</th><th>Advies</th><% if (!locals.compact) { %><th class="r">Koers toen</th><% } %></tr></thead>
   <tbody>
   <% rows.forEach(function (g) { %>
     <tr>
       <td class="muted nowrap"><%= fmt.date(g.published_at) %></td>
       <% if (!locals.hideSymbol) { %><td><%- include('sym', { s: g.symbol }) %></td><% } %>
-      <% if (!locals.hideFirm) { %><td><% if (g.grading_company) { %><a href="/bank/<%= encodeURIComponent(g.grading_company) %>"><%= g.grading_company %></a><% } else { %>–<% } %></td><% } %>
+      <% if (!locals.hideFirm) { %><td class="cell-firm"><% if (g.grading_company) { %><a href="/bank/<%= encodeURIComponent(g.grading_company) %>" title="<%= g.grading_company %>"><%= g.grading_company %></a><% } else { %>–<% } %></td><% } %>
       <td><span class="tag <%= fmt.actionTone(g.action) %>"><%= fmt.action(g.action) %></span></td>
-      <td class="nowrap"><% if (g.previous_grade && g.previous_grade !== g.new_grade) { %><span class="muted"><%= g.previous_grade %></span> → <% } %><span class="grade <%= fmt.gradeTone(g.new_grade) %>"><%= g.new_grade || '–' %></span></td>
-      <td class="r"><%= fmt.price(g.price_when_posted) %></td>
+      <td class="cell-grade"><span class="grade <%= fmt.gradeTone(g.new_grade) %>"><%= g.new_grade || '–' %></span><% if (g.previous_grade && g.previous_grade !== g.new_grade) { %><span class="was">was <%= g.previous_grade %></span><% } %></td>
+      <% if (!locals.compact) { %><td class="r muted"><%= fmt.price(g.price_when_posted) %></td><% } %>
     </tr>
   <% }) %>
   </tbody>

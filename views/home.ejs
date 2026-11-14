@@ -39,7 +39,7 @@
   </section>
   <section class="card">
     <div class="card-h"><h2>Insiders: kopen vs verkopen</h2><a href="/insiders" class="small">Alles</a></div>
-    <%- charts.divergingBars(insiderDays, { width: 380, height: 150, fmt: fmt.money, posLabel: 'gekocht', negLabel: 'verkocht' }) %>
+    <%- charts.divergingBars(insiderDays, { width: 380, height: 150, fmt: fmt.money, posLabel: 'gekocht', negLabel: 'verkocht', sqrt: true }) %>
     <p class="small muted">Waarde per dag, laatste 30 dagen.</p>
   </section>
 </div>
@@ -50,11 +50,11 @@
   <div class="grid2 rd-home">
     <div>
       <p class="small muted"><span class="dot-pos"></span>Meeste analistenliefde, laatste 30 dagen</p>
-      <%- charts.hbars(radarTop.map(function (r) { return { label: r.symbol + (r.name ? ' · ' + r.name : ''), value: r.score, display: '▲' + (r.raises + r.ups) + ' ▼' + (r.cuts + r.downs), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'hbars-wide hbars-pos' }) %>
+      <%- charts.hbars(radarTop.map(function (r) { return { sym: r.symbol, name: r.name, value: r.score, display: '▲' + (r.raises + r.ups) + ' ▼' + (r.cuts + r.downs), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'hbars-wide hbars-pos' }) %>
     </div>
     <div>
       <p class="small muted"><span class="dot-neg"></span>Sentiment verslechtert</p>
-      <div class="hbars-neg"><%- charts.hbars(radarBottom.map(function (r) { return { label: r.symbol + (r.name ? ' · ' + r.name : ''), value: -r.score, display: '▲' + (r.raises + r.ups) + ' ▼' + (r.cuts + r.downs), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'hbars-wide' }) %></div>
+      <div class="hbars-neg"><%- charts.hbars(radarBottom.map(function (r) { return { sym: r.symbol, name: r.name, value: -r.score, display: '▲' + (r.raises + r.ups) + ' ▼' + (r.cuts + r.downs), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'hbars-wide' }) %></div>
     </div>
   </div>
 </section>
@@ -63,7 +63,7 @@
 <div class="grid2 mt">
   <section class="card">
     <div class="card-h"><h2>Up- en downgrades</h2><a href="/analisten?tab=ratings" class="small">Alles</a></div>
-    <%- include('partials/grades', { rows: grades }) %>
+    <%- include('partials/grades', { rows: grades, compact: true }) %>
   </section>
   <section class="card">
     <div class="card-h"><h2>Nieuwe koersdoelen</h2><a href="/analisten?tab=koersdoelen" class="small">Alles</a></div>
@@ -73,14 +73,14 @@
     <div class="card-h"><h2>Cluster buys (30 dagen)</h2><a href="/insiders" class="small">Insiders</a></div>
     <p class="small muted">Aandelen waar meerdere insiders tegelijk kochten.</p>
     <% if (!clusters.length) { %><p class="empty">Nog geen data.</p><% } else { %>
-    <%- charts.hbars(clusters.map(function (c) { return { label: c.symbol, value: Number(c.value), display: c.insiders + ' insiders · ' + fmt.money(c.value), href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
+    <%- charts.hbars(clusters.map(function (c) { return { sym: c.symbol, name: c.name, value: c.insiders, display: c.insiders + ' insiders · ' + fmt.money(c.value), href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
     <% } %>
   </section>
   <section class="card">
     <div class="card-h"><h2>Favoriet bij de guru's</h2><a href="/fondsen" class="small">Fondsen</a></div>
     <p class="small muted">Meest gehouden door de gevolgde hedge funds.</p>
     <% if (!popular.length) { %><p class="empty">Nog geen 13F-data.</p><% } else { %>
-    <%- charts.hbars(popular.map(function (p) { return { label: p.symbol, value: p.funds, display: p.funds + ' fondsen · ' + fmt.money(p.value), href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %>
+    <%- charts.hbars(popular.map(function (p) { return { sym: p.symbol, name: p.name, value: p.funds, display: p.funds + ' fondsen · ' + fmt.money(p.value), href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %>
     <% } %>
   </section>
 </div>

@@ -192,7 +192,7 @@
     <tbody>
     <% peers.forEach(function (p) { %>
       <tr>
-        <td><a class="sym" href="/aandeel/<%= encodeURIComponent(p.symbol) %>"><%= p.symbol %></a> <span class="muted small rd-name"><%= p.name || '' %></span></td>
+        <td><%- ui.stock(p.symbol, p.name) %></td>
         <td class="r nowrap"><%= fmt.price(p.price) %></td>
         <td class="r nowrap"><%= fmt.price(p.target) %></td>
         <td class="r nowrap <%= fmt.tone(p.upside) %>"><b><%= fmt.pct(p.upside) %></b></td>
