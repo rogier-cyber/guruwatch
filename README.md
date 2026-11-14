@@ -31,7 +31,8 @@ De lijst met gevolgde fondsen staat in `src/lib/funds.js`.
 
 | Naam | Verplicht | Uitleg |
 |---|---|---|
-| `DATABASE_URL` | ja | Neon connection string (met `sslmode=require`) |
+| `DATABASE_URL` | ja | Neon connection string, pooled (host met `-pooler`), met `sslmode=require` |
+| `DATABASE_URL_UNPOOLED` | aanbevolen | Directe Neon connection string (zonder `-pooler`), gebruikt voor migraties |
 | `FMP_API_KEY` | ja | Financial Modeling Prep |
 | `EODHD_API_KEY` | nee | Koershistorie via EODHD (anders FMP) |
 | `RESEND_API_KEY` | ja (productie) | Voor de inlogcode-mails |
@@ -44,8 +45,10 @@ De lijst met gevolgde fondsen staat in `src/lib/funds.js`.
 ## Lokaal draaien
 
 ```bash
-cp .env.example .env   # vul de waarden in
+neon env pull          # zet DATABASE_URL(_UNPOOLED) in .env.local
+cp .env.example .env   # vul de overige waarden in
 npm install
+npm run build          # controleert modules en templates
 npm start              # http://localhost:3000
 npm test
 ```
@@ -54,7 +57,7 @@ Zonder `RESEND_API_KEY` wordt de inlogcode in de console gelogd.
 
 ## Live zetten op Render
 
-1. **Database**: maak in Neon een nieuw project `guruwatch` (Postgres 17, regio Frankfurt). Kopieer de connection string (pooled is prima).
+1. **Database**: het Neon-project `guruwatch` (Frankfurt) is gekoppeld via `neon.ts` en `.neon`. Kopieer in de Neon-console (Connect) de pooled en de directe connection string, of draai lokaal `neon login` en `neon env pull` om ze in `.env.local` te krijgen.
 2. **Web service**: in Render kies je *New → Web Service* en koppel je de repo `rogier-cyber/guruwatch`.
    - Branch: `main`
    - Region: Frankfurt
