@@ -1,9 +1,7 @@
 <%- include('partials/head') %>
 <%
   const esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
-  const stockCell = function (r) {
-    return '<a class="sym" href="/aandeel/' + encodeURIComponent(r.symbol) + '">' + esc(r.symbol) + '</a>' + (watched.has(r.symbol) ? ' <span class="star" title="Je volgt dit aandeel">★</span>' : '') + (r.name ? ' <span class="muted small rd-name">' + esc(r.name) + '</span>' : '');
-  };
+  const stockCell = function (r) { return ui.stock(r.symbol, r.name, { extra: watched.has(r.symbol) ? ' <span class="star" title="Je volgt dit aandeel">★</span>' : '' }); };
   const dayName = function (d) { return new Intl.DateTimeFormat('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(d + 'T00:00:00Z')); };
 %>
 <section class="hero hero-sm">
@@ -31,9 +29,9 @@
   <% days.forEach(function (d) { %>
     <section class="card cal-day">
       <div class="card-h"><h2><%= dayName(d.date) %></h2><span class="small muted"><%= d.list.length %> <%= d.list.length === 1 ? 'bedrijf' : 'bedrijven' %></span></div>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Aandeel</th><th>Beurswaarde</th><th>Verwachte winst/aandeel</th><th>Verwachte omzet</th><th>Analisten</th><th>Potentieel</th></tr></thead><tbody>
+      <div class="tbl-wrap"><table class="tbl tbl-tight tbl-fixed cal-tbl"><colgroup><col class="c-stock"><col><col><col><col><col></colgroup><thead><tr><th>Aandeel</th><th class="r">Beurswaarde</th><th class="r">Verw. winst/aandeel</th><th class="r">Verw. omzet</th><th class="r">Analisten</th><th class="r">Potentieel</th></tr></thead><tbody>
       <% d.list.slice(0, 40).forEach(function (r) { const up = r.target && r.price ? r.target / r.price - 1 : null; %>
-        <tr class="<%= watched.has(r.symbol) ? 'row-mine' : '' %>"><td><%- stockCell(r) %></td><td><%= fmt.money(r.market_cap) %></td><td><%= r.eps_estimated == null ? '–' : fmt.price(r.eps_estimated) %></td><td><%= fmt.money(r.revenue_estimated) %></td><td><%= r.analysts || '–' %></td><td class="<%= fmt.tone(up) %>"><%= fmt.pct(up) %></td></tr>
+        <tr class="<%= watched.has(r.symbol) ? 'row-mine' : '' %>"><td><%- stockCell(r) %></td><td class="r"><%= fmt.money(r.market_cap) %></td><td class="r"><%= r.eps_estimated == null ? '–' : fmt.price(r.eps_estimated) %></td><td class="r"><%= fmt.money(r.revenue_estimated) %></td><td class="r"><%= r.analysts || '–' %></td><td class="r strong <%= fmt.tone(up) %>"><%= fmt.pct(up) %></td></tr>
       <% }) %>
       </tbody></table></div>
       <% if (d.list.length > 40) { %><p class="small muted">En nog <%= d.list.length - 40 %> kleinere bedrijven.</p><% } %>

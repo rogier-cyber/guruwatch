@@ -15,9 +15,9 @@
 <section class="card mt">
   <h2>Meest gehouden door deze fondsen</h2>
   <% if (!popular.length) { %><p class="empty">Nog geen 13F-data.</p><% } else { %>
-  <%- charts.hbars(popular.slice(0, 12).map(function (p) { return { label: p.symbol, value: p.funds, display: p.funds + ' fondsen', href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %>
+  <%- charts.hbars(popular.slice(0, 12).map(function (p) { return { sym: p.symbol, name: p.name, value: p.funds, display: p.funds + ' fondsen', href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %>
   <div class="tbl-wrap mt"><table class="tbl"><thead><tr><th>Aandeel</th><th>Naam</th><th class="r">Fondsen</th><th class="r">Totale waarde</th><th class="r">Gem. gewicht</th></tr></thead><tbody>
-  <% popular.forEach(function (p) { %><tr><td><%- include('partials/sym', { s: p.symbol }) %></td><td><%= p.issuer %></td><td class="r"><%= p.funds %></td><td class="r"><%= fmt.money(p.value) %></td><td class="r"><%= fmt.pct(p.avg_weight, false) %></td></tr><% }) %>
+  <% popular.forEach(function (p) { %><tr><td><%- include('partials/sym', { s: p.symbol, n: p.name }) %></td><td class="muted small"><%= p.issuer %></td><td class="r"><%= p.funds %></td><td class="r"><%= fmt.money(p.value) %></td><td class="r"><%= fmt.pct(p.avg_weight, false) %></td></tr><% }) %>
   </tbody></table></div><% } %>
 </section>
 <%- include('partials/foot') %>

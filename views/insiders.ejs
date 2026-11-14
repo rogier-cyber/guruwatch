@@ -2,7 +2,7 @@
 <h1 class="page-title">Insider trades</h1>
 <section class="card">
   <div class="card-h"><h2>Kopen vs verkopen, laatste 60 dagen</h2><span class="chart-legend"><span><i class="sw-buy"></i>Gekocht</span><span><i class="sw-sell"></i>Verkocht</span></span></div>
-  <%- charts.divergingBars(flows, { width: 1100, height: 170, fmt: fmt.money, posLabel: 'gekocht', negLabel: 'verkocht' }) %>
+  <%- charts.divergingBars(flows, { width: 1100, height: 170, fmt: fmt.money, posLabel: 'gekocht', negLabel: 'verkocht', sqrt: true }) %>
 </section>
 <div class="grid-side">
   <section class="card">
@@ -21,7 +21,7 @@
     <h2>Cluster buys</h2>
     <p class="small muted">Meeste kopende insiders, laatste 30 dagen.</p>
     <% if (!clusters.length) { %><p class="empty">Nog geen data.</p><% } else { %>
-    <%- charts.hbars(clusters.map(function (c) { return { label: c.symbol, value: c.insiders, display: c.insiders + ' · ' + fmt.money(c.value), href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
+    <%- charts.hbars(clusters.map(function (c) { return { sym: c.symbol, name: c.name, value: c.insiders, display: c.insiders + ' · ' + fmt.money(c.value), href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
     <% } %>
   </aside>
 </div>

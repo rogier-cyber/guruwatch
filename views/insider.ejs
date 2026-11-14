@@ -1,5 +1,5 @@
 <%- include('partials/head') %>
-<h1 class="page-title"><%= person.reporting_name %></h1>
+<h1 class="page-title"><%= fmt.person(person.reporting_name) %></h1>
 <p class="muted">CIK <%= person.reporting_cik %> · <%= person.trades %> transacties · <% (person.symbols || []).forEach(function (s, i) { %><%= i ? ', ' : '' %><a href="/aandeel/<%= encodeURIComponent(s) %>"><%= s %></a><% }) %></p>
 <section class="card">
   <%- include('partials/insiders', { rows: trades, hidePerson: true }) %>

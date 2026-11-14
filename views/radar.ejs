@@ -4,9 +4,7 @@
     const p = Object.assign({ tab: tab, sector: filters.sector, cap: filters.cap }, extra || {});
     return '?' + Object.keys(p).filter(function (k) { return p[k] !== '' && p[k] !== undefined && p[k] !== null; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&');
   };
-  const stockCell = function (r) {
-    return '<a class="sym" href="/aandeel/' + encodeURIComponent(r.symbol) + '">' + encodeURIComponent(r.symbol).replace(/%5E/g, '^') + '</a>' + (r.name ? ' <span class="muted small rd-name">' + String(r.name).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }) + '</span>' : '');
-  };
+  const stockCell = function (r) { return ui.stock(r.symbol, r.name); };
 %>
 <section class="hero hero-sm">
   <div class="hero-in">

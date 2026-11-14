@@ -1,12 +1,12 @@
 <% if (!rows.length) { %><p class="empty">Geen insider trades gevonden.</p><% } else { %>
-<div class="tbl-wrap"><table class="tbl">
+<div class="tbl-wrap"><table class="tbl tbl-tight">
   <thead><tr><th>Datum</th><% if (!locals.hideSymbol) { %><th>Aandeel</th><% } %><% if (!locals.hidePerson) { %><th>Insider</th><% } %><th>Type</th><th class="r">Aantal</th><th class="r">Prijs</th><th class="r">Waarde</th></tr></thead>
   <tbody>
   <% rows.forEach(function (t) { %>
     <tr>
       <td class="muted nowrap" title="Gemeld <%= fmt.date(t.filing_date) %>"><%= fmt.date(t.transaction_date) %></td>
       <% if (!locals.hideSymbol) { %><td><%- include('sym', { s: t.symbol }) %></td><% } %>
-      <% if (!locals.hidePerson) { %><td><% if (t.reporting_cik) { %><a href="/insider/<%= t.reporting_cik %>"><%= t.reporting_name %></a><% } else { %><%= t.reporting_name %><% } %><% if (t.type_of_owner) { %><div class="muted small"><%= t.type_of_owner %></div><% } %></td><% } %>
+      <% if (!locals.hidePerson) { %><td class="cell-who"><%- ui.who(t.reporting_name, fmt.role(t.type_of_owner), t.reporting_cik ? '/insider/' + t.reporting_cik : null) %></td><% } %>
       <td><span class="tag <%= fmt.txTone(t.transaction_type) %>"><%= fmt.txType(t.transaction_type) %></span></td>
       <td class="r"><%= fmt.num(t.securities_transacted) %></td>
       <td class="r"><%= fmt.price(t.price) %></td>

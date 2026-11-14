@@ -9,6 +9,7 @@ const { migrate } = require('./migrate');
 const auth = require('./auth');
 const fmt = require('./lib/format');
 const charts = require('./lib/charts');
+const ui = require('./lib/ui');
 const pages = require('./routes/pages');
 const ingest = require('./ingest');
 
@@ -43,6 +44,7 @@ app.use(auth.loadUser);
 app.use((req, res, next) => {
   res.locals.fmt = fmt;
   res.locals.charts = charts;
+  res.locals.ui = ui;
   res.locals.path = req.path;
   res.locals.query = req.query;
   res.locals.title = 'Guruwatch';

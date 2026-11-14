@@ -53,7 +53,7 @@
     <% if (view === 'alle' && summary.topUpside.length) { %>
     <section class="card">
       <div class="card-h"><h2>Meeste potentieel volgens analisten</h2><span class="small muted">minimaal 5 adviezen</span></div>
-      <%- charts.hbars(summary.topUpside.map(function (r) { return { label: r.symbol, value: Math.max(0, r.upside), display: fmt.pct(r.upside), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'pos' }) %>
+      <%- charts.hbars(summary.topUpside.map(function (r) { return { sym: r.symbol, name: r.name, value: Math.max(0, r.upside), display: fmt.pct(r.upside), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'pos' }) %>
     </section>
     <% } %>
     <% if (view === 'vandaag') { %>
@@ -66,7 +66,7 @@
         <% today.forEach(function (a) { var lv = a.level; var gt = lv >= 4 ? 'pos' : lv !== null && lv <= 2 ? 'neg' : ''; %>
           <tr>
             <td class="muted nowrap"><%= fmt.dateTime(a.date) %></td>
-            <td><a class="sym" href="/aandeel/<%= encodeURIComponent(a.symbol) %>"><%= a.symbol %></a> <span class="muted small rd-name"><%= a.name || '' %></span></td>
+            <td><%- ui.stock(a.symbol, a.name) %></td>
             <td><span class="act act-<%= a.action.tone %>"><%= a.action.label %></span></td>
             <td><%= a.firm || '' %><% if (a.analyst) { %><div class="muted small"><%= a.analyst %></div><% } %></td>
             <td class="nowrap <%= gt %>"><% if (a.to_grade) { %><% if (a.from_grade) { %><span class="muted"><%= a.from_grade %></span> → <% } %><%= a.to_grade %><% } else { %><span class="muted">–</span><% } %></td>
@@ -87,7 +87,7 @@
         <tbody>
         <% rows.forEach(function (r) { %>
           <tr>
-            <td><a class="sym" href="/aandeel/<%= encodeURIComponent(r.symbol) %>"><%= r.symbol %></a> <span class="muted small rd-name"><%= r.name || '' %></span></td>
+            <td><%- ui.stock(r.symbol, r.name) %></td>
             <td class="r nowrap"><%= fmt.price(r.price) %><% if (r.change_pct !== null && r.change_pct !== undefined) { %><div class="small <%= fmt.tone(r.change_pct) %>"><%= fmt.pct(r.change_pct / 100) %></div><% } %></td>
             <td class="r nowrap"><%= fmt.price(r.target) %></td>
             <td class="r nowrap <%= fmt.tone(r.upside) %>"><b><%= fmt.pct(r.upside) %></b></td>
