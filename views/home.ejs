@@ -44,6 +44,22 @@
   </section>
 </div>
 
+<% if (radarTop.length || radarBottom.length) { %>
+<section class="card mt">
+  <div class="card-h"><h2>Radar: waar draait het sentiment?</h2><a href="/radar" class="small">Naar de radar</a></div>
+  <div class="grid2 rd-home">
+    <div>
+      <p class="small muted"><span class="dot-pos"></span>Meeste analistenliefde, laatste 30 dagen</p>
+      <%- charts.hbars(radarTop.map(function (r) { return { label: r.symbol + (r.name ? ' · ' + r.name : ''), value: r.score, display: '▲' + (r.raises + r.ups) + ' ▼' + (r.cuts + r.downs), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'hbars-wide hbars-pos' }) %>
+    </div>
+    <div>
+      <p class="small muted"><span class="dot-neg"></span>Sentiment verslechtert</p>
+      <div class="hbars-neg"><%- charts.hbars(radarBottom.map(function (r) { return { label: r.symbol + (r.name ? ' · ' + r.name : ''), value: -r.score, display: '▲' + (r.raises + r.ups) + ' ▼' + (r.cuts + r.downs), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'hbars-wide' }) %></div>
+    </div>
+  </div>
+</section>
+<% } %>
+
 <div class="grid2 mt">
   <section class="card">
     <div class="card-h"><h2>Up- en downgrades</h2><a href="/analisten?tab=ratings" class="small">Alles</a></div>

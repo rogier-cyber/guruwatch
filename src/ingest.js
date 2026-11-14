@@ -140,6 +140,11 @@ async function refreshScores(opts) {
   return job('scores', () => scores.runPipeline(opts));
 }
 
+async function refreshRadar(opts) {
+  const radar = require('./radar');
+  return job('radar', () => radar.runRadar(opts));
+}
+
 function startScheduler() {
   const min = 60 * 1000;
   const runFeeds = async () => {
@@ -153,14 +158,16 @@ function startScheduler() {
     await refreshQuotes();
     await refreshFunds();
     await refreshScores();
+    await refreshRadar();
   }, 5000);
+  setInterval(refreshRadar, 60 * min);
   setInterval(refreshScores, 30 * min);
   setInterval(runFeeds, 15 * min);
   setInterval(refreshQuotes, 30 * min);
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshScores, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
+module.exports = { refreshScores, refreshRadar, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
 
 if (require.main === module) {
   (async () => {

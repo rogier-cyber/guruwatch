@@ -33,6 +33,12 @@
       </div>
     </div>
   </div>
+  <% if (ratingTrend && ratingTrend.length >= 3) { %>
+  <div class="rd-trend">
+    <p class="small muted">Adviesverdeling per maand (stippellijn = 50%) <span class="rb-legend"><i class="rb-sb"></i>Sterk kopen <i class="rb-b"></i>Kopen <i class="rb-h"></i>Houden <i class="rb-s"></i>Verkopen <i class="rb-ss"></i>Sterk verkopen</span></p>
+    <%- charts.ratingArea(ratingTrend, { width: 920, height: 170 }) %>
+  </div>
+  <% } %>
 </section>
 <% } } %>
 <% if (smart) { var pr = quote && Number(quote.price); var lo = Math.min(smart.low, pr || smart.low), hi = Math.max(smart.high, pr || smart.high); var pos = function (v) { return ((v - lo) / ((hi - lo) || 1) * 100).toFixed(1); }; %>
