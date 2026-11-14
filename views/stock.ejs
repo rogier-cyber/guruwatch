@@ -80,6 +80,21 @@
 <p class="small muted story-note">Deze tekst is automatisch samengesteld uit koersen, kwartaalcijfers, analistenadviezen en insidertransacties en wordt bij elk bezoek bijgewerkt. Geen beleggingsadvies.</p>
 <% } %>
 
+<% var cmUrl = user ? '/community/nieuw?aandeel=' + encodeURIComponent(symbol) : '/login?next=' + encodeURIComponent('/community/nieuw?aandeel=' + symbol); %>
+<section class="card cm-stock">
+  <div class="cm-stock-t">
+    <span class="cm-stock-k">Community</span>
+    <h2>Wat verwacht jij van <%= name %>?</h2>
+    <% if (members && members.members) { var mUp = members.avg_target && quote && quote.price ? members.avg_target / Number(quote.price) - 1 : null; %>
+    <p><b><%= members.members %></b> <%= members.members === 1 ? 'lid gaf' : 'leden gaven' %> een koersdoel: <span class="pos"><%= members.bulls %> omhoog</span>, <span class="neg"><%= members.bears %> omlaag</span><% if (mUp !== null) { %>, gemiddeld <b><%= fmt.price(members.avg_target) %></b> (<span class="<%= fmt.tone(mUp) %>"><%= fmt.pct(mUp) %></span>)<% } %>.</p>
+    <span class="cm-bb lg"><i style="width:<%= (100 * members.bulls / Math.max(1, members.members)).toFixed(0) %>%"></i></span>
+    <% } else { %>
+    <p>Nog geen enkel lid gaf een koersdoel voor <%= name %>. Wees de eerste en laat zien dat je het beter weet dan de analisten.</p>
+    <% } %>
+  </div>
+  <div class="cm-stock-a"><a class="btn btn-primary" href="<%= cmUrl %>">Geef jouw koersdoel</a><a class="small" href="/community">Bekijk de ranglijst</a></div>
+</section>
+
 <% if (story.faq.length) { %>
 <section class="card faq" id="vragen">
   <div class="card-h"><h2>Veelgestelde vragen over het aandeel <%= name %></h2><span class="small muted">bijgewerkt <%= fmt.date(new Date()) %></span></div>

@@ -1,0 +1,50 @@
+<%- include('partials/head') %>
+<nav class="crumbs"><a href="/community">Community</a> › <span>Nieuw koersdoel</span></nav>
+<div class="cn-wrap">
+  <section class="card cn-card">
+    <h1 class="cn-h">Geef je koersdoel</h1>
+    <p class="muted">Waar staat dit aandeel over 12 maanden? We houden bij of de koers je doel raakt en of je de S&amp;P 500 verslaat.</p>
+    <% if (error) { %><p class="alert"><%= error %></p><% } %>
+    <form method="post" action="/community/voorspelling" class="cn-form" id="cn-form">
+      <% if (!me.handle) { %>
+      <label>Kies je schuilnaam<input name="handle" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]{3,20}" value="<%= form.handle || '' %>" placeholder="bijv. waardejager" autocomplete="off"><span class="small muted">Dit zien anderen op de ranglijst. Je e-mailadres blijft privé.</span></label>
+      <% } %>
+      <label>Aandeel (ticker)<input name="symbol" required maxlength="15" value="<%= symbol || '' %>" placeholder="bijv. AAPL" autocomplete="off" style="text-transform:uppercase" id="cn-sym"></label>
+      <% if (symbol && price) { %>
+      <div class="cn-now"><%- ui.stock(symbol, name, { href: '/aandeel/' + encodeURIComponent(symbol) }) %><span>Koers nu <b data-price="<%= price %>" id="cn-price"><%= fmt.price(price) %></b></span></div>
+      <% } %>
+      <label>Jouw koersdoel over 12 maanden ($)<input name="target" required inputmode="decimal" value="<%= form.target || '' %>" placeholder="bijv. 250" id="cn-target" autocomplete="off"></label>
+      <div class="cn-up" id="cn-up" hidden></div>
+      <label>Waarom? <span class="muted small">(optioneel, max. 280 tekens)</span><textarea name="note" maxlength="280" rows="3" placeholder="bijv. de nieuwe chipfabriek draait vanaf volgend jaar op volle toeren"><%= form.note || '' %></textarea></label>
+      <button class="btn btn-primary">Koersdoel vastleggen</button>
+    </form>
+  </section>
+  <aside class="card cn-rules">
+    <h2>Spelregels</h2>
+    <ul>
+      <li>Je doel moet minstens 1% van de huidige koers afwijken, en ligt tussen −75% en +300%.</li>
+      <li>Elk koersdoel telt mee, ook als het tegenvalt. Alleen het eerste uur kun je het intrekken bij een tikfout.</li>
+      <li>Per aandeel kun je één keer per week een nieuw doel afgeven, en maximaal 10 per dag.</li>
+      <li>Na 30 dagen beoordelen we je doelen met dezelfde methode als de analisten. Na 12 maanden is een doel definitief.</li>
+    </ul>
+  </aside>
+</div>
+<script>
+  (function () {
+    var t = document.getElementById('cn-target'), out = document.getElementById('cn-up'), pr = document.getElementById('cn-price');
+    var sym = document.getElementById('cn-sym');
+    if (sym) sym.addEventListener('change', function () { var v = sym.value.trim().toUpperCase(); if (/^[A-Z0-9.\-]{1,15}$/.test(v)) location.href = '/community/nieuw?aandeel=' + encodeURIComponent(v); });
+    if (!t || !pr) return;
+    var price = Number(pr.getAttribute('data-price'));
+    function upd() {
+      var v = Number(String(t.value).replace(',', '.'));
+      if (!(v > 0) || !(price > 0)) { out.hidden = true; return; }
+      var u = v / price - 1;
+      out.hidden = false;
+      out.className = 'cn-up ' + (u >= 0 ? 'up' : 'down');
+      out.textContent = (u >= 0 ? '▲ Je verwacht ' : '▼ Je verwacht ') + (u >= 0 ? '+' : '') + (u * 100).toFixed(1).replace('.', ',') + '% ' + (u >= 0 ? 'stijging' : 'daling') + ' in 12 maanden';
+    }
+    t.addEventListener('input', upd); upd();
+  })();
+</script>
+<%- include('partials/foot') %>

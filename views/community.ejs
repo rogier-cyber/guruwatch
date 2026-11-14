@@ -1,0 +1,103 @@
+<%- include('partials/head') %>
+<%
+  var initials = function (h) { return String(h || '?').replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase(); };
+  var hue = function (h) { var n = 0; String(h || '').split('').forEach(function (ch) { n = (n * 31 + ch.charCodeAt(0)) % 360; }); return n; };
+  var cta = user ? '/community/nieuw' : '/login?next=' + encodeURIComponent('/community/nieuw');
+%>
+<section class="hero hero-sm cm-hero">
+  <div class="hero-in">
+    <div>
+      <h1>Word zelf <b>guru</b></h1>
+      <p>Denk je dat je het beter weet dan de analisten van Goldman Sachs? Geef je eigen koersdoelen af. We rekenen je precies zo af als de professionals: haal je het doel binnen 12 maanden, en versla je de S&amp;P 500?</p>
+      <a class="btn btn-primary cm-cta" href="<%= cta %>">Geef een koersdoel</a>
+    </div>
+    <div class="gk-hero-kpis">
+      <div><strong><%= fmt.num(tot.members) %></strong><span>leden met een profiel</span></div>
+      <div><strong><%= fmt.num(tot.calls) %></strong><span>koersdoelen afgegeven</span></div>
+      <div><strong><%= fmt.num(tot.stocks) %></strong><span>verschillende aandelen</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="cm-steps">
+  <div><b>1</b><strong>Kies een aandeel en een koersdoel</strong><span>Omhoog of omlaag, tussen −75% en +300%. Een toelichting mag, hoeft niet.</span></div>
+  <div><b>2</b><strong>We volgen het 12 maanden</strong><span>Raakt de koers je doel? En deed je het beter dan de S&amp;P 500? Elke voorspelling telt mee, ook de missers.</span></div>
+  <div><b>3</b><strong>Verdien je GuruScore</strong><span>Na 30 dagen beoordelen we je calls met dezelfde methode als de analisten. De besten staan bovenaan.</span></div>
+</div>
+
+<div class="grid-side">
+  <section class="card">
+    <div class="card-h"><h2>Ranglijst van de community</h2><span class="small muted">GuruScore na 30 dagen · daarvoor het live rendement</span></div>
+    <% if (!leaders.length) { %>
+      <div class="cm-empty"><strong>De ranglijst is nog leeg.</strong><span>Wees de eerste: wie nu begint, staat straks bovenaan.</span><a class="btn btn-primary" href="<%= cta %>">Geef je koersdoel</a></div>
+    <% } else { %>
+    <div class="tbl-wrap"><table class="tbl cm-tbl">
+      <thead><tr><th>#</th><th>Lid</th><th>Score</th><th class="r">Koersdoelen</th><th class="r">Live rendement</th></tr></thead>
+      <tbody>
+      <% leaders.forEach(function (l, i) { %>
+        <tr>
+          <td class="muted"><%= i + 1 %></td>
+          <td><a class="cm-who" href="/lid/<%= encodeURIComponent(l.handle) %>"><span class="cm-av" style="--h:<%= hue(l.handle) %>"><%= initials(l.handle) %></span><span><b><%= l.handle %></b><% if (l.bio) { %><em><%= l.bio %></em><% } %></span></a></td>
+          <td><% if (l.score != null) { %><%- charts.scoreRing(l.score, 34) %><% } else { %><span class="cm-live">live</span><% } %></td>
+          <td class="r"><%= l.calls %></td>
+          <td class="r strong <%= fmt.tone(l.live_ret) %>"><%= fmt.pct(l.live_ret) %></td>
+        </tr>
+      <% }) %>
+      </tbody></table></div>
+    <% } %>
+  </section>
+  <aside class="stack">
+    <section class="card">
+      <div class="card-h"><h2>Meest voorspeld</h2><span class="small muted">90 dagen</span></div>
+      <% if (!popular.length) { %><p class="empty">Nog geen voorspellingen.</p><% } else { %>
+      <div class="cm-pop">
+      <% popular.forEach(function (p) { var tot2 = p.bulls + p.bears || 1; %>
+        <a class="cm-pop-r" href="/aandeel/<%= encodeURIComponent(p.symbol) %>">
+          <%- ui.stock(p.symbol, p.name, { href: false }) %>
+          <span class="cm-bb" title="<%= p.bulls %> omhoog · <%= p.bears %> omlaag"><i style="width:<%= (100 * p.bulls / tot2).toFixed(0) %>%"></i></span>
+          <span class="cm-n"><%= p.members %></span>
+        </a>
+      <% }) %>
+      </div>
+      <p class="small muted">Groen = verwacht stijging, rood = daling.</p>
+      <% } %>
+    </section>
+    <% if (me) { %>
+    <section class="card">
+      <div class="card-h"><h2>Jouw profiel</h2><% if (me.handle) { %><a class="small" href="/lid/<%= encodeURIComponent(me.handle) %>">Bekijk</a><% } %></div>
+      <% if (query.fout === 'naam') { %><p class="alert">Kies een naam van 3 tot 20 tekens (letters, cijfers of _).</p><% } else if (query.fout === 'bezet') { %><p class="alert">Deze naam is al bezet.</p><% } %>
+      <form method="post" action="/community/profiel" class="stack cm-form">
+        <label>Schuilnaam<input name="handle" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]{3,20}" value="<%= me.handle || '' %>" placeholder="bijv. waardejager"></label>
+        <label>Over jou <span class="muted small">(optioneel)</span><input name="bio" maxlength="200" value="<%= me.bio || '' %>" placeholder="bijv. dividendbelegger sinds 2008"></label>
+        <button class="btn">Opslaan</button>
+        <p class="small muted">Alleen je schuilnaam is zichtbaar voor anderen, nooit je e-mailadres.</p>
+      </form>
+    </section>
+    <% } %>
+  </aside>
+</div>
+
+<section class="card">
+  <div class="card-h"><h2>Nieuwste koersdoelen</h2><a class="small" href="<%= cta %>">Doe mee</a></div>
+  <% if (!recent.length) { %><p class="empty">Nog geen koersdoelen. Jij bent de eerste!</p><% } else { %>
+  <div class="cm-feed">
+  <% recent.forEach(function (c) { %>
+    <div class="cm-card">
+      <div class="cm-card-h">
+        <a class="cm-who" href="/lid/<%= encodeURIComponent(c.handle) %>"><span class="cm-av sm" style="--h:<%= hue(c.handle) %>"><%= initials(c.handle) %></span><b><%= c.handle %></b></a>
+        <span class="small muted"><%= fmt.ago(c.published_at) %></span>
+      </div>
+      <div class="cm-card-m">
+        <%- ui.stock(c.symbol, c.name) %>
+        <span class="cm-dir <%= c.direction > 0 ? 'up' : 'down' %>"><%= c.direction > 0 ? '▲' : '▼' %> <%= fmt.price(c.target) %> <em><%= fmt.pct(c.upside) %></em></span>
+      </div>
+      <%- include('partials/progress', { c: c }) %>
+      <div class="cm-card-f"><span>Koers nu <%= fmt.price(c.price_now) %> · rendement</span><b class="<%= fmt.tone(c.live) %>"><%= fmt.pct(c.live) %></b></div>
+      <% if (c.note) { %><p class="cm-note">“<%= c.note %>”</p><% } %>
+    </div>
+  <% }) %>
+  </div>
+  <% } %>
+</section>
+<p class="small muted">Voorspellingen van leden zijn meningen, geen beleggingsadvies. <a href="/methode">Zo berekenen we de GuruScore</a>.</p>
+<%- include('partials/foot') %>

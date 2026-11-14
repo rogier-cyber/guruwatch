@@ -1,0 +1,66 @@
+<%- include('partials/head') %>
+<%
+  var initials = function (h) { return String(h || '?').replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase(); };
+  var hue = function (h) { var n = 0; String(h || '').split('').forEach(function (ch) { n = (n * 31 + ch.charCodeAt(0)) % 360; }); return n; };
+  var since = new Intl.DateTimeFormat('nl-NL', { month: 'long', year: 'numeric' }).format(new Date(member.created_at));
+%>
+<nav class="crumbs"><a href="/community">Community</a> › <span><%= member.handle %></span></nav>
+<section class="hero hero-sm">
+  <div class="hero-in">
+    <div class="mb-id">
+      <span class="cm-av xl" style="--h:<%= hue(member.handle) %>"><%= initials(member.handle) %></span>
+      <div>
+        <h1><%= member.handle %></h1>
+        <p><%= member.bio || 'Lid van de Guruwatch-community' %> · lid sinds <%= since %></p>
+        <% if (isMe) { %><a class="btn btn-primary" href="/community/nieuw">Nieuw koersdoel</a><% } %>
+      </div>
+    </div>
+    <div class="gk-hero-kpis mb-kpis">
+      <div class="mb-score"><% if (score) { %><%- charts.scoreRing(score.score, 46) %><span>GuruScore</span><% } else { %><strong>–</strong><span>GuruScore na 30 dagen</span><% } %></div>
+      <div><strong><%= stats.calls %></strong><span>koersdoelen</span></div>
+      <div><strong class="<%= stats.live > 0 ? 'kp-pos' : stats.live < 0 ? 'kp-neg' : '' %>"><%= fmt.pct(stats.live) %></strong><span>live rendement (open)</span></div>
+    </div>
+  </div>
+</section>
+
+<% if (query.nieuw) { %><p class="alert info">Je koersdoel staat erin. Binnen een uur kun je het nog intrekken als je een tikfout maakte, daarna telt het mee.</p><% } %>
+
+<section class="card">
+  <div class="card-h"><h2>Lopende koersdoelen</h2><span class="small muted"><%= stats.open %> open<% if (stats.atTarget) { %> · <%= stats.atTarget %> nu op of voorbij het doel<% } %></span></div>
+  <% if (!open.length) { %>
+    <p class="empty"><%= isMe ? 'Je hebt nog geen lopende koersdoelen.' : 'Nog geen lopende koersdoelen.' %> <% if (isMe) { %><a href="/community/nieuw">Geef je eerste koersdoel</a>.<% } %></p>
+  <% } else { %>
+  <div class="cm-feed">
+  <% open.forEach(function (c) { var canUndo = isMe && (Date.now() - new Date(c.published_at).getTime()) < undoMinutes * 60000; %>
+    <div class="cm-card<%= String(query.nieuw) === String(c.id) ? ' cm-new' : '' %>">
+      <div class="cm-card-h"><span class="small muted"><%= fmt.date(c.published_at) %> · dag <%= c.ageDays %> van 365</span>
+        <% if (canUndo) { %><form method="post" action="/community/intrekken"><input type="hidden" name="id" value="<%= c.id %>"><button class="link small">Intrekken</button></form><% } %></div>
+      <div class="cm-card-m">
+        <%- ui.stock(c.symbol, c.name) %>
+        <span class="cm-dir <%= c.direction > 0 ? 'up' : 'down' %>"><%= c.direction > 0 ? '▲' : '▼' %> <%= fmt.price(c.target) %> <em><%= fmt.pct(c.upside) %></em></span>
+      </div>
+      <%- include('partials/progress', { c: c }) %>
+      <div class="cm-card-f"><span>Koers nu <%= fmt.price(c.price_now) %> · rendement</span><b class="<%= fmt.tone(c.live) %>"><%= fmt.pct(c.live) %></b></div>
+      <% if (c.note) { %><p class="cm-note">“<%= c.note %>”</p><% } %>
+    </div>
+  <% }) %>
+  </div>
+  <% } %>
+</section>
+
+<% if (done.length) { %>
+<section class="card">
+  <div class="card-h"><h2>Afgerond</h2><span class="small muted">na 12 maanden beoordeeld</span></div>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Aandeel</th><th>Datum</th><th class="r">Koersdoel</th><th>Uitkomst</th><th class="r">Rendement</th><th class="r">Vs. S&amp;P 500</th></tr></thead>
+    <tbody>
+    <% done.forEach(function (c) { %>
+      <tr><td><%- ui.stock(c.symbol, c.name) %></td><td class="muted"><%= fmt.date(c.published_at) %></td><td class="r"><%= fmt.price(c.target) %></td>
+      <td><span class="tag <%= c.hit ? 'pos' : 'neg' %>"><%= c.hit ? 'Doel gehaald' + (c.days_to_hit ? ' in ' + c.days_to_hit + ' d' : '') : 'Niet gehaald' %></span></td>
+      <td class="r <%= fmt.tone(c.ret) %>"><%= fmt.pct(c.ret) %></td><td class="r <%= fmt.tone(c.excess) %>"><%= fmt.pct(c.excess) %></td></tr>
+    <% }) %>
+    </tbody></table></div>
+</section>
+<% } %>
+<p class="small muted">Meningen van leden, geen beleggingsadvies.</p>
+<%- include('partials/foot') %>

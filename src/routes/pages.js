@@ -24,6 +24,7 @@ const guru = require('../lib/guru');
 const guruCharts = require('../lib/guruCharts');
 const viz = require('../lib/vizCharts');
 const vq = require('../lib/vizQueries');
+const cm = require('../lib/community');
 
 const router = express.Router();
 
@@ -573,7 +574,9 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     jsonld.push({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: story.faq.map((x) => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) });
   }
 
+  const members = await safe(cm.stockSentiment(symbol), null);
   res.render('stock', {
+    members,
     ratingTrend,
     earningsHist: earningsRows.map(withReaction).reverse().map((h) => ({ ...h, label: er.quarterLabel(h.date) })),
     nextEarn,
@@ -697,10 +700,106 @@ pub.get('/aandelen', wrap(async (req, res) => {
   });
 }));
 
+// ---------- Community: zelf guru worden ----------
+pub.get('/community', wrap(async (req, res) => {
+  const [leaders, recent, popular, tot] = await Promise.all([
+    safe(cm.leaderboard(50), []),
+    safe(cm.recentCalls(16), []),
+    safe(cm.popularStocks(8), []),
+    safe(cm.totals(), { members: 0, calls: 0, stocks: 0 }),
+  ]);
+  const me = req.user ? await safe(cm.userProfile(req.user.id)) : null;
+  res.render('community', {
+    title: 'Community',
+    leaders, recent, popular, tot, me,
+    seo: {
+      title: 'Community: word zelf guru · Guruwatch',
+      description: 'Geef je eigen koersdoelen af en laat je net als de analisten afrekenen op je trackrecord. Bekijk de ranglijst van de beste beleggers in de Guruwatch-community.',
+    },
+  });
+}));
+
+pub.get('/lid/:handle', wrap(async (req, res) => {
+  const member = await cm.byHandle(String(req.params.handle).slice(0, 30));
+  if (!member) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Dit lid bestaat niet (meer).' });
+  const [calls, score] = await Promise.all([cm.callsForUser(member.id), safe(cm.memberScore(member.id))]);
+  const open = calls.filter((c) => !c.complete);
+  const done = calls.filter((c) => c.complete);
+  const lives = open.map((c) => c.live).filter(Number.isFinite);
+  const stats = {
+    calls: calls.length,
+    open: open.length,
+    live: lives.length ? lives.reduce((a, b) => a + b, 0) / lives.length : null,
+    atTarget: open.filter((c) => c.progress >= 1).length,
+    bulls: calls.filter((c) => c.direction > 0).length,
+  };
+  const isMe = !!(req.user && req.user.id === member.id);
+  res.render('member', {
+    title: member.handle, member, calls, open, done, score, stats, isMe,
+    undoMinutes: cm.UNDO_MINUTES,
+    seo: { title: `${member.handle}: koersdoelen en trackrecord · Guruwatch`, description: `Alle koersdoelen van ${member.handle} in de Guruwatch-community, met hoe ze ervoor staan.` },
+  });
+}));
+
+router.get('/community/nieuw', wrap(async (req, res) => {
+  const symbol = String(req.query.aandeel || '').toUpperCase().slice(0, 15);
+  const me = await cm.userProfile(req.user.id);
+  let price = null;
+  let name = null;
+  if (symbol && SYMBOL_RE.test(symbol)) {
+    price = await safe(cm.currentPrice(symbol));
+    const c = await safe(db.one('SELECT name FROM companies WHERE symbol = $1', [symbol]));
+    name = c && c.name;
+  }
+  res.render('community-new', { title: 'Geef je koersdoel', me, symbol, price, name, error: req.query.fout || null, form: {} });
+}));
+
+router.post('/community/voorspelling', wrap(async (req, res) => {
+  const symbol = String(req.body.symbol || '').trim().toUpperCase().slice(0, 15);
+  const target = Number(String(req.body.target || '').replace(',', '.'));
+  const note = String(req.body.note || '').trim().slice(0, 280);
+  let me = await cm.userProfile(req.user.id);
+  const fail = async (msg) => {
+    const price = SYMBOL_RE.test(symbol) ? await safe(cm.currentPrice(symbol)) : null;
+    res.status(400).render('community-new', { title: 'Geef je koersdoel', me, symbol, price, name: null, error: msg, form: { target: req.body.target, note, handle: req.body.handle } });
+  };
+  if (!me.handle) {
+    const handle = String(req.body.handle || '').trim();
+    if (!cm.validHandle(handle)) return fail('Kies een naam van 3 tot 20 tekens (letters, cijfers of _).');
+    const r = await cm.setProfile(req.user.id, { handle, bio: null });
+    if (r.error) return fail(r.error);
+    me = await cm.userProfile(req.user.id);
+  }
+  if (!SYMBOL_RE.test(symbol)) return fail('Vul een geldig tickersymbool in, bijvoorbeeld AAPL.');
+  if (!(await safe(cm.currentPrice(symbol)))) {
+    const qt = await safe(fmp.quote(symbol));
+    if (qt && qt.price > 0) await db.query('INSERT INTO quotes (symbol, price, change_pct) VALUES ($1, $2, $3) ON CONFLICT (symbol) DO UPDATE SET price = EXCLUDED.price, updated_at = now()', [symbol, qt.price, qt.changePercentage ?? null]);
+  }
+  const r = await cm.addCall(req.user.id, { symbol, target, note });
+  if (r.error) return fail(r.error);
+  res.redirect(`/lid/${encodeURIComponent(me.handle)}?nieuw=${r.id}`);
+}));
+
+router.post('/community/profiel', wrap(async (req, res) => {
+  const handle = String(req.body.handle || '').trim();
+  const bio = String(req.body.bio || '').trim().slice(0, 200);
+  if (!cm.validHandle(handle)) return res.redirect('/community?fout=naam');
+  const r = await cm.setProfile(req.user.id, { handle, bio });
+  if (r.error) return res.redirect('/community?fout=bezet');
+  res.redirect(`/lid/${encodeURIComponent(handle)}`);
+}));
+
+router.post('/community/intrekken', wrap(async (req, res) => {
+  const id = Number(req.body.id);
+  const me = await cm.userProfile(req.user.id);
+  if (Number.isInteger(id)) await cm.withdrawCall(req.user.id, id);
+  res.redirect(me && me.handle ? `/lid/${encodeURIComponent(me.handle)}` : '/community');
+}));
+
 // ---------- Zoekmachines ----------
 pub.get('/robots.txt', (req, res) => {
   const base = config.publicUrl.replace(/\/$/, '');
-  res.type('text/plain').send(`User-agent: *\nAllow: /aandeel/\nAllow: /aandelen\nDisallow: /mijn\nDisallow: /login\nSitemap: ${base}/sitemap.xml\n`);
+  res.type('text/plain').send(`User-agent: *\nAllow: /aandeel/\nAllow: /aandelen\nAllow: /gurus\nAllow: /community\nDisallow: /mijn\nDisallow: /login\nSitemap: ${base}/sitemap.xml\n`);
 });
 
 pub.get('/sitemap.xml', wrap(async (req, res) => {
@@ -709,6 +808,7 @@ pub.get('/sitemap.xml', wrap(async (req, res) => {
   const urls = [
     ...indexes.ALL.filter((i) => i.endpoint).map((i) => `<url><loc>${base}/aandelen?index=${i.key}</loc><changefreq>daily</changefreq></url>`),
     `<url><loc>${base}/gurus</loc><changefreq>weekly</changefreq></url>`,
+    `<url><loc>${base}/community</loc><changefreq>daily</changefreq></url>`,
     ...(await safe(q.fundsList(), [])).filter((f) => f.latest_period).map((f) => `<url><loc>${base}/guru/${f.slug}</loc><changefreq>weekly</changefreq></url>`),
     ...syms.map((s) => `<url><loc>${base}/aandeel/${encodeURIComponent(s.symbol)}</loc><lastmod>${new Date(s.last).toISOString().slice(0, 10)}</lastmod><changefreq>daily</changefreq></url>`),
   ];
