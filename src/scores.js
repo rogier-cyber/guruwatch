@@ -38,6 +38,7 @@ async function pool(items, limit, fn) {
 async function registerSymbols() {
   await db.query(`INSERT INTO symbol_sync (symbol)
     SELECT DISTINCT symbol FROM price_targets
+    UNION SELECT symbol FROM index_members
     UNION SELECT $1
     ON CONFLICT DO NOTHING`, [BENCH]);
 }

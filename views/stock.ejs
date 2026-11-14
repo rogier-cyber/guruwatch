@@ -3,7 +3,7 @@
   <div class="stock-id">
     <img src="<%= logo %>" alt="" class="stock-logo" onerror="this.style.display='none'">
     <div>
-      <h1 class="page-title"><%= profile ? profile.companyName : symbol %> <span class="muted"><%= symbol %></span></h1>
+      <h1 class="page-title stock-name"><%= profile ? profile.companyName : symbol %> <span class="stock-tk"><%= symbol %></span></h1>
       <p class="muted"><%= profile ? [profile.exchange, profile.sector, profile.industry].filter(Boolean).join(' · ') : '' %></p>
     </div>
   </div>
@@ -19,28 +19,96 @@
   <div class="stat"><span>Marktwaarde</span><strong><%= fmt.money(profile && (profile.marketCap || profile.mktCap)) %></strong></div>
 </div>
 
-<% if (gradesConsensus) { var gb = (gradesConsensus.strongBuy || 0) + (gradesConsensus.buy || 0), gh = gradesConsensus.hold || 0, gs = (gradesConsensus.sell || 0) + (gradesConsensus.strongSell || 0), gt = gb + gh + gs; %>
-<% if (gt) { %>
-<section class="card">
-  <div class="sentiment">
-    <%- charts.donut([{ value: gb, cls: 'buy', label: 'Kopen' }, { value: gh, cls: 'hold', label: 'Houden' }, { value: gs, cls: 'sell', label: 'Verkopen' }], { size: 128, thickness: 16, center: Math.round(gb / gt * 100) + '%', sub: 'kopen' }) %>
-    <div>
-      <h2>Analistensentiment: <%= gradesConsensus.consensus || '' %></h2>
-      <div class="sent-legend">
-        <span><i class="sw-buy"></i><strong><%= gb %></strong> kopen</span>
-        <span><i class="sw-hold"></i><strong><%= gh %></strong> houden</span>
-        <span><i class="sw-sell"></i><strong><%= gs %></strong> verkopen</span>
-      </div>
+<% var nowR = rot[0]; var nc = nowR.counts; %>
+<% if (nc || nowR.target) { %>
+<section class="card av-hero">
+  <div class="av-sum">
+    <div class="av-verdict">
+      <span class="av-k">Analistenoordeel</span>
+      <strong class="vt vt-<%= nowR.verdict ? nowR.verdict.tone : 'na' %>"><%= nowR.verdict ? nowR.verdict.label : 'Nog geen oordeel' %></strong>
+      <% if (nowR.score) { %><em class="small muted">score <%= nowR.score.toFixed(2).replace('.', ',') %> op een schaal van 1 tot 5</em><% } %>
     </div>
+    <div class="av-kpis">
+      <div><span class="av-k">Gem. koersdoel</span><strong><%= fmt.price(nowR.target) %></strong></div>
+      <div><span class="av-k">Potentieel</span><strong class="<%= fmt.tone(nowR.upside) %>"><%= nowR.upside === null ? '–' : (nowR.upside >= 0 ? '▲ ' : '▼ ') + fmt.pct(nowR.upside) %></strong></div>
+      <div><span class="av-k">Analisten</span><strong><%= nc ? nc.total : (nowR.analysts || '–') %></strong><em class="small muted"><%= nowR.analysts ? nowR.analysts + ' met koersdoel' : '' %></em></div>
+    </div>
+    <% if (nc) { %>
+    <div class="av-dist">
+      <%- charts.ratingBar(nc, { height: 12 }) %>
+      <p class="small muted"><span class="pos"><%= nc.strong_buy + nc.buy %> kopen</span> · <%= nc.hold %> houden · <span class="neg"><%= nc.sell + nc.strong_sell %> verkopen</span></p>
+    </div>
+    <% } %>
   </div>
-  <% if (ratingTrend && ratingTrend.length >= 3) { %>
-  <div class="rd-trend">
-    <p class="small muted">Adviesverdeling per maand (stippellijn = 50%) <span class="rb-legend"><i class="rb-sb"></i>Sterk kopen <i class="rb-b"></i>Kopen <i class="rb-h"></i>Houden <i class="rb-s"></i>Verkopen <i class="rb-ss"></i>Sterk verkopen</span></p>
-    <%- charts.ratingArea(ratingTrend, { width: 920, height: 170 }) %>
-  </div>
-  <% } %>
+  <% if (nc) { %><div class="av-chart"><%- charts.ratingDist(nc, { width: 340, height: 180 }) %></div><% } %>
 </section>
-<% } } %>
+<% } %>
+
+<% if (fan) { %>
+<section class="card">
+  <div class="card-h"><h2>Verwachtingen voor de koers van <%= name %></h2><span class="small muted">beweeg over een stip voor het advies</span></div>
+  <% if (story.forecast) { %><p class="fc-txt"><%= story.forecast.text %></p><% } %>
+  <%- fan %>
+  <p class="small muted">Links de koers van het afgelopen jaar, rechts waar analisten het aandeel over twaalf maanden zien: hoogste, gemiddelde en laagste koersdoel. Elke stip is het laatste koersdoel van één analist (groen = positief advies, rood = negatief).</p>
+</section>
+<% } %>
+
+<% if (story && (story.summary.length || story.bull.length || story.bear.length)) { %>
+<section class="card story">
+  <h2>Wat je moet weten over <%= name %></h2>
+  <% story.summary.forEach(function (p) { %><p><%= p %></p><% }) %>
+</section>
+<div class="grid2 cases">
+  <section class="card case case-bull">
+    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bull case</h2></div><svg viewBox="0 0 64 40" class="case-ic" aria-hidden="true"><path d="M6 30c4-9 13-14 24-14h12c6 0 10-3 12-8 2 4 1 8-2 11l4 3-4 2c-2 3-6 5-10 5l-2 7h-4l-1-6h-12l-2 6h-4l-1-7c-4-1-7 0-10 1z"/><path d="M50 8c1-3 4-5 7-5"/></svg></div>
+    <p class="small muted">Waarom beleggers positief kunnen zijn over <%= name %>:</p>
+    <% if (story.bull.length) { %><ul><% story.bull.forEach(function (b) { %><li><%= b %></li><% }) %></ul><% } else { %><p class="empty">Er springen nu geen duidelijk positieve signalen uit de data.</p><% } %>
+  </section>
+  <section class="card case case-bear">
+    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bear case</h2></div><svg viewBox="0 0 64 40" class="case-ic" aria-hidden="true"><path d="M8 30c0-9 8-16 20-16h14c7 0 12 4 14 10l4 2-2 4h-4l-2 8h-4l-1-6h-16l-2 6h-4l-1-7c-5 0-10 1-16-1z"/><circle cx="54" cy="22" r="1.5"/></svg></div>
+    <p class="small muted">Waarom beleggers voorzichtig kunnen zijn met <%= name %>:</p>
+    <% if (story.bear.length) { %><ul><% story.bear.forEach(function (b) { %><li><%= b %></li><% }) %></ul><% } else { %><p class="empty">Er springen nu geen duidelijk negatieve signalen uit de data.</p><% } %>
+  </section>
+</div>
+<p class="small muted story-note">Deze tekst is automatisch samengesteld uit koersen, kwartaalcijfers, analistenadviezen en insidertransacties en wordt bij elk bezoek bijgewerkt. Geen beleggingsadvies.</p>
+<% } %>
+
+<% var hasCols = months.filter(function (m) { return m.ratings; }).length >= 2; var hasBand = months.filter(function (m) { return m.mean; }).length >= 3; %>
+<% if (hasCols || hasBand) { %>
+<div class="grid2">
+  <% if (hasCols) { %>
+  <section class="card">
+    <div class="card-h"><h2>Adviezen per maand</h2><span class="small muted">laatste 2 jaar</span></div>
+    <%- charts.ratingColumns(months, { width: 560, height: 260 }) %>
+    <p class="small rb-legend"><i class="rb-sb"></i>Sterk kopen <i class="rb-b"></i>Kopen <i class="rb-h"></i>Houden <i class="rb-s"></i>Verkopen <i class="rb-ss"></i>Sterk verkopen</p>
+  </section>
+  <% } %>
+  <% if (hasBand) { %>
+  <section class="card">
+    <div class="card-h"><h2>Koersdoelen per maand</h2><span class="small muted">laatste 2 jaar</span></div>
+    <%- charts.targetBand(months, { width: 560, height: 260 }) %>
+    <p class="small tb-legend"><i class="p"></i>Koers <i class="t"></i>Gemiddeld koersdoel <i class="b"></i>Laagste tot hoogste koersdoel</p>
+  </section>
+  <% } %>
+</div>
+<% } %>
+
+<% if (rot.some(function (r) { return r.counts || r.target; })) { var maxC = Math.max.apply(null, [1].concat(rot.map(function (r) { return r.counts ? Math.max(r.counts.strong_buy, r.counts.buy, r.counts.hold, r.counts.sell, r.counts.strong_sell) : 0; }))); %>
+<section class="card">
+  <div class="card-h"><h2>Adviezen door de tijd</h2></div>
+  <div class="tbl-wrap"><table class="tbl rot">
+    <thead><tr><th></th><% rot.forEach(function (r) { %><th><%= r.label %><span class="muted small rot-d"><%= fmt.date(r.date) %></span></th><% }) %></tr></thead>
+    <tbody>
+      <% [['strong_buy', 'Sterk kopen', 'rb-sb'], ['buy', 'Kopen', 'rb-b'], ['hold', 'Houden', 'rb-h'], ['sell', 'Verkopen', 'rb-s'], ['strong_sell', 'Sterk verkopen', 'rb-ss']].forEach(function (l) { %>
+      <tr><th scope="row"><%= l[1] %></th><% rot.forEach(function (r) { var v = r.counts ? r.counts[l[0]] : null; %><td><% if (v === null) { %><span class="muted">–</span><% } else { %><span class="rot-n"><%= v %></span><i class="rot-bar <%= l[2] %>" style="width:<%= (v / maxC * 70).toFixed(0) %>px"></i><% } %></td><% }) %></tr>
+      <% }) %>
+      <tr><th scope="row">Gem. koersdoel</th><% rot.forEach(function (r) { %><td class="strong"><%= fmt.price(r.target) %></td><% }) %></tr>
+      <tr><th scope="row">Potentieel <span class="muted small">t.o.v. koers toen</span></th><% rot.forEach(function (r) { %><td class="<%= fmt.tone(r.upside) %>"><%= r.upside === null ? '–' : (r.upside >= 0 ? '▲ ' : '▼ ') + fmt.pct(r.upside) %></td><% }) %></tr>
+      <tr><th scope="row">Oordeel</th><% rot.forEach(function (r) { %><td><% if (r.verdict) { %><span class="vt-dot vt-<%= r.verdict.tone %>"></span><%= r.verdict.label %><% } else { %><span class="muted">–</span><% } %></td><% }) %></tr>
+    </tbody>
+  </table></div>
+</section>
+<% } %>
 <% if (smart) { var pr = quote && Number(quote.price); var lo = Math.min(smart.low, pr || smart.low), hi = Math.max(smart.high, pr || smart.high); var pos = function (v) { return ((v - lo) / ((hi - lo) || 1) * 100).toFixed(1); }; %>
 <section class="card">
   <div class="card-h"><h2>Consensus van <%= smart.count %> analisten</h2><a href="/methode" class="small">Hoe berekend?</a></div>
@@ -60,6 +128,40 @@
 </section>
 <% } %>
 
+<% if (actions.length) { %>
+<section class="card">
+  <div class="card-h"><h2>Recente acties van analisten</h2><span class="small muted">upgrades, downgrades en koersdoelen</span></div>
+  <div class="tbl-wrap"><table class="tbl acts">
+    <thead><tr><th>Datum</th><th>Actie</th><th>Analist</th><th>Advies</th><th class="r">Koersdoel</th><th class="r">Potentieel</th></tr></thead>
+    <tbody>
+    <% actions.forEach(function (a) { var lv = a.level; var gt = lv >= 4 ? 'pos' : lv !== null && lv <= 2 ? 'neg' : ''; %>
+      <tr>
+        <td class="muted nowrap"><%= fmt.date(a.date) %></td>
+        <td><span class="act act-<%= a.action.tone %>"><%= a.action.label %></span></td>
+        <td><div class="id-row sm"><%- include('partials/score', { score: a.score }) %><div><% if (a.analyst_slug) { %><a href="/analist/<%= a.analyst_slug %>"><%= a.analyst %></a><div class="muted small"><%= a.firm %></div><% } else { %><% if (a.firm) { %><a href="/bank/<%= encodeURIComponent(a.firm) %>"><%= a.firm %></a><% } %><% if (a.analyst) { %><div class="muted small"><%= a.analyst %></div><% } %><% } %></div></div></td>
+        <td class="nowrap <%= gt %>"><% if (a.to_grade) { %><% if (a.from_grade) { %><span class="muted"><%= a.from_grade %></span> → <% } %><%= a.to_grade %><% } else { %><span class="muted">–</span><% } %></td>
+        <td class="r nowrap"><% if (a.to_target) { %><% if (a.from_target) { %><span class="muted"><%= fmt.price(a.from_target) %></span> → <% } %><strong class="<%= a.from_target ? (a.to_target > a.from_target ? 'pos' : 'neg') : '' %>"><%= fmt.price(a.to_target) %></strong><% } else { %><span class="muted">–</span><% } %></td>
+        <td class="r nowrap <%= fmt.tone(a.upside) %>"><%= a.upside === null ? '–' : (a.upside >= 0 ? '▲ ' : '▼ ') + fmt.pct(a.upside) %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+<% } %>
+
+<% if (compare.stock.score !== null && (compare.sector || compare.market)) { var cols = [compare.stock, compare.sector, compare.market].filter(Boolean); %>
+<section class="card">
+  <div class="card-h"><h2><%= name %> vergeleken met <%= compare.sector ? 'de sector en ' : '' %>de markt</h2></div>
+  <div class="cmp" style="--cols:<%= cols.length %>">
+    <div class="cmp-row cmp-head"><span></span><% cols.forEach(function (c, i) { %><span class="<%= i === 0 ? 'cmp-me' : '' %>"><%= i === 1 && compare.sector ? c.label : c.label %></span><% }) %></div>
+    <div class="cmp-row"><span class="cmp-l">Oordeel van analisten</span><% cols.forEach(function (c) { %><span class="cmp-g"><%- charts.gauge(c.score, { size: 170, label: 'Oordeel' }) %></span><% }) %></div>
+    <div class="cmp-row"><span class="cmp-l">Consensus</span><% cols.forEach(function (c) { var v = av.ratingLabel(c.score); %><span class="strong"><% if (v) { %><span class="vt-dot vt-<%= v.tone %>"></span><%= v.label %><% } else { %>–<% } %></span><% }) %></div>
+    <div class="cmp-row"><span class="cmp-l">Potentieel <span class="muted small">(mediaan voor sector en markt)</span></span><% cols.forEach(function (c) { %><span class="<%= fmt.tone(c.upside) %> strong"><%= c.upside === null || c.upside === undefined ? '–' : (c.upside >= 0 ? '▲ ' : '▼ ') + fmt.pct(c.upside) %></span><% }) %></div>
+    <div class="cmp-row"><span class="cmp-l">Analisten met koersdoel</span><% cols.forEach(function (c) { %><span><%= c.analysts ? Math.round(c.analysts) : '–' %></span><% }) %></div>
+  </div>
+  <p class="small muted"><%= compare.sector ? 'Sector: ' + compare.sector.stocks + ' aandelen. ' : '' %><%= compare.market ? 'Markt: ' + compare.market.stocks + ' aandelen met adviezen. ' : '' %>Oordeel van 1 (sterk verkopen) tot 5 (sterk kopen).</p>
+</section>
+<% } %>
 <% if (timeline) { %>
 <% if ((earningsHist && earningsHist.length) || nextEarn) { %>
 <section class="card">
@@ -111,22 +213,6 @@
 <% } %>
 <div class="grid2">
   <section class="card">
-    <h2>Laatste analistenactiviteit</h2>
-    <% if (!activity.length) { %><p class="empty">Nog geen koersdoelen.</p><% } else { %>
-    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Datum</th><th>Analist</th><th>Wijziging</th><th class="r">Koersdoel</th></tr></thead><tbody>
-    <% activity.forEach(function (a) { var p = Number(a.prev_target), n = Number(a.price_target); var kind = !a.prev_target ? 'Gestart' : n > p ? 'Verhoogd' : n < p ? 'Verlaagd' : 'Herhaald'; var tone = kind === 'Verhoogd' ? 'pos' : kind === 'Verlaagd' ? 'neg' : 'neutral'; %>
-      <tr><td class="muted nowrap"><%= fmt.date(a.published_at) %></td>
-      <td><div class="id-row sm"><%- include('partials/score', { score: a.score }) %><div><% if (a.analyst_slug) { %><a href="/analist/<%= a.analyst_slug %>"><%= a.analyst_name %></a><% } else { %><%= a.analyst_name || '' %><% } %><div class="muted small"><%= a.analyst_firm || '' %></div></div></div></td>
-      <td><span class="tag <%= tone %>"><%= kind %></span></td>
-      <td class="r nowrap"><% if (a.prev_target && p !== n) { %><span class="muted"><%= fmt.price(p) %></span> → <% } %><strong><%= fmt.price(n) %></strong></td></tr>
-    <% }) %>
-    </tbody></table></div><% } %>
-  </section>
-  <section class="card">
-    <h2>Up- en downgrades</h2>
-    <%- include('partials/grades', { rows: grades, hideSymbol: true }) %>
-  </section>
-  <section class="card">
     <h2>Insider trades</h2>
     <%- include('partials/insiders', { rows: insiders, hideSymbol: true }) %>
   </section>
@@ -147,4 +233,10 @@
     <% if (profile && profile.description) { %><h2 class="mt">Over <%= profile.companyName %></h2><p class="small desc"><%= profile.description %></p><% } %>
   </section>
 </div>
+<% if (story && story.faq.length) { %>
+<section class="card faq">
+  <h2>Veelgestelde vragen over <%= name %></h2>
+  <% story.faq.forEach(function (f) { %><details><summary><%= f.q %></summary><p><%= f.a %></p></details><% }) %>
+</section>
+<% } %>
 <%- include('partials/foot') %>

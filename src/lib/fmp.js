@@ -84,6 +84,12 @@ module.exports = {
   ratingHistoryNoCache: async (symbol) => arr(await request('grades-historical', { symbol, limit: 120 }, { ttl: 0 })),
   priceTargetPageNoCache: async (symbol, page) => arr(await request('price-target-news', { symbol, page, limit: 100 }, { ttl: 0 })),
 
+  // Indexsamenstelling en fundamentele cijfers
+  indexConstituentsNoCache: async (endpoint) => arr(await request(endpoint, {}, { ttl: 0 })),
+  ratiosTtm: async (symbol) => first(await request('ratios-ttm', { symbol }, { ttl: 12 * 60 * MIN })),
+  keyMetricsTtm: async (symbol) => first(await request('key-metrics-ttm', { symbol }, { ttl: 12 * 60 * MIN })),
+  incomeQuarterly: async (symbol) => arr(await request('income-statement', { symbol, period: 'quarter', limit: 6 }, { ttl: 12 * 60 * MIN })),
+
   // Analisten
   priceTargetLatest: async (page = 0, limit = 100) => arr(await request('price-target-latest-news', { page, limit }, { ttl: 2 * MIN })),
   priceTargetNews: async (symbol, limit = 100, page = 0) => arr(await request('price-target-news', { symbol, page, limit }, { ttl: 30 * MIN })),

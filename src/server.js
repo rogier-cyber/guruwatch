@@ -108,7 +108,8 @@ app.get('/uit', async (req, res, next) => {
   }
 });
 
-// Alle datapagina's vereisen een login.
+// Aandeelpagina's en Aandelen zijn openbaar (vindbaar in Google); de rest vereist een login.
+app.use(pages.publicRouter);
 app.use(auth.requireUser, pages);
 
 app.use((req, res) => res.status(404).render('error', { title: 'Niet gevonden', message: 'Deze pagina bestaat niet.' }));
