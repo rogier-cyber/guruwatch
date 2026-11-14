@@ -1,0 +1,77 @@
+<%- include('partials/head') %>
+<%
+  var initials = function (n) { return String(n || '?').split(/\s+/).filter(Boolean).map(function (w) { return w.charAt(0); }).join('').slice(0, 2).toUpperCase(); };
+  var tone = function (s) { s = String(s || '').toLowerCase(); return /activist/.test(s) ? 'act' : /macro/.test(s) ? 'mac' : /growth|disrupt|tech/.test(s) ? 'gro' : /quant/.test(s) ? 'qua' : /quality/.test(s) ? 'qly' : 'val'; };
+%>
+<section class="hero hero-sm">
+  <div class="hero-in">
+    <div>
+      <h1>Guru<b>'s</b></h1>
+      <p>Wat kopen en verkopen de bekendste beleggers ter wereld? Elk kwartaal moeten zij hun Amerikaanse aandelen melden bij de SEC (13F). Wij zetten het voor je op een rij.</p>
+    </div>
+    <div class="gk-hero-kpis">
+      <div><strong><%= cards.length %></strong><span>guru's</span></div>
+      <div><strong><%= fmt.money(totalValue) %></strong><span>samen belegd</span></div>
+      <div><strong><%= together.length %></strong><span>aandelen samen gekocht</span></div>
+    </div>
+  </div>
+</section>
+
+<nav class="filters" aria-label="Filter op stijl">
+  <% styles.forEach(function (s) { %><a href="/gurus<%= s === 'Alle' ? '' : '?stijl=' + encodeURIComponent(s) %>" class="<%= style === s ? 'on' : '' %>"><%= s %></a><% }) %>
+</nav>
+
+<div class="gk-grid">
+<% cards.forEach(function (f) { var vals = f.series.map(function (s) { return s.value; }); %>
+  <a class="card gk" href="/guru/<%= f.slug %>">
+    <div class="gk-top">
+      <span class="gk-av gk-<%= tone(f.style) %>"><%= initials(f.manager || f.name) %></span>
+      <div class="gk-id">
+        <strong><%= f.manager || f.name %></strong>
+        <span><%= f.name %></span>
+      </div>
+    </div>
+    <div class="gk-mid">
+      <div>
+        <span class="gk-k">Portefeuille</span>
+        <b class="gk-v"><%= fmt.money(f.latest_value) %></b>
+        <% if (f.growth !== null) { %><em class="gk-g <%= fmt.tone(f.growth) %>"><%= f.growth >= 0 ? '▲' : '▼' %> <%= fmt.pct(Math.abs(f.growth), false) %> <span class="muted">in 1 jaar</span></em><% } %>
+      </div>
+      <%- gc.spark(vals, { width: 130, height: 42 }) %>
+    </div>
+    <div class="gk-tops">
+      <% f.tops.slice(0, 5).forEach(function (t) { if (!t.symbol) return; %><span class="gk-tp" title="<%= t.issuer %>"><%- ui.logo(t.symbol) %><b><%= t.symbol %></b><i><%= fmt.pct(t.weight, false) %></i></span><% }) %>
+    </div>
+    <div class="gk-foot">
+      <span><% if (f.style) { %><b class="gk-style gk-<%= tone(f.style) %>"><%= f.style %></b><% } %><%= f.latest_positions || '–' %> posities</span>
+      <span class="<%= f.stale ? 'gk-stale' : '' %>"><%= f.stale ? 'laatste filing ' : '13F ' %><%= gc.qLabel(f.latest_period) %></span>
+    </div>
+  </a>
+<% }) %>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <div class="card-h"><h2>Samen gekocht dit kwartaal</h2><span class="small muted">nieuw of flink bijgekocht door 2+ guru's</span></div>
+    <% if (!together.length) { %><p class="empty">Nog niet genoeg kwartalen binnen om dit te berekenen.</p><% } else { %>
+    <div class="tg-list">
+      <% together.forEach(function (t, i) { %>
+      <div class="tg-row">
+        <span class="tg-n"><%= i + 1 %></span>
+        <%- ui.stock(t.symbol, t.name) %>
+        <span class="tg-who" title="<%= t.managers.join(', ') %>"><%= t.managers.slice(0, 2).join(', ') %><%= t.managers.length > 2 ? ' +' + (t.managers.length - 2) : '' %></span>
+        <span class="tg-c"><b><%= t.gurus %></b> guru's<% if (t.new_positions) { %><i><%= t.new_positions %> nieuw</i><% } %></span>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Favoriet bij de guru's</h2><span class="small muted">in de meeste portefeuilles</span></div>
+    <% if (!popular.length) { %><p class="empty">Nog geen 13F-data.</p><% } else { %>
+    <%- charts.hbars(popular.map(function (p) { return { sym: p.symbol, name: p.name, value: p.funds, display: p.funds + ' guru\'s · ' + fmt.money(p.value), href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %>
+    <% } %>
+  </section>
+</div>
+<p class="small muted">13F-filings tonen alleen Amerikaanse aandelen en opties die een fonds aan het einde van het kwartaal had, en verschijnen tot 45 dagen later. Shortposities en buitenlandse aandelen staan er niet in.</p>
+<%- include('partials/foot') %>

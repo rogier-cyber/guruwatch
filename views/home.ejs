@@ -77,7 +77,7 @@
     <% } %>
   </section>
   <section class="card">
-    <div class="card-h"><h2>Favoriet bij de guru's</h2><a href="/fondsen" class="small">Fondsen</a></div>
+    <div class="card-h"><h2>Favoriet bij de guru's</h2><a href="/gurus" class="small">Alle guru's</a></div>
     <p class="small muted">Meest gehouden door de gevolgde hedge funds.</p>
     <% if (!popular.length) { %><p class="empty">Nog geen 13F-data.</p><% } else { %>
     <%- charts.hbars(popular.map(function (p) { return { sym: p.symbol, name: p.name, value: p.funds, display: p.funds + ' fondsen · ' + fmt.money(p.value), href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %>

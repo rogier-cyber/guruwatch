@@ -86,9 +86,10 @@ async function saveQuotes(quotes) {
 async function syncFundList(list) {
   for (const f of list) {
     await db.query(
-      `INSERT INTO funds (cik, name, manager, slug, style) VALUES ($1,$2,$3,$4,$5)
-       ON CONFLICT (cik) DO UPDATE SET name = EXCLUDED.name, manager = EXCLUDED.manager, style = EXCLUDED.style`,
-      [f.cik, f.name, f.manager, slugify(f.manager || f.name) || f.cik, f.style || null]
+      `INSERT INTO funds (cik, name, manager, slug, style, bio, quant) VALUES ($1,$2,$3,$4,$5,$6,$7)
+       ON CONFLICT (cik) DO UPDATE SET name = EXCLUDED.name, manager = EXCLUDED.manager, style = EXCLUDED.style,
+         bio = EXCLUDED.bio, quant = EXCLUDED.quant, featured = true`,
+      [f.cik, f.name, f.manager, slugify(f.manager || f.name) || f.cik, f.style || null, f.bio || null, !!f.quant]
     );
   }
 }

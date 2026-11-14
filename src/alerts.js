@@ -215,7 +215,7 @@ const evaluators = {
       symbol: null,
       title: `${r.manager || r.name}: nieuwe portefeuille (${fmt.date(r.period)})`,
       body: `${r.latest_positions || '?'} posities, totaal ${fmt.money(r.latest_value)}.`,
-      url: `/fonds/${r.slug}`,
+      url: `/guru/${r.slug}`,
       key: `fund_change:${r.slug}:${r.period}`,
     }));
   },

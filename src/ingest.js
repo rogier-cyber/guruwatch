@@ -80,18 +80,21 @@ async function refreshQuotes() {
   });
 }
 
+// Laatste kwartalen van een fonds ophalen: 12 kwartalen historie (quant-fondsen 4),
+// de nieuwste altijd opnieuw, oudere alleen als ze nog ontbreken.
 async function refreshFund(cik) {
+  const meta = await db.one('SELECT quant FROM funds WHERE cik = $1', [cik]);
   const dates = await fmp.institutionalDates(cik);
   const sorted = dates
     .filter((d) => d && d.year && d.quarter)
     .sort((a, b) => b.year - a.year || b.quarter - a.quarter)
-    .slice(0, 2);
+    .slice(0, meta && meta.quant ? 4 : 12);
   let latest = null;
   for (const d of sorted) {
     const period = d.date || quarterEnd(d.year, d.quarter);
     const have = await db.one('SELECT count(*)::int AS n FROM fund_holdings WHERE cik = $1 AND period = $2', [cik, period]);
     let res;
-    if (!have.n || d === sorted[0]) {
+    if (!have.n || d === sorted[0] || d === sorted[1]) {
       const rows = await fmp.institutionalExtract(cik, d.year, d.quarter);
       res = await store.saveFundQuarter(cik, period, rows);
     }
@@ -99,10 +102,23 @@ async function refreshFund(cik) {
   }
   if (latest) {
     await db.query(
-      'UPDATE funds SET latest_period = $2, latest_value = $3, latest_positions = $4, refreshed_at = now() WHERE cik = $1',
+      'UPDATE funds SET latest_period = $2, latest_value = $3, latest_positions = $4, refreshed_at = now(), last_error = NULL WHERE cik = $1',
       [cik, latest.period, latest.total ?? null, latest.positions ?? null]
     );
+    // Grootste posities meenemen in koersen, profielen (sector) en koersdoelen.
+    if (!(meta && meta.quant)) {
+      await db.query(
+        `INSERT INTO symbol_sync (symbol)
+         SELECT symbol FROM fund_holdings WHERE cik = $1 AND period = $2 AND symbol IS NOT NULL AND put_call = ''
+           AND symbol ~ '^[A-Z0-9.\\-]{1,12}$' ORDER BY value DESC LIMIT 25
+         ON CONFLICT DO NOTHING`,
+        [cik, latest.period]
+      );
+    }
+  } else {
+    await db.query("UPDATE funds SET last_error = 'geen 13F-filings gevonden', refreshed_at = now() WHERE cik = $1", [cik]);
   }
+  await db.query('UPDATE funds SET quarters = (SELECT count(DISTINCT period) FROM fund_holdings WHERE cik = $1) WHERE cik = $1', [cik]);
   return latest;
 }
 
