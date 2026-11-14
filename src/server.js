@@ -95,6 +95,19 @@ app.post('/logout', async (req, res) => {
   res.redirect('/login');
 });
 
+// Afmelden voor e-mails via de link in de mail (zonder inloggen, met ondertekende link).
+app.get('/uit', async (req, res, next) => {
+  try {
+    const alerts = require('./alerts');
+    const userId = Number(req.query.u);
+    if (!userId || !alerts.checkUnsub(userId, req.query.t)) return res.status(400).render('error', { title: 'Ongeldige link', message: 'Deze afmeldlink klopt niet.' });
+    await db.query('UPDATE user_settings SET briefing = false, instant_email = false WHERE user_id = $1', [userId]);
+    res.render('error', { title: 'Afgemeld', message: 'Je krijgt geen e-mails meer van Guruwatch. Je kunt dit altijd weer aanzetten onder Mijn GuruWatch, Meldingen.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Alle datapagina's vereisen een login.
 app.use(auth.requireUser, pages);
 

@@ -1,0 +1,10 @@
+<% var c = a.tone === 'pos' ? '#0e9f6e' : a.tone === 'neg' ? '#d32f2f' : '#2856d9'; %>
+<tr><td style="padding:12px 0;border-bottom:1px solid #eef1f6;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr>
+    <td width="6" style="background:<%= c %>;border-radius:3px;"></td>
+    <td style="padding-left:12px;">
+      <a href="<%= base %><%= a.url || '/mijn' %>" style="color:#111827;text-decoration:none;font-weight:700;font-size:15px;"><%= a.title %></a>
+      <% if (a.body) { %><div style="color:#64748b;font-size:13.5px;margin-top:3px;line-height:1.45;"><%= a.body %></div><% } %>
+    </td>
+  </tr></table>
+</td></tr>

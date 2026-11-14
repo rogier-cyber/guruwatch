@@ -148,4 +148,4 @@ async function cleanup() {
   await db.query('DELETE FROM sessions WHERE expires_at < now()');
 }
 
-module.exports = { requestCode, verifyCode, setSessionCookie, loadUser, requireUser, logout, cleanup, normalizeEmail };
+module.exports = { sendMail, requestCode, verifyCode, setSessionCookie, loadUser, requireUser, logout, cleanup, normalizeEmail };

@@ -1,0 +1,6 @@
+<%- include('_top', { heading: alerts.length === 1 ? 'Nieuwe melding' : alerts.length + ' nieuwe meldingen' }) %>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<% alerts.forEach(function (a) { %><%- include('_alert', { a: a }) %><% }) %>
+</table>
+<p style="margin:20px 0 0;"><a href="<%= base %>/mijn" style="display:inline-block;background:#d32f2f;color:#fff;text-decoration:none;font-weight:700;padding:11px 18px;border-radius:10px;">Naar Mijn GuruWatch</a></p>
+<%- include('_bottom') %>

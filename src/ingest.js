@@ -145,11 +145,22 @@ async function refreshRadar(opts) {
   return job('radar', () => radar.runRadar(opts));
 }
 
+async function refreshAlerts() {
+  const alerts = require('./alerts');
+  return job('alerts', () => alerts.runAlerts());
+}
+
+async function briefings() {
+  const alerts = require('./alerts');
+  return job('briefing', async () => ({ sent: await alerts.sendBriefings() }));
+}
+
 function startScheduler() {
   const min = 60 * 1000;
   const runFeeds = async () => {
     await ingestAnalysts();
     await ingestInsiders();
+    await refreshAlerts();
   };
   // Eerste run kort na het opstarten, daarna periodiek.
   setTimeout(async () => {
@@ -161,13 +172,15 @@ function startScheduler() {
     await refreshRadar();
   }, 5000);
   setInterval(refreshRadar, 60 * min);
+  // Ochtendbriefing: elke 5 minuten kijken of het 08:00 (Amsterdam) is geweest.
+  setInterval(briefings, 5 * min);
   setInterval(refreshScores, 30 * min);
   setInterval(runFeeds, 15 * min);
   setInterval(refreshQuotes, 30 * min);
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshScores, refreshRadar, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
+module.exports = { refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
 
 if (require.main === module) {
   (async () => {
