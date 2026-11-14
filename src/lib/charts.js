@@ -222,7 +222,7 @@ function miniLine(values, { width = 120, height = 34, cls = '' } = {}) {
 }
 
 // Squarified treemap voor portefeuilles: [{label, value, sub, href, tone}].
-function treemap(items, { width = 920, height = 420 } = {}) {
+function treemap(items, { width = 920, height = 420, label = 'Verdeling van de portefeuille' } = {}) {
   const data = items.filter((x) => x.value > 0).sort((a, b) => b.value - a.value);
   if (!data.length) return '';
   const total = data.reduce((s, x) => s + x.value, 0);
@@ -272,21 +272,160 @@ function treemap(items, { width = 920, height = 420 } = {}) {
     .map((n, i) => {
       const big = n.w > 70 && n.h > 38;
       const mid = n.w > 40 && n.h > 20;
-      const shade = Math.max(0.35, 1 - i * 0.025);
-      return `<a href="${esc(n.href || '#')}"><g class="tm ${n.tone || ''}"><rect x="${(n.x + 1).toFixed(1)}" y="${(n.y + 1).toFixed(1)}" width="${Math.max(0, n.w - 2).toFixed(1)}" height="${Math.max(0, n.h - 2).toFixed(1)}" rx="4" style="opacity:${shade.toFixed(2)}"><title>${esc(n.label)}${n.sub ? ' · ' + esc(n.sub) : ''}</title></rect>
+      const shade = n.fill ? 1 : Math.max(0.35, 1 - i * 0.025);
+      const style = n.fill ? `fill:${n.fill}` : `opacity:${shade.toFixed(2)}`;
+      return `<a href="${esc(n.href || '#')}"><g class="tm ${n.tone || ''}"><rect x="${(n.x + 1).toFixed(1)}" y="${(n.y + 1).toFixed(1)}" width="${Math.max(0, n.w - 2).toFixed(1)}" height="${Math.max(0, n.h - 2).toFixed(1)}" rx="4" style="${style}"><title>${esc(n.label)}${n.sub ? ' · ' + esc(n.sub) : ''}</title></rect>
         ${mid ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 18).toFixed(1)}" class="tm-l">${esc(n.label)}</text>` : ''}
         ${big && n.sub ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 34).toFixed(1)}" class="tm-s">${esc(n.sub)}</text>` : ''}</g></a>`;
     })
     .join('');
-  return `<svg viewBox="0 0 ${width} ${height}" class="treemap" role="img" aria-label="Verdeling van de portefeuille">${cells}</svg>`;
+  return `<svg viewBox="0 0 ${width} ${height}" class="treemap" role="img" aria-label="${esc(label)}">${cells}</svg>`;
 }
 
 // Horizontale staven [{label, value, display, href}].
-function hbars(items, { max } = {}) {
+function hbars(items, { max, cls = '' } = {}) {
   const m = max || Math.max(1, ...items.map((x) => x.value));
-  return `<div class="hbars">${items
+  return `<div class="hbars ${cls}">${items
     .map((x) => `<a class="hb" href="${esc(x.href || '#')}"><span class="hb-l">${esc(x.label)}</span><span class="hb-t"><span class="hb-f" style="width:${((x.value / m) * 100).toFixed(1)}%"></span></span><span class="hb-v">${esc(x.display ?? x.value)}</span></a>`)
     .join('')}</div>`;
 }
 
-module.exports = { targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, hbars };
+
+const pctTxt = (v, d = 0) => `${v > 0 ? '+' : ''}${(v * 100).toFixed(d).replace('.', ',')}%`;
+
+// Kleur van rood (-1) via neutraal (0) naar groen (+1), voor heatmaps.
+function heat(v) {
+  const t = Math.max(-1, Math.min(1, v || 0));
+  const a = 0.3 + Math.abs(t) * 0.7;
+  return t >= 0 ? `rgba(14,159,110,${a.toFixed(2)})` : `rgba(211,47,47,${a.toFixed(2)})`;
+}
+
+// Spreidingsdiagram met vier kwadranten: [{x, y, label, href, tone, r}] (x en y als fractie).
+function scatter(points, { width = 920, height = 440, xLabel = '', yLabel = '', quadrants = [], clampAt = 0.6 } = {}) {
+  const pts = points.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+  if (!pts.length) return '';
+  const pad = { l: 52, r: 16, t: 16, b: 40 };
+  const cl = (v) => Math.max(-clampAt, Math.min(clampAt, v));
+  const xs = pts.map((p) => cl(p.x));
+  const ys = pts.map((p) => cl(p.y));
+  // Zelfde schaal op beide assen, zodat de diagonaal echt 'even hard' betekent.
+  const xm = Math.max(0.1, ...xs.map(Math.abs), ...ys.map(Math.abs)) * 1.08;
+  const ym = xm;
+  const W = width - pad.l - pad.r;
+  const H = height - pad.t - pad.b;
+  const X = (v) => pad.l + ((cl(v) + xm) / (2 * xm)) * W;
+  const Y = (v) => pad.t + (1 - (cl(v) + ym) / (2 * ym)) * H;
+  const ticks = (m) => niceTicks(-m, m, 6).filter((t) => Math.abs(t) <= m);
+  const grid = [
+    ...ticks(xm).map((t) => `<line x1="${X(t).toFixed(1)}" x2="${X(t).toFixed(1)}" y1="${pad.t}" y2="${pad.t + H}" class="tl-grid ${t === 0 ? 'zero' : ''}"/><text x="${X(t).toFixed(1)}" y="${height - 22}" text-anchor="middle" class="tl-axis">${pctTxt(t)}</text>`),
+    ...ticks(ym).map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="tl-grid ${t === 0 ? 'zero' : ''}"/><text x="${pad.l - 6}" y="${(Y(t) + 4).toFixed(1)}" text-anchor="end" class="tl-axis">${pctTxt(t)}</text>`),
+  ].join('');
+  // Kwadrantlabels: [linksboven, rechtsboven, linksonder, rechtsonder]
+  const q = quadrants.length === 4
+    ? `<text x="${pad.l + 8}" y="${pad.t + 16}" class="sc-q">${esc(quadrants[0])}</text>
+       <text x="${pad.l + W - 8}" y="${pad.t + 16}" text-anchor="end" class="sc-q">${esc(quadrants[1])}</text>
+       <text x="${pad.l + 8}" y="${pad.t + H - 8}" class="sc-q">${esc(quadrants[2])}</text>
+       <text x="${pad.l + W - 8}" y="${pad.t + H - 8}" text-anchor="end" class="sc-q">${esc(quadrants[3])}</text>`
+    : '';
+  const diag = `<line x1="${X(-xm).toFixed(1)}" y1="${Y(-xm).toFixed(1)}" x2="${X(xm).toFixed(1)}" y2="${Y(xm).toFixed(1)}" class="sc-diag"/>`;
+  const dots = pts
+    .sort((a, b) => (a.tone ? 1 : 0) - (b.tone ? 1 : 0))
+    .map((p) => {
+      const r = p.r || 4.5;
+      const right = X(p.x) > pad.l + W * 0.85;
+      const lbl = p.tone && p.label ? `<text x="${(X(p.x) + (right ? -(r + 3) : r + 3)).toFixed(1)}" y="${(Y(p.y) + 4).toFixed(1)}" class="sc-l" ${right ? 'text-anchor="end"' : ''}>${esc(p.label)}</text>` : '';
+      return `<a href="${esc(p.href || '#')}"><circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${r}" class="sc-dot ${p.tone || ''}"><title>${esc(p.title || p.label || '')}</title></circle>${lbl}</a>`;
+    })
+    .join('');
+  return `<svg viewBox="0 0 ${width} ${height}" class="scatter" role="img" aria-label="${esc(xLabel)} tegen ${esc(yLabel)}">
+    ${grid}${diag}${q}${dots}
+    <text x="${pad.l + W / 2}" y="${height - 4}" text-anchor="middle" class="tl-axis sc-ax">${esc(xLabel)} →</text>
+    <text transform="translate(12 ${pad.t + H / 2}) rotate(-90)" text-anchor="middle" class="tl-axis sc-ax">${esc(yLabel)} →</text>
+  </svg>`;
+}
+
+// Verticale kolommen met positieve en negatieve waarden: [{label, value, sub}] (value als fractie).
+function columns(items, { width = 640, height = 240 } = {}) {
+  if (!items.length) return '';
+  const pad = { l: 44, r: 8, t: 22, b: 44 };
+  const vals = items.map((x) => (Number.isFinite(x.value) ? x.value : 0));
+  const m = Math.max(0.02, ...vals.map(Math.abs)) * 1.15;
+  const W = width - pad.l - pad.r;
+  const H = height - pad.t - pad.b;
+  const Y = (v) => pad.t + (1 - (v + m) / (2 * m)) * H;
+  const bw = W / items.length;
+  const ticks = niceTicks(-m, m, 5).filter((t) => Math.abs(t) <= m);
+  const grid = ticks.map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="tl-grid ${t === 0 ? 'zero' : ''}"/><text x="${pad.l - 6}" y="${(Y(t) + 4).toFixed(1)}" text-anchor="end" class="tl-axis">${pctTxt(t)}</text>`).join('');
+  const bars = items
+    .map((x, i) => {
+      const v = vals[i];
+      const cx = pad.l + i * bw + bw / 2;
+      const w = Math.min(64, bw * 0.6);
+      const y0 = Y(0);
+      const y1 = Y(v);
+      const has = Number.isFinite(x.value);
+      return `<g><title>${esc(x.label)}: ${has ? pctTxt(v, 1) : 'te weinig data'}${x.sub ? ' · ' + esc(x.sub) : ''}</title>
+        ${has ? `<rect x="${(cx - w / 2).toFixed(1)}" y="${Math.min(y0, y1).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1.5, Math.abs(y1 - y0)).toFixed(1)}" rx="5" class="${v >= 0 ? 'bar-pos' : 'bar-neg'}"/>
+        <text x="${cx.toFixed(1)}" y="${(v >= 0 ? y1 - 6 : y1 + 15).toFixed(1)}" text-anchor="middle" class="col-v">${pctTxt(v, 1)}</text>` : ''}
+        <text x="${cx.toFixed(1)}" y="${height - 24}" text-anchor="middle" class="tl-axis col-l">${esc(x.label)}</text>
+        ${x.sub ? `<text x="${cx.toFixed(1)}" y="${height - 9}" text-anchor="middle" class="tl-axis">${esc(x.sub)}</text>` : ''}</g>`;
+    })
+    .join('');
+  return `<svg viewBox="0 0 ${width} ${height}" class="cols" role="img">${grid}${bars}</svg>`;
+}
+
+// Gestapelde balk van een adviesverdeling (sterk kopen → sterk verkopen).
+function ratingBar(r, { height = 10 } = {}) {
+  const parts = [
+    ['sb', Number(r.strong_buy) || 0, 'Sterk kopen'],
+    ['b', Number(r.buy) || 0, 'Kopen'],
+    ['h', Number(r.hold) || 0, 'Houden'],
+    ['s', Number(r.sell) || 0, 'Verkopen'],
+    ['ss', Number(r.strong_sell) || 0, 'Sterk verkopen'],
+  ];
+  const total = parts.reduce((s, p) => s + p[1], 0);
+  if (!total) return '';
+  return `<span class="rbar" style="height:${height}px" title="${parts.filter((p) => p[1]).map((p) => `${p[2]}: ${p[1]}`).join(' · ')}">${parts
+    .filter((p) => p[1])
+    .map((p) => `<i class="rb-${p[0]}" style="width:${((p[1] / total) * 100).toFixed(1)}%"></i>`)
+    .join('')}</span>`;
+}
+
+// Adviesverdeling door de tijd als gestapeld vlak (100%).
+function ratingArea(rows, { width = 920, height = 200 } = {}) {
+  const data = rows.map((r) => ({ date: r.date, v: [Number(r.strong_buy) || 0, Number(r.buy) || 0, Number(r.hold) || 0, Number(r.sell) || 0, Number(r.strong_sell) || 0] }))
+    .filter((r) => r.v.some((x) => x > 0));
+  if (data.length < 2) return '';
+  const pad = { l: 4, r: 4, t: 4, b: 22 };
+  const W = width - pad.l - pad.r;
+  const H = height - pad.t - pad.b;
+  const X = (i) => pad.l + (i / (data.length - 1)) * W;
+  const cls = ['rb-sb', 'rb-b', 'rb-h', 'rb-s', 'rb-ss'];
+  const cum = data.map((d) => {
+    const t = d.v.reduce((s, x) => s + x, 0);
+    let acc = 0;
+    return d.v.map((x) => { const lo = acc; acc += x / t; return [lo, acc]; });
+  });
+  const layers = cls.map((c, k) => {
+    const top = cum.map((cs, i) => `${X(i).toFixed(1)},${(pad.t + cs[k][0] * H).toFixed(1)}`);
+    const bot = cum.map((cs, i) => `${X(i).toFixed(1)},${(pad.t + cs[k][1] * H).toFixed(1)}`).reverse();
+    return `<polygon points="${top.concat(bot).join(' ')}" class="ra ${c}"/>`;
+  }).join('');
+  const grid = `<line x1="${pad.l}" x2="${pad.l + W}" y1="${pad.t + H / 2}" y2="${pad.t + H / 2}" class="ra-mid"/>`;
+  const lab = (i) => { const d = new Date(data[i].date); return `${MONTHS[d.getUTCMonth()]} '${String(d.getUTCFullYear()).slice(2)}`; };
+  const step = Math.max(1, Math.ceil(data.length / 8));
+  const xl = data.map((_, i) => (i % step === 0 ? `<text x="${X(i).toFixed(1)}" y="${height - 6}" text-anchor="${i === 0 ? 'start' : i > data.length - step ? 'end' : 'middle'}" class="tl-axis">${lab(i)}</text>` : '')).join('');
+  return `<svg viewBox="0 0 ${width} ${height}" class="rarea" role="img" aria-label="Adviesverdeling door de tijd">${layers}${grid}${xl}</svg>`;
+}
+
+// Bereikbalk: laagste–hoogste koersdoel, met koers en consensus.
+function rangeBar({ low, high, price, target }) {
+  const vals = [low, high, price, target].filter((v) => Number.isFinite(v) && v > 0);
+  if (vals.length < 3) return '';
+  const lo = Math.min(...vals);
+  const hi = Math.max(...vals);
+  const P = (v) => (((v - lo) / (hi - lo || 1)) * 100).toFixed(1);
+  return `<span class="rng" title="Laag ${fmtPrice(low)} · hoog ${fmtPrice(high)} · koers ${fmtPrice(price)} · consensus ${fmtPrice(target)}"><span class="rng-r" style="left:${P(low)}%;width:${(P(high) - P(low)).toFixed(1)}%"></span><i class="rng-t" style="left:${P(target)}%"></i><i class="rng-p" style="left:${P(price)}%"></i></span>`;
+}
+
+module.exports = { targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, hbars, heat, scatter, columns, ratingBar, ratingArea, rangeBar };

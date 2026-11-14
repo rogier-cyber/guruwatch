@@ -7,6 +7,8 @@ const eodhd = require('../lib/eodhd');
 const ingest = require('../ingest');
 const { consensus: calcConsensus, computeScores } = require('../lib/scoring');
 const { targetTimeline } = require('../lib/charts');
+const rq = require('../lib/radarQueries');
+const radar = require('../lib/radar');
 
 const router = express.Router();
 
@@ -31,6 +33,9 @@ router.get('/', wrap(async (req, res) => {
     q.hasGuruScores(),
   ]);
   const top = scored ? await q.guruLeaderboard({ minCalls: 10, limit: 5 }) : [];
+  const mom = (await safe(rq.momentum({ days: 30 }), [])).map((r) => ({ ...r, score: radar.momentumScore(r) })).sort((a, b) => b.score - a.score);
+  const radarTop = mom.filter((r) => r.score > 0).slice(0, 6);
+  const radarBottom = mom.filter((r) => r.score < 0).slice(-6).reverse();
   const sum = (arr, k) => arr.reduce((s, d) => s + (Number(d[k]) || 0), 0);
   const kpi = {
     upgrades: sum(gradeDays, 'pos'),
@@ -40,7 +45,7 @@ router.get('/', wrap(async (req, res) => {
     insiderBuy: sum(insiderDays, 'pos'),
     insiderSell: sum(insiderDays, 'neg'),
   };
-  res.render('home', { title: 'Overzicht', grades, activity, buys, clusters, popular, counts, gradeDays, insiderDays, revisionDays, top, kpi });
+  res.render('home', { title: 'Overzicht', radarTop, radarBottom, grades, activity, buys, clusters, popular, counts, gradeDays, insiderDays, revisionDays, top, kpi });
 }));
 
 // ---------- Analisten ----------
@@ -158,13 +163,23 @@ router.get('/aandeel/:symbol', wrap(async (req, res) => {
 
   // Analistenkern: consensus, bulls vs bears, beste analisten, tijdlijn, activiteit.
   const since = new Date(Date.now() - 3 * 365 * 864e5).toISOString().slice(0, 10);
-  const [latest, activity, stats, timelineTargets, dbSeries] = await Promise.all([
+  const [latest, activity, stats, timelineTargets, dbSeries, ratingRows] = await Promise.all([
     q.latestTargetPerAnalyst(symbol),
     q.targetActivity(symbol, 25),
     q.symbolAnalystStats(symbol),
     q.targetTimeline(symbol, since),
     q.priceSeries(symbol, since),
+    safe(rq.ratingHistory(symbol), []),
   ]);
+  // Adviesverdeling door de tijd: uit de database, anders direct van FMP.
+  let ratingTrend = ratingRows;
+  if (!ratingTrend.length) {
+    const live = await safe(fmp.ratingHistory(symbol), []);
+    const pick = (o, k) => Number(o[Object.keys(o).find((x) => x.toLowerCase() === k.toLowerCase())]) || 0;
+    ratingTrend = live.filter((x) => x && x.date).map((x) => ({ date: x.date, strong_buy: pick(x, 'analystRatingsStrongBuy'), buy: pick(x, 'analystRatingsBuy'),
+      hold: pick(x, 'analystRatingsHold'), sell: pick(x, 'analystRatingsSell'), strong_sell: pick(x, 'analystRatingsStrongSell') }))
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+  }
   const price = quote && Number(quote.price);
   const smart = calcConsensus(latest, price, { topScore: 70 });
   const ranked = latest.filter((t) => Number(t.price_target) > 0).sort((a, b) => Number(b.price_target) - Number(a.price_target));
@@ -187,6 +202,7 @@ router.get('/aandeel/:symbol', wrap(async (req, res) => {
   const series = dbSeries.length >= 60 ? dbSeries : sortedHistory;
   const timeline = targetTimeline(series, timelineTargets);
   res.render('stock', {
+    ratingTrend,
     title: profile ? `${profile.companyName} (${symbol})` : symbol,
     symbol,
     profile,
@@ -250,6 +266,80 @@ router.post('/volg', wrap(async (req, res) => {
   await q.toggleWatch(req.user.id, kind, kind === 'stock' ? ref.toUpperCase() : ref);
   const back = String(req.body.back || '/volglijst');
   res.redirect(back.startsWith('/') && !back.startsWith('//') ? back : '/volglijst');
+}));
+
+// ---------- Radar ----------
+const RADAR_TABS = ['momentum', 'verrassing', 'potentieel', 'contrair'];
+
+function radarFilters(query) {
+  const sector = typeof query.sector === 'string' && query.sector.length <= 60 ? query.sector : '';
+  const cap = radar.CAPS.some((c) => c.key === query.cap) ? query.cap : '';
+  return { sector, cap };
+}
+
+router.get('/radar', wrap(async (req, res) => {
+  const tab = RADAR_TABS.includes(req.query.tab) ? req.query.tab : 'momentum';
+  const filters = radarFilters(req.query);
+  const data = { tab, filters, caps: radar.CAPS, sectors: await safe(rq.sectors(), []) };
+
+  if (tab === 'momentum') {
+    const days = [7, 30, 90].includes(Number(req.query.dagen)) ? Number(req.query.dagen) : 30;
+    const rows = (await rq.momentum({ days, ...filters })).map((r) => ({ ...r, score: radar.momentumScore(r), herd: radar.herd(r) }));
+    rows.sort((a, b) => b.score - a.score || (b.raises + b.ups) - (a.raises + a.ups));
+    const bySector = new Map();
+    for (const r of rows) {
+      if (!r.sector) continue;
+      const s = bySector.get(r.sector) || { sector: r.sector, pos: 0, neg: 0, n: 0 };
+      s.pos += r.raises + r.ups;
+      s.neg += r.cuts + r.downs;
+      s.n += 1;
+      bySector.set(r.sector, s);
+    }
+    Object.assign(data, {
+      days,
+      risers: rows.filter((r) => r.score > 0).slice(0, 30),
+      fallers: rows.filter((r) => r.score < 0).slice(-20).reverse(),
+      herds: rows.filter((r) => r.herd).sort((a, b) => (b.h_up + b.h_down) - (a.h_up + a.h_down)).slice(0, 24),
+      sectorHeat: [...bySector.values()].filter((s) => s.pos + s.neg > 0),
+      totals: { pos: rows.filter((r) => r.score > 0).length, neg: rows.filter((r) => r.score < 0).length, all: rows.length },
+      hasEps: rows.some((r) => r.eps_rev !== null && r.eps_rev !== undefined),
+    });
+  }
+
+  if (tab === 'verrassing') {
+    const days = [30, 90, 180].includes(Number(req.query.dagen)) ? Number(req.query.dagen) : 90;
+    const rows = (await rq.consensusShift({ days, ...filters })).map((r) => ({ ...r, signal: radar.surprise(r.price_chg, r.target_chg) }));
+    const group = (k) => rows.filter((r) => r.signal === k).sort((a, b) => Math.abs(b.price_chg - b.target_chg) - Math.abs(a.price_chg - a.target_chg)).slice(0, 15);
+    Object.assign(data, {
+      days,
+      points: rows,
+      groups: { 'koers-daalt': group('koers-daalt'), 'koers-stijgt': group('koers-stijgt'), 'doelen-stijgen': group('doelen-stijgen'), 'doelen-dalen': group('doelen-dalen') },
+    });
+  }
+
+  if (tab === 'potentieel') {
+    const minAnalysts = [3, 5, 10, 20].includes(Number(req.query.min)) ? Number(req.query.min) : 5;
+    const sort = req.query.sort === 'slim' ? 'slim' : 'gewoon';
+    let rows = await rq.upside({ ...filters, minAnalysts });
+    if (sort === 'slim') rows = rows.filter((r) => Number.isFinite(r.smart_upside) && r.smart_n >= 2).sort((a, b) => b.smart_upside - a.smart_upside);
+    else rows.sort((a, b) => b.upside - a.upside);
+    // Extreme uitschieters (vaak verouderde koersdoelen of penny stocks) apart houden.
+    Object.assign(data, { minAnalysts, sort, rows: rows.filter((r) => r.upside < 3).slice(0, 100), count: rows.length });
+  }
+
+  if (tab === 'contrair') {
+    const rows = (await rq.ratingSnapshot(filters)).map((r) => ({ ...r, ...radar.bullShare(r) }));
+    const backtest = await safe(rq.cached('contrarian_backtest'));
+    Object.assign(data, {
+      hated: [...rows].sort((a, b) => a.bull - b.bull || b.bear - a.bear).slice(0, 20),
+      loved: [...rows].sort((a, b) => b.bull - a.bull || b.total - a.total).slice(0, 20),
+      backtest: backtest && backtest.data,
+      backtestAt: backtest && backtest.updated_at,
+      count: rows.length,
+    });
+  }
+
+  res.render('radar', { title: 'Radar', ...data });
 }));
 
 // ---------- Status ----------
