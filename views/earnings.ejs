@@ -10,6 +10,13 @@
       <h1>Kwartaal<b>cijfers</b></h1>
       <p>Wanneer rapporteren de bedrijven, hoe reageerde de koers, en wie paste als eerste zijn koersdoel aan?</p>
     </div>
+    <% if (tab === 'kalender' && days.length) { var wk = days.slice(0, 5); var wkN = wk.reduce(function (t, d) { return t + d.list.length; }, 0); var wkCap = wk.reduce(function (t, d) { return t + d.list.reduce(function (u, r) { return u + (r.market_cap || 0); }, 0); }, 0); var biggest = wk.map(function (d) { return d.list[0]; }).filter(Boolean).sort(function (a, b) { return (b.market_cap || 0) - (a.market_cap || 0); })[0]; %>
+    <div class="gk-hero-kpis">
+      <div><strong><%= fmt.num(wkN) %></strong><span>bedrijven, komende <%= wk.length %> dagen</span></div>
+      <div><strong><%= fmt.money(wkCap) %></strong><span>beurswaarde samen</span></div>
+      <div><strong><%= biggest ? biggest.symbol : '–' %></strong><span>grootste naam<%= biggest ? ', ' + dayName(biggest.date).split(' ')[0] : '' %></span></div>
+    </div>
+    <% } %>
   </div>
 </section>
 
@@ -25,6 +32,24 @@
     <a href="?tab=kalender&mijn=1" class="<%= only ? 'on' : '' %>">Alleen die ik volg</a>
   </div>
   <% if (!days.length) { %><section class="card"><p class="empty"><%= only ? 'Geen cijfers van aandelen die je volgt in de komende drie weken.' : 'De cijferkalender wordt nog opgehaald.' %></p></section><% } %>
+  <% if (days.length) { var maxCap = Math.max.apply(null, days.slice(0, 5).map(function (d) { return d.list[0] && d.list[0].market_cap || 0; }).concat([1])); %>
+  <section class="card wb-card">
+    <div class="card-h"><h2>Deze week</h2><span class="small muted">grootste namen per dag · groter = hogere beurswaarde</span></div>
+    <div class="wb">
+    <% days.slice(0, 5).forEach(function (d) { var dt = new Date(d.date + 'T00:00:00Z'); %>
+      <div class="wb-col">
+        <div class="wb-h"><b><%= new Intl.DateTimeFormat('nl-NL', { weekday: 'short', timeZone: 'UTC' }).format(dt) %></b><span><%= dt.getUTCDate() %> <%= new Intl.DateTimeFormat('nl-NL', { month: 'short', timeZone: 'UTC' }).format(dt).replace('.', '') %></span><em><%= d.list.length %></em></div>
+        <% d.list.slice(0, 6).forEach(function (r) { var sz = r.market_cap ? Math.max(0, Math.min(1, Math.log10(r.market_cap / 1e9 + 1) / Math.log10(maxCap / 1e9 + 1))) : 0; var up = r.target && r.price ? r.target / r.price - 1 : null; %>
+        <a class="wb-t<%= watched.has(r.symbol) ? ' mine' : '' %>" href="/aandeel/<%= encodeURIComponent(r.symbol) %>" style="--sz:<%= sz.toFixed(2) %>" title="<%= r.name || r.symbol %> · <%= fmt.money(r.market_cap) %>">
+          <%- ui.logo(r.symbol) %><span class="wb-s"><b><%= r.symbol %></b><em><%= fmt.money(r.market_cap) %></em></span><% if (up !== null) { %><i class="<%= fmt.tone(up) %>"><%= (up > 0 ? '+' : up < 0 ? '−' : '') + Math.abs(Math.round(up * 100)) + '%' %></i><% } %>
+        </a>
+        <% }) %>
+        <% if (d.list.length > 6) { %><span class="wb-more">+<%= d.list.length - 6 %> meer</span><% } %>
+      </div>
+    <% }) %>
+    </div>
+  </section>
+  <% } %>
   <div class="cal">
   <% days.forEach(function (d) { %>
     <section class="card cal-day">
