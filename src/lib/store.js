@@ -129,4 +129,36 @@ async function markJob(job, ok, info) {
   }
 }
 
-module.exports = { savePriceTargets, saveGrades, saveInsiders, saveQuotes, syncFundList, saveFundQuarter, markJob };
+async function savePrices(points) {
+  let n = 0;
+  for (let i = 0; i < points.length; i += 1000) {
+    n += await bulkInsert('prices', ['symbol', 'date', 'close'], points.slice(i, i + 1000),
+      'ON CONFLICT (symbol, date) DO UPDATE SET close = EXCLUDED.close');
+  }
+  return n;
+}
+
+const RESULT_COLS = ['price_target_id', 'analyst_id', 'analyst_firm', 'symbol', 'published_at', 'direction', 'p0', 'target', 'horizon_end', 'p_end', 'bench_ret', 'ret', 'excess', 'hit', 'days_to_hit', 'complete'];
+
+async function saveCallResults(results) {
+  const updates = RESULT_COLS.filter((c) => c !== 'price_target_id').map((c) => `${c} = EXCLUDED.${c}`).join(', ');
+  return bulkInsert('call_results', RESULT_COLS, results, `ON CONFLICT (price_target_id) DO UPDATE SET ${updates}, computed_at = now()`);
+}
+
+async function replaceGuruScores(kind, scores) {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM guru_scores WHERE kind = $1', [kind]);
+    const rows = scores.map((s) => ({ kind, ...s }));
+    await bulkInsert('guru_scores', ['kind', 'ref', 'calls', 'hit_rate', 'avg_return', 'avg_excess', 'success_rate', 'score', 'rank'], rows, '', client);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { savePrices, saveCallResults, replaceGuruScores, savePriceTargets, saveGrades, saveInsiders, saveQuotes, syncFundList, saveFundQuarter, markJob };

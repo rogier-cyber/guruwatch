@@ -134,6 +134,12 @@ async function backfillSymbol(symbol) {
   if (ins.status === 'fulfilled') await store.saveInsiders(ins.value);
 }
 
+async function refreshScores(opts) {
+  // Lazy require om een circulaire import te voorkomen.
+  const scores = require('./scores');
+  return job('scores', () => scores.runPipeline(opts));
+}
+
 function startScheduler() {
   const min = 60 * 1000;
   const runFeeds = async () => {
@@ -146,13 +152,15 @@ function startScheduler() {
     await runFeeds();
     await refreshQuotes();
     await refreshFunds();
+    await refreshScores();
   }, 5000);
+  setInterval(refreshScores, 30 * min);
   setInterval(runFeeds, 15 * min);
   setInterval(refreshQuotes, 30 * min);
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
+module.exports = { refreshScores, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
 
 if (require.main === module) {
   (async () => {
@@ -163,6 +171,7 @@ if (require.main === module) {
     await ingestInsiders();
     await refreshQuotes();
     await refreshFunds();
+    await refreshScores();
     await db.pool.end();
   })().catch((err) => {
     console.error(err);

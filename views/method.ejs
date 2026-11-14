@@ -1,0 +1,30 @@
+<%- include('partials/head') %>
+<article class="card prose">
+  <h1 class="page-title">Hoe de GuruScore werkt</h1>
+  <p>De GuruScore (0–100) beantwoordt één vraag: <strong>welke analist moet ik geloven?</strong> De methode is volledig open.</p>
+  <h2>1. Elk koersdoel wordt afgerekend</h2>
+  <ul>
+    <li><strong>Startpunt:</strong> de slotkoers op de dag dat het koersdoel verscheen.</li>
+    <li><strong>Richting:</strong> ligt het doel boven de koers, dan is het een koopadvies, ligt het eronder een verkoopadvies. Doelen binnen 1% van de koers tellen niet mee.</li>
+    <li><strong>Horizon:</strong> 12 maanden. Loopt die nog, dan rekenen we tot vandaag. Adviezen jonger dan 30 dagen tellen nog niet mee.</li>
+    <li><strong>Trefkans:</strong> heeft de slotkoers het koersdoel binnen 12 maanden geraakt?</li>
+    <li><strong>Rendement:</strong> de koersverandering in de richting van het advies. Bij een verkoopadvies is een dalende koers dus winst.</li>
+    <li><strong>Vs. S&amp;P 500:</strong> hetzelfde rendement min dat van de S&amp;P 500 (SPY) in dezelfde periode.</li>
+  </ul>
+  <h2>2. Van adviezen naar een score</h2>
+  <ul>
+    <li><strong>Gemiddelden, geen optelsommen.</strong> Wie veel adviezen geeft, krijgt daar geen voordeel van. Rendementen worden gemiddeld, niet opgeteld.</li>
+    <li><strong>Recent telt zwaarder.</strong> Een advies van 1,4 jaar geleden telt half zo zwaar als een advies van vandaag.</li>
+    <li><strong>Geluk wordt gedempt.</strong> Bij weinig adviezen trekken we de cijfers naar het gemiddelde van alle analisten. Drie gelukstreffers verslaan zo niet tweehonderd goede adviezen.</li>
+    <li><strong>De score:</strong> 40% trefkans + 40% rendement boven de S&amp;P 500 (beide als percentiel ten opzichte van alle analisten) + 20% betrouwbaarheid (aantal adviezen, volledig vanaf 50).</li>
+  </ul>
+  <h2>3. Slimme consensus</h2>
+  <p>Per aandeel nemen we het laatste koersdoel van elke analist uit de afgelopen 12 maanden. De gewone consensus is het gemiddelde daarvan. De slimme consensus gebruikt alleen analisten met een GuruScore van 70 of hoger.</p>
+  <h2>Beperkingen</h2>
+  <ul>
+    <li>De data komt van Financial Modeling Prep en dekt vooral Amerikaanse aandelen.</li>
+    <li>Of de slimme consensus beter voorspelt dan het gewone gemiddelde, moet nog getest worden. Zie het als extra informatie, niet als koopsignaal.</li>
+    <li>Dit is geen beleggingsadvies.</li>
+  </ul>
+</article>
+<%- include('partials/foot') %>

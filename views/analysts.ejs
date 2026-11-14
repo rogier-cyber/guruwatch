@@ -8,8 +8,39 @@
 </nav>
 <section class="card">
 <% if (tab === 'ranglijst') { %>
-  <p class="small muted">Score over koersdoelen van 30 tot 365 dagen oud (minimaal 5). <strong>Goede richting</strong>: koers ging sindsdien de kant op die de analist voorspelde. <strong>Doel gehaald</strong>: koers staat nu op of voorbij het koersdoel. <strong>Gem. rendement</strong>: koersverandering sinds het advies, in de richting van het advies.</p>
-  <% if (!leaders.length) { %><p class="empty">Nog te weinig data voor een ranglijst. Dit vult zich zodra koersdoelen en koersen zijn binnengehaald.</p><% } else { %>
+  <% if (scored) { %>
+  <p class="small muted">De <strong>GuruScore</strong> (0–100) combineert trefkans binnen 12 maanden, rendement boven de S&amp;P 500 en het aantal adviezen. Recente adviezen tellen zwaarder en kleine aantallen worden naar het gemiddelde getrokken. <a href="/methode">Zo werkt het</a>.</p>
+  <% } else { %>
+  <p class="alert info">De GuruScore wordt nog berekend: eerst wordt de koersdoel-historie en koershistorie opgehaald. Tot die tijd zie je hieronder een voorlopige ranglijst.</p>
+  <% } %>
+  <% if (!leaders.length) { %><p class="empty">Nog te weinig data voor een ranglijst.</p><% } else if (scored) { %>
+  <div class="podium">
+    <% leaders.slice(0, 3).forEach(function (a, i) { %>
+    <a class="pod <%= i === 0 ? 'first' : '' %>" data-rank="<%= i + 1 %>" href="/analist/<%= a.slug %>">
+      <%- charts.scoreRing(a.score, 58) %>
+      <div><strong><%= a.name %></strong><span class="muted small"><%= a.firm %></span><div class="small"><span class="<%= fmt.tone(a.avg_excess) %>"><%= fmt.pct(a.avg_excess) %> vs S&amp;P</span> · <%= fmt.pct(a.hit_rate, false) %> trefkans · <%= a.calls %> adviezen</div></div>
+    </a>
+    <% }) %>
+  </div>
+  <% if (dist && dist.length) { var maxN = Math.max.apply(null, dist.map(function (d) { return d.n; })); var buckets = []; for (var b = 1; b <= 10; b++) { var f = dist.find(function (d) { return d.b === b; }); buckets.push(f ? f.n : 0); } %>
+  <div class="card" style="box-shadow:none;background:var(--line-2);border:0">
+    <div class="card-h"><h2>Verdeling van GuruScores</h2><span class="small muted">analisten met 5+ adviezen</span></div>
+    <div class="hist"><% buckets.forEach(function (n, i) { %><span style="height:<%= (n / maxN * 100).toFixed(0) %>%" title="<%= i * 10 %>–<%= i * 10 + 10 %>: <%= n %> analisten"></span><% }) %></div>
+    <div class="hist-axis"><span>0</span><span>50</span><span>100</span></div>
+  </div>
+  <% } %>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>#</th><th>GuruScore</th><th>Analist</th><th>Bank</th><th class="r">Adviezen</th><th class="r">Trefkans</th><th class="r">Gem. rendement</th><th class="r">Vs. S&amp;P 500</th></tr></thead>
+    <tbody>
+    <% leaders.forEach(function (a, i) { %>
+      <tr><td class="muted"><%= i + 1 %></td><td><%- include('partials/score', { score: a.score }) %></td><td><a href="/analist/<%= a.slug %>" class="strong"><%= a.name %></a></td>
+      <td><% if (a.firm) { %><a href="/bank/<%= encodeURIComponent(a.firm) %>"><%= a.firm %></a><% } %></td>
+      <td class="r"><%= a.calls %></td><td class="r"><%= fmt.pct(a.hit_rate, false) %></td>
+      <td class="r <%= fmt.tone(a.avg_return) %>"><%= fmt.pct(a.avg_return) %></td>
+      <td class="r <%= fmt.tone(a.avg_excess) %>"><%= fmt.pct(a.avg_excess) %></td></tr>
+    <% }) %>
+    </tbody></table></div>
+  <% } else { %>
   <div class="tbl-wrap"><table class="tbl">
     <thead><tr><th>#</th><th>Analist</th><th>Bank</th><th class="r">Beoordeeld</th><th class="r">Goede richting</th><th class="r">Doel gehaald</th><th class="r">Gem. rendement</th></tr></thead>
     <tbody>
@@ -27,7 +58,15 @@
   <div class="filters"><a href="?tab=ratings" class="<%= !action ? 'on' : '' %>">Alle</a><a href="?tab=ratings&actie=upgrade" class="<%= action === 'upgrade' ? 'on' : '' %>">Upgrades</a><a href="?tab=ratings&actie=downgrade" class="<%= action === 'downgrade' ? 'on' : '' %>">Downgrades</a></div>
   <%- include('partials/grades', { rows: grades }) %>
 <% } else { %>
+  <% if (firmScores.length) { %>
+  <h2>Banken op GuruScore</h2>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>GuruScore</th><th>Bank</th><th class="r">Adviezen</th><th class="r">Trefkans</th><th class="r">Gem. rendement</th><th class="r">Vs. S&amp;P 500</th></tr></thead><tbody>
+  <% firmScores.forEach(function (f, i) { %><tr><td class="muted"><%= i + 1 %></td><td><%- include('partials/score', { score: f.score }) %></td><td><a href="/bank/<%= encodeURIComponent(f.firm) %>" class="strong"><%= f.firm %></a></td><td class="r"><%= f.calls %></td><td class="r"><%= fmt.pct(f.hit_rate, false) %></td><td class="r <%= fmt.tone(f.avg_return) %>"><%= fmt.pct(f.avg_return) %></td><td class="r <%= fmt.tone(f.avg_excess) %>"><%= fmt.pct(f.avg_excess) %></td></tr><% }) %>
+  </tbody></table></div>
+  <h2 class="mt">Meest actief (90 dagen)</h2>
+  <% } else { %>
   <p class="small muted">Meest actieve banken in de laatste 90 dagen.</p>
+  <% } %>
   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Bank</th><th class="r">Ratings</th><th class="r">Upgrades</th><th class="r">Downgrades</th><th>Laatste</th></tr></thead><tbody>
   <% firms.forEach(function (f) { %><tr><td><a href="/bank/<%= encodeURIComponent(f.firm) %>" class="strong"><%= f.firm %></a></td><td class="r"><%= f.n %></td><td class="r pos"><%= f.upgrades %></td><td class="r neg"><%= f.downgrades %></td><td class="muted"><%= fmt.ago(f.last_at) %></td></tr><% }) %>
   </tbody></table></div>

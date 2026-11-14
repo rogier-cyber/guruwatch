@@ -1,7 +1,8 @@
 <%- include('partials/head') %>
 <section class="login">
-  <h1>Inloggen bij Guruwatch</h1>
-  <p class="muted">Volg wat analisten, insiders en de bekendste hedge funds doen.</p>
+  <img src="/static/img/logo.png" alt="Guruwatch" class="login-logo">
+  <h1>Welke analist moet je geloven?</h1>
+  <p class="muted">Analisten afgerekend op hun trackrecord, plus insiders en de bekendste hedge funds.</p>
   <% if (error) { %><p class="alert"><%= error %></p><% } %>
   <% if (step === 'email') { %>
   <form method="post" action="/login" class="card form">

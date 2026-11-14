@@ -1,33 +1,71 @@
 <%- include('partials/head') %>
-<h1 class="page-title">Overzicht</h1>
+<section class="hero">
+  <div class="hero-in">
+    <div>
+      <h1>Welke analist moet je <b>geloven</b>?</h1>
+      <p>Elke analist afgerekend op zijn trackrecord. Plus wat insiders kopen en waar de bekendste hedge funds in zitten.</p>
+      <form action="/zoek" method="get" role="search"><input name="q" placeholder="Zoek een aandeel, analist, bank of fonds" aria-label="Zoeken"></form>
+    </div>
+    <div class="hero-kpis">
+      <div class="hk"><span>Koersdoelen verhoogd (30 d)</span><strong><%= fmt.num(kpi.raised) %></strong> <em class="down">/ <%= fmt.num(kpi.lowered) %> verlaagd</em><%- charts.miniLine(revisionDays.map(function (d) { return d.pos - d.neg; }), { width: 200, height: 26, cls: 'light' }) %></div>
+      <div class="hk"><span>Upgrades vs downgrades (30 d)</span><strong class="up"><%= fmt.num(kpi.upgrades) %></strong> <em class="down">/ <%= fmt.num(kpi.downgrades) %></em><%- charts.miniLine(gradeDays.map(function (d) { return d.pos - d.neg; }), { width: 200, height: 26, cls: 'light' }) %></div>
+      <div class="hk"><span>Insiders kochten (30 d)</span><strong><%= fmt.money(kpi.insiderBuy) %></strong> <em class="down">verkochten <%= fmt.money(kpi.insiderSell) %></em></div>
+      <div class="hk"><span>In de database</span><strong><%= fmt.num(counts.analysts) %></strong> <em>analisten · <%= counts.funds %> fondsen</em></div>
+    </div>
+  </div>
+</section>
+
 <% if (!counts.targets && !counts.insiders) { %>
 <p class="alert info">De eerste data wordt op de achtergrond binnengehaald. Ververs over een paar minuten. Voortgang zie je op <a href="/status">Status</a>.</p>
 <% } %>
-<div class="grid2">
+
+<div class="grid3">
   <section class="card">
-    <div class="card-h"><h2>Up- en downgrades</h2><a href="/analisten?tab=ratings">Alles</a></div>
+    <div class="card-h"><h2>Topanalisten</h2><a href="/analisten" class="small">Ranglijst</a></div>
+    <% if (!top.length) { %><p class="empty">De GuruScore wordt nog berekend.</p><% } else { %>
+    <div class="stack" style="gap:10px">
+    <% top.forEach(function (a) { %>
+      <a class="id-row" href="/analist/<%= a.slug %>" style="color:inherit;text-decoration:none">
+        <%- charts.scoreRing(a.score, 42) %>
+        <div><strong><%= a.name %></strong><div class="muted small"><%= a.firm %> · trefkans <%= fmt.pct(a.hit_rate, false) %></div></div>
+      </a>
+    <% }) %>
+    </div><% } %>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Analistensentiment</h2><span class="chart-legend"><span><i class="sw-buy"></i>Upgrades</span><span><i class="sw-sell"></i>Downgrades</span></span></div>
+    <%- charts.divergingBars(gradeDays, { width: 380, height: 150, posLabel: 'upgrades', negLabel: 'downgrades' }) %>
+    <p class="small muted">Per dag, laatste 30 dagen.</p>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Insiders: kopen vs verkopen</h2><a href="/insiders" class="small">Alles</a></div>
+    <%- charts.divergingBars(insiderDays, { width: 380, height: 150, fmt: fmt.money, posLabel: 'gekocht', negLabel: 'verkocht' }) %>
+    <p class="small muted">Waarde per dag, laatste 30 dagen.</p>
+  </section>
+</div>
+
+<div class="grid2 mt">
+  <section class="card">
+    <div class="card-h"><h2>Up- en downgrades</h2><a href="/analisten?tab=ratings" class="small">Alles</a></div>
     <%- include('partials/grades', { rows: grades }) %>
   </section>
   <section class="card">
-    <div class="card-h"><h2>Nieuwe koersdoelen</h2><a href="/analisten?tab=koersdoelen">Alles</a></div>
-    <%- include('partials/targets', { rows: targets }) %>
+    <div class="card-h"><h2>Nieuwe koersdoelen</h2><a href="/analisten?tab=koersdoelen" class="small">Alles</a></div>
+    <%- include('partials/targets', { rows: activity }) %>
   </section>
   <section class="card">
-    <div class="card-h"><h2>Insider-aankopen</h2><a href="/insiders">Alles</a></div>
-    <%- include('partials/insiders', { rows: buys }) %>
-  </section>
-  <section class="card">
-    <div class="card-h"><h2>Cluster buys (30 dagen)</h2><a href="/insiders">Insiders</a></div>
+    <div class="card-h"><h2>Cluster buys (30 dagen)</h2><a href="/insiders" class="small">Insiders</a></div>
     <p class="small muted">Aandelen waar meerdere insiders tegelijk kochten.</p>
     <% if (!clusters.length) { %><p class="empty">Nog geen data.</p><% } else { %>
-    <table class="tbl"><thead><tr><th>Aandeel</th><th class="r">Insiders</th><th class="r">Waarde</th></tr></thead><tbody>
-    <% clusters.forEach(function (c) { %><tr><td><%- include('partials/sym', { s: c.symbol }) %></td><td class="r"><%= c.insiders %></td><td class="r"><%= fmt.money(c.value) %></td></tr><% }) %>
-    </tbody></table><% } %>
-    <div class="card-h mt"><h2>Favoriet bij de guru's</h2><a href="/fondsen">Fondsen</a></div>
+    <%- charts.hbars(clusters.map(function (c) { return { label: c.symbol, value: Number(c.value), display: c.insiders + ' insiders · ' + fmt.money(c.value), href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
+    <% } %>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Favoriet bij de guru's</h2><a href="/fondsen" class="small">Fondsen</a></div>
+    <p class="small muted">Meest gehouden door de gevolgde hedge funds.</p>
     <% if (!popular.length) { %><p class="empty">Nog geen 13F-data.</p><% } else { %>
-    <table class="tbl"><thead><tr><th>Aandeel</th><th class="r">Fondsen</th><th class="r">Waarde</th></tr></thead><tbody>
-    <% popular.forEach(function (p) { %><tr><td><%- include('partials/sym', { s: p.symbol }) %> <span class="muted small"><%= p.issuer %></span></td><td class="r"><%= p.funds %></td><td class="r"><%= fmt.money(p.value) %></td></tr><% }) %>
-    </tbody></table><% } %>
+    <%- charts.hbars(popular.map(function (p) { return { label: p.symbol, value: p.funds, display: p.funds + ' fondsen · ' + fmt.money(p.value), href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %>
+    <% } %>
   </section>
 </div>
 <%- include('partials/foot') %>

@@ -19,17 +19,91 @@
   <div class="stat"><span>Marktwaarde</span><strong><%= fmt.money(profile && (profile.marketCap || profile.mktCap)) %></strong></div>
 </div>
 
-<% if (history.length > 1) { %>
+<% if (gradesConsensus) { var gb = (gradesConsensus.strongBuy || 0) + (gradesConsensus.buy || 0), gh = gradesConsensus.hold || 0, gs = (gradesConsensus.sell || 0) + (gradesConsensus.strongSell || 0), gt = gb + gh + gs; %>
+<% if (gt) { %>
+<section class="card">
+  <div class="sentiment">
+    <%- charts.donut([{ value: gb, cls: 'buy', label: 'Kopen' }, { value: gh, cls: 'hold', label: 'Houden' }, { value: gs, cls: 'sell', label: 'Verkopen' }], { size: 128, thickness: 16, center: Math.round(gb / gt * 100) + '%', sub: 'kopen' }) %>
+    <div>
+      <h2>Analistensentiment: <%= gradesConsensus.consensus || '' %></h2>
+      <div class="sent-legend">
+        <span><i class="sw-buy"></i><strong><%= gb %></strong> kopen</span>
+        <span><i class="sw-hold"></i><strong><%= gh %></strong> houden</span>
+        <span><i class="sw-sell"></i><strong><%= gs %></strong> verkopen</span>
+      </div>
+    </div>
+  </div>
+</section>
+<% } } %>
+<% if (smart) { var pr = quote && Number(quote.price); var lo = Math.min(smart.low, pr || smart.low), hi = Math.max(smart.high, pr || smart.high); var pos = function (v) { return ((v - lo) / ((hi - lo) || 1) * 100).toFixed(1); }; %>
+<section class="card">
+  <div class="card-h"><h2>Consensus van <%= smart.count %> analisten</h2><a href="/methode" class="small">Hoe berekend?</a></div>
+  <div class="cons-compare">
+    <div><span class="muted small">Gewone consensus</span><strong><%= fmt.price(smart.mean) %></strong><em class="<%= fmt.tone(smart.upside) %>"><%= fmt.pct(smart.upside) %></em></div>
+    <div class="smart"><span class="muted small">Slimme consensus <span class="hint" title="Alleen analisten met een GuruScore van 70 of hoger">ⓘ</span></span>
+      <% if (smart.topMean) { %><strong><%= fmt.price(smart.topMean) %></strong><em class="<%= fmt.tone(smart.topUpside) %>"><%= fmt.pct(smart.topUpside) %> · <%= smart.topCount %> topanalist<%= smart.topCount === 1 ? '' : 'en' %></em><% } else { %><strong>–</strong><em class="muted">Geen topanalisten op dit aandeel</em><% } %></div>
+    <div><span class="muted small">Mediaan</span><strong><%= fmt.price(smart.median) %></strong><em class="muted"><%= fmt.price(smart.low) %> – <%= fmt.price(smart.high) %></em></div>
+  </div>
+  <div class="band" role="img" aria-label="Spreiding van koersdoelen">
+    <div class="band-range" style="left:<%= pos(smart.low) %>%;right:<%= (100 - pos(smart.high)) %>%"></div>
+    <% if (pr) { %><div class="band-mk band-price" style="left:<%= pos(pr) %>%"><span>Koers <%= fmt.price(pr) %></span></div><% } %>
+    <div class="band-mk band-mean" style="left:<%= pos(smart.mean) %>%"><span>Gem. <%= fmt.price(smart.mean) %></span></div>
+    <% if (smart.topMean) { %><div class="band-mk band-top" style="left:<%= pos(smart.topMean) %>%"><span>Top <%= fmt.price(smart.topMean) %></span></div><% } %>
+  </div>
+  <div class="band-ends small muted"><span>Laagste <%= fmt.price(smart.low) %></span><span>Hoogste <%= fmt.price(smart.high) %></span></div>
+</section>
+<% } %>
+
+<% if (timeline) { %>
+<section class="card chart-card" id="tijdlijn">
+  <div class="card-h"><h2>Koers en koersdoelen door de tijd</h2><span class="small legend"><i class="cons"></i>Gemiddeld koersdoel</span></div>
+  <%- timeline.svg %>
+  <div class="tl-legend">
+    <% timeline.legend.forEach(function (l) { %><label><input type="checkbox" checked data-firm="<%= l.key %>"><span class="dot" style="background:<%= l.color %>"></span><%= l.label %> <span class="muted">(<%= l.n %>)</span></label><% }) %>
+  </div>
+  <p class="small muted">Elke stip is een koersdoel. Zet banken aan of uit. Loopt de lijn van het gemiddelde koersdoel achter de koers aan, dan volgen analisten de markt eerder dan dat ze die voorspellen.</p>
+  <script>
+    document.querySelectorAll('#tijdlijn input[data-firm]').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        document.querySelectorAll('#tijdlijn .tl-dot.' + cb.dataset.firm).forEach(function (d) { d.style.display = cb.checked ? '' : 'none'; });
+      });
+    });
+  </script>
+</section>
+<% } else if (history.length > 1) { %>
 <section class="card chart-card">
-  <div class="card-h"><h2>Koers afgelopen jaar</h2><% if (consensus) { %><span class="small legend"><i class="lo"></i>Laagste doel <i class="mid"></i>Gemiddeld <i class="hi"></i>Hoogste doel</span><% } %></div>
+  <div class="card-h"><h2>Koers afgelopen jaar</h2></div>
   <%- fmt.sparkline(history, { markers: consensus ? [ { value: consensus.targetLow, label: 'Laag', cls: 'lo' }, { value: consensus.targetConsensus, label: 'Gem.', cls: 'mid' }, { value: consensus.targetHigh, label: 'Hoog', cls: 'hi' } ] : [] }) %>
 </section>
 <% } %>
 
+<% if (bull && bear) { var pr2 = quote && Number(quote.price); %>
+<section class="card">
+  <h2>Bulls versus bears</h2>
+  <div class="battle">
+    <% [['Grootste optimist', bull, 'pos'], ['Grootste pessimist', bear, 'neg']].forEach(function (b, bi) { var t = b[1]; var up = pr2 ? Number(t.price_target) / pr2 - 1 : null; %>
+    <% if (bi === 1) { %><div class="battle-vs">VS</div><% } %>
+    <div class="battle-side <%= b[2] %>">
+      <span class="muted small"><%= b[0] %></span>
+      <div class="id-row"><%- include('partials/score', { score: t.score }) %><div><% if (t.analyst_slug) { %><a class="strong" href="/analist/<%= t.analyst_slug %>"><%= t.analyst_name %></a><% } else { %><strong><%= t.analyst_name || t.analyst_firm %></strong><% } %><div class="muted small"><%= t.analyst_firm || '' %> · <%= fmt.date(t.published_at) %></div></div></div>
+      <div class="battle-target"><strong><%= fmt.price(t.price_target) %></strong> <em class="<%= fmt.tone(up) %>"><%= fmt.pct(up) %></em></div>
+    </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>
 <div class="grid2">
   <section class="card">
-    <h2>Koersdoelen van analisten</h2>
-    <%- include('partials/targets', { rows: targets, hideSymbol: true }) %>
+    <h2>Laatste analistenactiviteit</h2>
+    <% if (!activity.length) { %><p class="empty">Nog geen koersdoelen.</p><% } else { %>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Datum</th><th>Analist</th><th>Wijziging</th><th class="r">Koersdoel</th></tr></thead><tbody>
+    <% activity.forEach(function (a) { var p = Number(a.prev_target), n = Number(a.price_target); var kind = !a.prev_target ? 'Gestart' : n > p ? 'Verhoogd' : n < p ? 'Verlaagd' : 'Herhaald'; var tone = kind === 'Verhoogd' ? 'pos' : kind === 'Verlaagd' ? 'neg' : 'neutral'; %>
+      <tr><td class="muted nowrap"><%= fmt.date(a.published_at) %></td>
+      <td><div class="id-row sm"><%- include('partials/score', { score: a.score }) %><div><% if (a.analyst_slug) { %><a href="/analist/<%= a.analyst_slug %>"><%= a.analyst_name %></a><% } else { %><%= a.analyst_name || '' %><% } %><div class="muted small"><%= a.analyst_firm || '' %></div></div></div></td>
+      <td><span class="tag <%= tone %>"><%= kind %></span></td>
+      <td class="r nowrap"><% if (a.prev_target && p !== n) { %><span class="muted"><%= fmt.price(p) %></span> → <% } %><strong><%= fmt.price(n) %></strong></td></tr>
+    <% }) %>
+    </tbody></table></div><% } %>
   </section>
   <section class="card">
     <h2>Up- en downgrades</h2>
@@ -38,6 +112,14 @@
   <section class="card">
     <h2>Insider trades</h2>
     <%- include('partials/insiders', { rows: insiders, hideSymbol: true }) %>
+  </section>
+  <section class="card">
+    <h2>Wie kent <%= symbol %> het best?</h2>
+    <% if (!experts.length) { %><p class="empty">Nog niet genoeg beoordeelde adviezen op dit aandeel.</p><% } else { %>
+    <p class="small muted">Analisten gerangschikt op hun adviezen voor dít aandeel (minimaal 2).</p>
+    <table class="tbl"><thead><tr><th>Score</th><th>Analist</th><th class="r">Adviezen</th><th class="r">Trefkans</th><th class="r">Vs. S&amp;P</th></tr></thead><tbody>
+    <% experts.forEach(function (e) { %><tr><td><%- include('partials/score', { score: e.score }) %></td><td><a href="/analist/<%= e.slug %>" class="strong"><%= e.name %></a><div class="muted small"><%= e.firm %></div></td><td class="r"><%= e.calls %></td><td class="r"><%= fmt.pct(e.hit_rate, false) %></td><td class="r <%= fmt.tone(e.avg_excess) %>"><%= fmt.pct(e.avg_excess) %></td></tr><% }) %>
+    </tbody></table><% } %>
   </section>
   <section class="card">
     <h2>Gehouden door guru's</h2>

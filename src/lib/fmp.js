@@ -22,7 +22,7 @@ async function request(path, params = {}, { ttl = 5 * MIN, retries = 2 } = {}) {
   qs.set('apikey', config.fmpKey);
   const url = `${BASE}/${path}?${qs.toString()}`;
 
-  return cache.wrap(key, ttl, async () => {
+  const run = async () => {
     let lastErr;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -54,7 +54,9 @@ async function request(path, params = {}, { ttl = 5 * MIN, retries = 2 } = {}) {
       }
     }
     throw lastErr;
-  });
+  };
+  // ttl 0: niet cachen (grote reeksen voor achtergrondtaken).
+  return ttl > 0 ? cache.wrap(key, ttl, run) : run();
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -71,11 +73,15 @@ module.exports = {
   batchQuoteShort: async (symbols) => arr(await request('batch-quote-short', { symbols: symbols.join(',') }, { ttl: 1 * MIN })),
   searchSymbol: async (query) => arr(await request('search-symbol', { query, limit: 20 }, { ttl: 60 * MIN })),
   searchName: async (query) => arr(await request('search-name', { query, limit: 20 }, { ttl: 60 * MIN })),
-  historicalLight: async (symbol, from) => arr(await request('historical-price-eod/light', { symbol, from }, { ttl: 60 * MIN })),
+  historicalLight: async (symbol, from, to) => arr(await request('historical-price-eod/light', { symbol, from, to }, { ttl: 60 * MIN })),
+
+  // Voor achtergrondtaken: zonder cache
+  historyNoCache: async (symbol, from, to) => arr(await request('historical-price-eod/light', { symbol, from, to }, { ttl: 0 })),
+  priceTargetPageNoCache: async (symbol, page) => arr(await request('price-target-news', { symbol, page, limit: 100 }, { ttl: 0 })),
 
   // Analisten
   priceTargetLatest: async (page = 0, limit = 100) => arr(await request('price-target-latest-news', { page, limit }, { ttl: 2 * MIN })),
-  priceTargetNews: async (symbol, limit = 100) => arr(await request('price-target-news', { symbol, page: 0, limit }, { ttl: 30 * MIN })),
+  priceTargetNews: async (symbol, limit = 100, page = 0) => arr(await request('price-target-news', { symbol, page, limit }, { ttl: 30 * MIN })),
   priceTargetConsensus: async (symbol) => first(await request('price-target-consensus', { symbol }, { ttl: 60 * MIN })),
   priceTargetSummary: async (symbol) => first(await request('price-target-summary', { symbol }, { ttl: 60 * MIN })),
   gradesLatest: async (page = 0, limit = 100) => arr(await request('grades-latest-news', { page, limit }, { ttl: 2 * MIN })),

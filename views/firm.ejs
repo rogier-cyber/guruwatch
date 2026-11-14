@@ -1,10 +1,16 @@
 <%- include('partials/head') %>
-<h1 class="page-title"><%= firm %></h1>
+<div class="page-head">
+  <div class="id-row">
+    <%- include('partials/score', { score: guru && guru.score }) %>
+    <div><h1 class="page-title"><%= firm %></h1>
+    <p class="muted"><% if (guru) { %>Bank-score <%= Math.round(guru.score) %> · nr. <%= guru.rank %> · <%= guru.calls %> beoordeelde koersdoelen · trefkans <%= fmt.pct(guru.hit_rate, false) %> · vs. S&amp;P 500 <%= fmt.pct(guru.avg_excess) %><% } else { %>Nog geen bank-score<% } %></p></div>
+  </div>
+</div>
 <% if (leaders.length) { %>
 <section class="card">
   <h2>Analisten van <%= firm %></h2>
-  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Analist</th><th class="r">Beoordeeld</th><th class="r">Goede richting</th><th class="r">Gem. rendement</th></tr></thead><tbody>
-  <% leaders.forEach(function (a) { %><tr><td><a href="/analist/<%= a.slug %>" class="strong"><%= a.name %></a></td><td class="r"><%= a.scored %></td><td class="r"><%= fmt.pct(a.success_rate, false) %></td><td class="r <%= fmt.tone(a.avg_return) %>"><%= fmt.pct(a.avg_return) %></td></tr><% }) %>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>GuruScore</th><th>Analist</th><th class="r">Adviezen</th><th class="r">Trefkans</th><th class="r">Vs. S&amp;P 500</th></tr></thead><tbody>
+  <% leaders.forEach(function (a) { %><tr><td><%- include('partials/score', { score: a.score }) %></td><td><a href="/analist/<%= a.slug %>" class="strong"><%= a.name %></a></td><td class="r"><%= a.calls %></td><td class="r"><%= fmt.pct(a.hit_rate, false) %></td><td class="r <%= fmt.tone(a.avg_excess) %>"><%= fmt.pct(a.avg_excess) %></td></tr><% }) %>
   </tbody></table></div>
 </section>
 <% } %>
