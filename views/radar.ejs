@@ -12,6 +12,16 @@
       <h1>Analisten<b>radar</b></h1>
       <p>Waar draait het sentiment? Welke aandelen krijgen er analistenliefde bij, waar lopen koers en verwachting uit elkaar, en waar is iedereen het (te) eens?</p>
     </div>
+    <% if (tab === 'momentum') { var rdN = totals.pos + totals.neg; var rdShare = rdN ? totals.pos / rdN : 0.5; %>
+    <div class="rd-hero-kpis">
+      <div class="rd-mood"><%- viz.moodGauge(rdShare, { width: 150, label: 'Aandeel aandelen met verbeterend sentiment' }) %><div><strong><%= Math.round(rdShare * 100) %>%</strong><span>van de aandelen krijgt er analistenliefde bij</span></div></div>
+      <div class="gk-hero-kpis rd-k">
+        <div><strong class="kp-pos"><%= fmt.num(totals.pos) %></strong><span>sentiment verbetert</span></div>
+        <div><strong class="kp-neg"><%= fmt.num(totals.neg) %></strong><span>sentiment verslechtert</span></div>
+        <div><strong><%= fmt.num(herds.length) %></strong><span>kuddes deze week</span></div>
+      </div>
+    </div>
+    <% } %>
   </div>
 </section>
 
@@ -47,13 +57,6 @@
 <% if (tab === 'momentum') { %>
   <div class="filters">
     <% [7, 30, 90].forEach(function (d) { %><a href="<%= qs({ dagen: d }) %>" class="<%= days === d ? 'on' : '' %>"><%= d %> dagen</a><% }) %>
-  </div>
-  <div class="stats">
-    <div class="stat"><span>Sentiment verbetert</span><strong class="pos"><%= fmt.num(totals.pos) %></strong><em class="small muted">aandelen, laatste <%= days %> d</em></div>
-    <div class="stat"><span>Sentiment verslechtert</span><strong class="neg"><%= fmt.num(totals.neg) %></strong><em class="small muted">aandelen</em></div>
-    <div class="stat"><span>Kuddegedrag deze week</span><strong><%= fmt.num(herds.length) %></strong><em class="small muted">3+ analisten dezelfde kant op</em></div>
-    <div class="stat"><span>Verhouding</span><strong><%= totals.pos + totals.neg ? Math.round(100 * totals.pos / (totals.pos + totals.neg)) : 0 %>%</strong><em class="small muted">positief</em>
-      <span class="rd-ratio"><i style="width:<%= totals.pos + totals.neg ? (100 * totals.pos / (totals.pos + totals.neg)).toFixed(1) : 50 %>%"></i></span></div>
   </div>
 
   <% if (sectorHeat.length) { %>

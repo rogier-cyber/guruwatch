@@ -75,7 +75,7 @@ function analystMap(points, { width = 920, height = 420, labels = 8 } = {}) {
     return `<a href="${esc(p.href || '#')}"><circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${r.toFixed(1)}" class="am-dot${top.has(p) ? ' top' : ''}" style="fill:${fill}"><title>${esc(t)}</title></circle></a>`;
   }).join('');
   // Namen bij de beste analisten, maar alleen waar ze niet over een ander label vallen.
-  const placed = [];
+  const placed = [{ x0: pad.l + W - 190, x1: pad.l + W, y0: pad.t, y1: pad.t + 22 }, { x0: pad.l, x1: pad.l + 170, y0: pad.t + H - 22, y1: pad.t + H }];
   const lbls = narrow ? '' : [...top].map((p) => {
     const r = R(p.calls);
     const right = X(p.x) > pad.l + W * 0.8;
