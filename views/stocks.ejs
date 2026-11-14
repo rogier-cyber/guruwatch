@@ -68,7 +68,7 @@
             <td class="muted nowrap"><%= fmt.dateTime(a.date) %></td>
             <td><%- ui.stock(a.symbol, a.name) %></td>
             <td><span class="act act-<%= a.action.tone %>"><%= a.action.label %></span></td>
-            <td><%= a.firm || '' %><% if (a.analyst) { %><div class="muted small"><%= a.analyst %></div><% } %></td>
+            <td><span class="an-n"><%= a.firm || '' %></span><% if (a.analyst) { %><div class="muted small"><%= a.analyst %></div><% } %></td>
             <td class="nowrap <%= gt %>"><% if (a.to_grade) { %><% if (a.from_grade) { %><span class="muted"><%= a.from_grade %></span> → <% } %><%= a.to_grade %><% } else { %><span class="muted">–</span><% } %></td>
             <td class="r nowrap"><% if (a.to_target) { %><% if (a.from_target) { %><span class="muted"><%= fmt.price(a.from_target) %></span> → <% } %><strong><%= fmt.price(a.to_target) %></strong><% } else { %>–<% } %></td>
             <td class="r nowrap <%= fmt.tone(a.upside) %>"><%= fmt.pct(a.upside) %></td>

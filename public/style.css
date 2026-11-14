@@ -606,6 +606,13 @@ a.plain { color: inherit; }
 .ff-dot { stroke: var(--card); stroke-width: 1.5; cursor: pointer; fill-opacity: .85; }
 .ff-dot.pos { fill: var(--pos); } .ff-dot.neg { fill: var(--neg); }
 .ff-dot:hover { r: 7; fill-opacity: 1; }
+/* Analistenacties: compact, namen opvallend */
+.tbl.acts { width: auto; max-width: 100%; }
+.tbl.acts th, .tbl.acts td { padding: 6px 22px 6px 6px; }
+.tbl.acts th:last-child, .tbl.acts td:last-child { padding-right: 6px; }
+.acts .an-n { font-size: 15px; font-weight: 750; color: var(--navy); letter-spacing: -.01em; }
+.acts a.an-n:hover { color: var(--red); text-decoration: none; }
+@media (prefers-color-scheme: dark) { .acts .an-n { color: var(--text); } }
 @media (max-width: 640px) {
   .acts { min-width: 600px; }
   .acts .ring { display: none; }
@@ -616,7 +623,10 @@ a.plain { color: inherit; }
 .crumbs a { color: var(--muted); }
 .crumbs a:hover { color: var(--accent); }
 .crumbs [aria-current] { color: var(--text); font-weight: 600; }
-.h1-k { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--red); margin-bottom: 2px; }
+/* Woord "Aandeel" blijft in de h1 voor zoekmachines, maar is niet zichtbaar. */
+.h1-k { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.page-head h1, .page-head .page-title { margin-bottom: 2px; }
+.page-head h1 + p, .page-head .page-title + p { margin-top: 0; }
 .qbar { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; padding: 10px 14px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: 12px; }
 .qbar-k { font-size: 12px; font-weight: 800; color: var(--navy); white-space: nowrap; }
 .qbar-list { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -636,7 +646,6 @@ a.plain { color: inherit; }
   .qbar { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 12px; }
   .qbar-list { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
   .faq-grid { grid-template-columns: 1fr; }
-  .h1-k { font-size: 11px; }
 }
 
 /* ===== Designpass: aandeelcel, persoonscel, strakke tabellen ===== */
@@ -1075,3 +1084,6 @@ a.sc:hover b { color: var(--accent); }
   .cm-feed { grid-template-columns: 1fr; }
   .cm-who em { max-width: 130px; }
 }
+
+.more-btn { display: block; width: 100%; margin-top: 10px; font: inherit; font-weight: 650; font-size: 14px; color: var(--accent); background: var(--neutral-soft); border: 0; border-radius: 10px; padding: 9px; cursor: pointer; }
+.more-btn:hover { background: var(--accent-soft); }

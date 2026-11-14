@@ -123,7 +123,8 @@ async function firmStats(limit = 40) {
 const INSIDER_TYPES = { buy: "transaction_type ILIKE 'P-%'", sell: "transaction_type ILIKE 'S-%'" };
 
 async function latestInsiders({ limit = 100, type, symbol, cik, minValue } = {}) {
-  const where = [];
+  // Alleen echte transacties: geen Form 3-standen (aantal 0) en geen datums na de melding.
+  const where = ['securities_transacted > 0', '(filing_date IS NULL OR transaction_date <= filing_date::date + 3)', 'transaction_date <= current_date'];
   const params = [];
   if (INSIDER_TYPES[type]) where.push(INSIDER_TYPES[type]);
   if (symbol) {
@@ -142,7 +143,7 @@ async function latestInsiders({ limit = 100, type, symbol, cik, minValue } = {})
   return db.many(
     `SELECT *, (securities_transacted * price) AS value FROM insider_trades
      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-     ORDER BY coalesce(filing_date, transaction_date::timestamptz) DESC, id DESC LIMIT $${params.length}`,
+     ORDER BY transaction_date DESC, filing_date DESC NULLS LAST, id DESC LIMIT $${params.length}`,
     params
   );
 }
