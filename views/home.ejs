@@ -1,0 +1,33 @@
+<%- include('partials/head') %>
+<h1 class="page-title">Overzicht</h1>
+<% if (!counts.targets && !counts.insiders) { %>
+<p class="alert info">De eerste data wordt op de achtergrond binnengehaald. Ververs over een paar minuten. Voortgang zie je op <a href="/status">Status</a>.</p>
+<% } %>
+<div class="grid2">
+  <section class="card">
+    <div class="card-h"><h2>Up- en downgrades</h2><a href="/analisten?tab=ratings">Alles</a></div>
+    <%- include('partials/grades', { rows: grades }) %>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Nieuwe koersdoelen</h2><a href="/analisten?tab=koersdoelen">Alles</a></div>
+    <%- include('partials/targets', { rows: targets }) %>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Insider-aankopen</h2><a href="/insiders">Alles</a></div>
+    <%- include('partials/insiders', { rows: buys }) %>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Cluster buys (30 dagen)</h2><a href="/insiders">Insiders</a></div>
+    <p class="small muted">Aandelen waar meerdere insiders tegelijk kochten.</p>
+    <% if (!clusters.length) { %><p class="empty">Nog geen data.</p><% } else { %>
+    <table class="tbl"><thead><tr><th>Aandeel</th><th class="r">Insiders</th><th class="r">Waarde</th></tr></thead><tbody>
+    <% clusters.forEach(function (c) { %><tr><td><%- include('partials/sym', { s: c.symbol }) %></td><td class="r"><%= c.insiders %></td><td class="r"><%= fmt.money(c.value) %></td></tr><% }) %>
+    </tbody></table><% } %>
+    <div class="card-h mt"><h2>Favoriet bij de guru's</h2><a href="/fondsen">Fondsen</a></div>
+    <% if (!popular.length) { %><p class="empty">Nog geen 13F-data.</p><% } else { %>
+    <table class="tbl"><thead><tr><th>Aandeel</th><th class="r">Fondsen</th><th class="r">Waarde</th></tr></thead><tbody>
+    <% popular.forEach(function (p) { %><tr><td><%- include('partials/sym', { s: p.symbol }) %> <span class="muted small"><%= p.issuer %></span></td><td class="r"><%= p.funds %></td><td class="r"><%= fmt.money(p.value) %></td></tr><% }) %>
+    </tbody></table><% } %>
+  </section>
+</div>
+<%- include('partials/foot') %>

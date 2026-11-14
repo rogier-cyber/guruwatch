@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> · Guruwatch</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="/"><span class="logo-mark">G</span>Guruwatch</a>
+    <% if (user) { %>
+    <nav class="nav">
+      <a href="/analisten" class="<%= path.startsWith('/analist') || path.startsWith('/bank') ? 'on' : '' %>">Analisten</a>
+      <a href="/insiders" class="<%= path.startsWith('/insider') ? 'on' : '' %>">Insiders</a>
+      <a href="/fondsen" class="<%= path.startsWith('/fonds') ? 'on' : '' %>">Hedge funds</a>
+      <a href="/volglijst" class="<%= path === '/volglijst' ? 'on' : '' %>">Volglijst</a>
+    </nav>
+    <form class="search" action="/zoek" method="get" role="search">
+      <input name="q" placeholder="Zoek aandeel, analist of fonds" value="<%= path === '/zoek' ? (query.q || '') : '' %>" aria-label="Zoeken">
+    </form>
+    <form action="/logout" method="post" class="logout"><button class="link" title="<%= user.email %>">Uitloggen</button></form>
+    <% } %>
+  </div>
+</header>
+<main class="wrap">

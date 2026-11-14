@@ -1,0 +1,22 @@
+<%- include('partials/head') %>
+<section class="login">
+  <h1>Inloggen bij Guruwatch</h1>
+  <p class="muted">Volg wat analisten, insiders en de bekendste hedge funds doen.</p>
+  <% if (error) { %><p class="alert"><%= error %></p><% } %>
+  <% if (step === 'email') { %>
+  <form method="post" action="/login" class="card form">
+    <label>E-mailadres<input type="email" name="email" value="<%= email %>" required autofocus autocomplete="email"></label>
+    <input type="hidden" name="next" value="<%= next %>">
+    <button class="btn btn-primary">Stuur inlogcode</button>
+  </form>
+  <% } else { %>
+  <form method="post" action="/login/code" class="card form">
+    <p>We hebben een code gestuurd naar <strong><%= email %></strong>.</p>
+    <label>Code<input name="code" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" required autofocus autocomplete="one-time-code" class="code"></label>
+    <input type="hidden" name="email" value="<%= email %>"><input type="hidden" name="next" value="<%= next %>">
+    <button class="btn btn-primary">Inloggen</button>
+    <p class="small muted">Geen mail ontvangen? Kijk in je spam of <a href="/login">vraag een nieuwe code aan</a>.</p>
+  </form>
+  <% } %>
+</section>
+<%- include('partials/foot') %>

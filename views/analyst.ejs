@@ -1,0 +1,28 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <div>
+    <h1 class="page-title"><%= analyst.name %></h1>
+    <p class="muted"><% if (analyst.firm) { %><a href="/bank/<%= encodeURIComponent(analyst.firm) %>"><%= analyst.firm %></a> · <% } %><%= targets.length %> koersdoelen · <%= symbols.length %> aandelen</p>
+  </div>
+  <%- include('partials/watch', { kind: 'analyst', ref: analyst.slug, watched: watched }) %>
+</div>
+<div class="stats">
+  <div class="stat"><span>Beoordeeld</span><strong><%= score && score.scored || 0 %></strong></div>
+  <div class="stat"><span>Goede richting</span><strong><%= fmt.pct(score && score.success_rate, false) %></strong></div>
+  <div class="stat"><span>Doel gehaald</span><strong><%= fmt.pct(score && score.hit_rate, false) %></strong></div>
+  <div class="stat"><span>Gem. rendement</span><strong class="<%= fmt.tone(score && score.avg_return) %>"><%= fmt.pct(score && score.avg_return) %></strong></div>
+</div>
+<section class="card">
+  <h2>Koersdoelen</h2>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Datum</th><th>Aandeel</th><th class="r">Koersdoel</th><th class="r">Koers toen</th><th class="r">Koers nu</th><th class="r">Sindsdien</th><th>Uitkomst</th></tr></thead>
+    <tbody>
+    <% targets.forEach(function (t) { var s = t.score; %>
+      <tr><td class="muted nowrap"><%= fmt.date(t.published_at) %></td><td><%- include('partials/sym', { s: t.symbol }) %></td>
+      <td class="r strong"><%= fmt.price(t.price_target) %></td><td class="r"><%= fmt.price(t.price_when_posted) %></td><td class="r"><%= fmt.price(t.current_price) %></td>
+      <td class="r <%= s ? fmt.tone(s.realized) : '' %>"><%= s ? fmt.pct(s.realized) : '–' %></td>
+      <td><% if (s) { %><span class="tag <%= s.hit ? 'pos' : (s.correct ? 'neutral' : 'neg') %>"><%= s.hit ? 'Doel gehaald' : (s.correct ? 'Goede richting' : 'Verkeerde richting') %></span><% } %></td></tr>
+    <% }) %>
+    </tbody></table></div>
+</section>
+<%- include('partials/foot') %>
