@@ -1,0 +1,124 @@
+<%- include('partials/head') %>
+<%
+  const esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  const stockCell = function (r) {
+    return '<a class="sym" href="/aandeel/' + encodeURIComponent(r.symbol) + '">' + esc(r.symbol) + '</a>' + (watched.has(r.symbol) ? ' <span class="star" title="Je volgt dit aandeel">★</span>' : '') + (r.name ? ' <span class="muted small rd-name">' + esc(r.name) + '</span>' : '');
+  };
+  const dayName = function (d) { return new Intl.DateTimeFormat('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(d + 'T00:00:00Z')); };
+%>
+<section class="hero hero-sm">
+  <div class="hero-in">
+    <div>
+      <h1>Kwartaal<b>cijfers</b></h1>
+      <p>Wanneer rapporteren de bedrijven, hoe reageerde de koers, en wie paste als eerste zijn koersdoel aan?</p>
+    </div>
+  </div>
+</section>
+
+<nav class="tabs">
+  <a href="?tab=kalender" class="<%= tab === 'kalender' ? 'on' : '' %>">Kalender</a>
+  <a href="?tab=reacties" class="<%= tab === 'reacties' ? 'on' : '' %>">Reacties na cijfers</a>
+  <a href="?tab=herzieningen" class="<%= tab === 'herzieningen' ? 'on' : '' %>">Winstherzieningen</a>
+</nav>
+
+<% if (tab === 'kalender') { %>
+  <div class="filters">
+    <a href="?tab=kalender" class="<%= !only ? 'on' : '' %>">Alle aandelen</a>
+    <a href="?tab=kalender&mijn=1" class="<%= only ? 'on' : '' %>">Alleen die ik volg</a>
+  </div>
+  <% if (!days.length) { %><section class="card"><p class="empty"><%= only ? 'Geen cijfers van aandelen die je volgt in de komende drie weken.' : 'De cijferkalender wordt nog opgehaald.' %></p></section><% } %>
+  <div class="cal">
+  <% days.forEach(function (d) { %>
+    <section class="card cal-day">
+      <div class="card-h"><h2><%= dayName(d.date) %></h2><span class="small muted"><%= d.list.length %> <%= d.list.length === 1 ? 'bedrijf' : 'bedrijven' %></span></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Aandeel</th><th>Beurswaarde</th><th>Verwachte winst/aandeel</th><th>Verwachte omzet</th><th>Analisten</th><th>Potentieel</th></tr></thead><tbody>
+      <% d.list.slice(0, 40).forEach(function (r) { const up = r.target && r.price ? r.target / r.price - 1 : null; %>
+        <tr class="<%= watched.has(r.symbol) ? 'row-mine' : '' %>"><td><%- stockCell(r) %></td><td><%= fmt.money(r.market_cap) %></td><td><%= r.eps_estimated == null ? '–' : fmt.price(r.eps_estimated) %></td><td><%= fmt.money(r.revenue_estimated) %></td><td><%= r.analysts || '–' %></td><td class="<%= fmt.tone(up) %>"><%= fmt.pct(up) %></td></tr>
+      <% }) %>
+      </tbody></table></div>
+      <% if (d.list.length > 40) { %><p class="small muted">En nog <%= d.list.length - 40 %> kleinere bedrijven.</p><% } %>
+    </section>
+  <% }) %>
+  </div>
+<% } %>
+
+<% if (tab === 'reacties') { %>
+  <div class="filters">
+    <% [7, 30, 90].forEach(function (d) { %><a href="?tab=reacties&dagen=<%= d %>" class="<%= period === d ? 'on' : '' %>"><%= d %> dagen</a><% }) %>
+  </div>
+  <div class="stats">
+    <div class="stat"><span>Bedrijven met cijfers</span><strong><%= fmt.num(stats.reported) %></strong></div>
+    <div class="stat"><span>Verslaat de winstverwachting</span><strong class="pos"><%= fmt.pct(stats.beatRate, false) %></strong></div>
+    <div class="stat"><span>Gem. koersreactie</span><strong class="<%= fmt.tone(stats.avgReaction) %>"><%= fmt.pct(stats.avgReaction) %></strong><em class="small muted">dag ervoor tot dag erna</em></div>
+    <div class="stat"><span>Gem. koersdoelherziening</span><strong class="<%= fmt.tone(stats.avgRevision) %>"><%= fmt.pct(stats.avgRevision) %></strong><em class="small muted">binnen 10 dagen</em></div>
+  </div>
+  <section class="card">
+    <div class="card-h"><h2>Koersreactie versus koersdoelherziening</h2><span class="small muted"><%= scored.length %> bedrijven met 2+ herzieningen</span></div>
+    <% if (!scored.length) { %><p class="empty">Nog te weinig cijfers met koersen en herzieningen in deze periode.</p><% } else { %>
+    <%- charts.scatter(scored.map(function (r) {
+      const hot = r.verdict && (r.verdict.key === 'koers-omlaag-doelen-omhoog' || r.verdict.key === 'koers-omhoog-doelen-omlaag');
+      return { x: r.reaction, y: r.avg_change, label: r.symbol, href: '/aandeel/' + encodeURIComponent(r.symbol) + '/cijfers/' + r.date, tone: hot ? 'hot ' + (r.verdict.key === 'koers-omlaag-doelen-omhoog' ? 'doelen-stijgen' : 'doelen-dalen') : '',
+        title: r.symbol + ' — koers ' + fmt.pct(r.reaction) + ', koersdoel ' + fmt.pct(r.avg_change) + ' (' + r.revisions + ' herzieningen)' };
+    }), { xLabel: 'Koersreactie op de cijfers', yLabel: 'Gemiddelde koersdoelherziening', quadrants: ['Koers omlaag, doelen omhoog', 'Beide omhoog', 'Beide omlaag', 'Koers omhoog, doelen omlaag'], clampAt: 0.4 }) %>
+    <p class="small muted">Op de diagonaal reageren koers en analisten even sterk. Klik op een stip voor de Earnings Reaction Monitor van dat bedrijf.</p>
+    <% } %>
+  </section>
+  <div class="grid2">
+    <section class="card">
+      <div class="card-h"><h2><span class="sig sig-doelen-stijgen"></span>Koers omlaag, analisten omhoog</h2></div>
+      <p class="small muted">De markt strafte de cijfers af, maar analisten verhoogden hun koersdoel.</p>
+      <% if (!groups.up.length) { %><p class="empty">Nu geen bedrijven in deze groep.</p><% } else { %>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Aandeel</th><th>Koers</th><th>Koersdoel</th><th></th></tr></thead><tbody>
+      <% groups.up.forEach(function (r) { %><tr><td><%- stockCell(r) %></td><td class="neg"><%= fmt.pct(r.reaction) %></td><td class="pos"><%= fmt.pct(r.avg_change) %></td><td><a class="small" href="/aandeel/<%= encodeURIComponent(r.symbol) %>/cijfers/<%= r.date %>">Details</a></td></tr><% }) %>
+      </tbody></table></div><% } %>
+    </section>
+    <section class="card">
+      <div class="card-h"><h2><span class="sig sig-doelen-dalen"></span>Koers omhoog, analisten omlaag</h2></div>
+      <p class="small muted">De koers steeg op de cijfers, maar analisten verlaagden hun koersdoel.</p>
+      <% if (!groups.down.length) { %><p class="empty">Nu geen bedrijven in deze groep.</p><% } else { %>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Aandeel</th><th>Koers</th><th>Koersdoel</th><th></th></tr></thead><tbody>
+      <% groups.down.forEach(function (r) { %><tr><td><%- stockCell(r) %></td><td class="pos"><%= fmt.pct(r.reaction) %></td><td class="neg"><%= fmt.pct(r.avg_change) %></td><td><a class="small" href="/aandeel/<%= encodeURIComponent(r.symbol) %>/cijfers/<%= r.date %>">Details</a></td></tr><% }) %>
+      </tbody></table></div><% } %>
+    </section>
+  </div>
+  <section class="card">
+    <div class="card-h"><h2>Alle cijfers</h2><span class="small muted">nieuwste eerst</span></div>
+    <% if (!rows.length) { %><p class="empty">Nog geen gerapporteerde cijfers in deze periode.</p><% } else { %>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Datum</th><th>Aandeel</th><th>Winst vs verwachting</th><th>Omzet vs verwachting</th><th>Koersreactie</th><th>Doelen ▲/▼</th><th>Gem. herziening</th><th></th></tr></thead><tbody>
+    <% rows.forEach(function (r) { %>
+      <tr><td><%= fmt.date(r.date) %></td><td><%- stockCell(r) %></td>
+        <td class="<%= fmt.tone(r.surprise) %>"><%= fmt.pct(r.surprise) %></td>
+        <td class="<%= fmt.tone(r.revSurprise) %>"><%= fmt.pct(r.revSurprise) %></td>
+        <td class="<%= fmt.tone(r.reaction) %>"><b><%= fmt.pct(r.reaction) %></b></td>
+        <td><span class="pos">▲<%= r.raises %></span> <span class="neg">▼<%= r.cuts %></span></td>
+        <td class="<%= fmt.tone(r.avg_change) %>"><%= fmt.pct(r.avg_change) %></td>
+        <td><a class="small" href="/aandeel/<%= encodeURIComponent(r.symbol) %>/cijfers/<%= r.date %>">Monitor</a></td></tr>
+    <% }) %>
+    </tbody></table></div><% } %>
+  </section>
+<% } %>
+
+<% if (tab === 'herzieningen') { %>
+  <div class="filters">
+    <% [7, 30, 90].forEach(function (d) { %><a href="?tab=herzieningen&dagen=<%= d %>" class="<%= period === d ? 'on' : '' %>"><%= d %> dagen</a><% }) %>
+  </div>
+  <% if (!total) { %>
+  <section class="card">
+    <h2>Winstherzieningen bouwen zich op</h2>
+    <p>FMP geeft alleen de huidige winstverwachting, geen historie. Daarom slaat Guruwatch elke dag zelf een momentopname op<% if (span && span.first) { %> (sinds <%= fmt.date(span.first) %>, <%= span.days %> dag<%= span.days === 1 ? '' : 'en' %>)<% } %>. Na <%= period %> dagen zie je hier welke bedrijven hun winstverwachting zien stijgen of dalen.</p>
+  </section>
+  <% } else { %>
+  <div class="grid2">
+    <% [['Winstverwachting omhoog', ups, 'pos'], ['Winstverwachting omlaag', downs, 'neg']].forEach(function (b) { %>
+    <section class="card">
+      <div class="card-h"><h2><span class="dot-<%= b[2] %>"></span><%= b[0] %></h2><span class="small muted">volgend boekjaar</span></div>
+      <% if (!b[1].length) { %><p class="empty">Geen bedrijven.</p><% } else { %>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Aandeel</th><th>Winst/aandeel nu</th><th>Was</th><th>Wijziging</th></tr></thead><tbody>
+      <% b[1].forEach(function (r) { %><tr><td><%- stockCell(r) %></td><td><%= fmt.price(r.eps_now) %></td><td class="muted"><%= fmt.price(r.eps_then) %></td><td class="<%= b[2] %>"><span class="rd-gap"><i class="<%= b[2] %>" style="width:<%= Math.min(100, Math.abs(r.change) * 400).toFixed(0) %>%"></i></span><b><%= fmt.pct(r.change) %></b></td></tr><% }) %>
+      </tbody></table></div><% } %>
+    </section>
+    <% }) %>
+  </div>
+  <% } %>
+<% } %>
+<%- include('partials/foot') %>

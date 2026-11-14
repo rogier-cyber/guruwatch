@@ -8,7 +8,10 @@ const eodhd = require('../lib/eodhd');
 const ingest = require('../ingest');
 const { consensus: calcConsensus, computeScores } = require('../lib/scoring');
 const { targetTimeline } = require('../lib/charts');
+const fmt = require('../lib/format');
 const rq = require('../lib/radarQueries');
+const eq = require('../lib/earningsQueries');
+const er = require('../lib/earnings');
 const radar = require('../lib/radar');
 
 const router = express.Router();
@@ -178,13 +181,15 @@ router.get('/aandeel/:symbol', wrap(async (req, res) => {
 
   // Analistenkern: consensus, bulls vs bears, beste analisten, tijdlijn, activiteit.
   const since = new Date(Date.now() - 3 * 365 * 864e5).toISOString().slice(0, 10);
-  const [latest, activity, stats, timelineTargets, dbSeries, ratingRows] = await Promise.all([
+  const [latest, activity, stats, timelineTargets, dbSeries, ratingRows, earningsRows, nextEarn] = await Promise.all([
     q.latestTargetPerAnalyst(symbol),
     q.targetActivity(symbol, 25),
     q.symbolAnalystStats(symbol),
     q.targetTimeline(symbol, since),
     q.priceSeries(symbol, since),
     safe(rq.ratingHistory(symbol), []),
+    safe(eq.reactions({ symbol, limit: 8 }), []),
+    safe(eq.nextEarnings(symbol)),
   ]);
   // Adviesverdeling door de tijd: uit de database, anders direct van FMP.
   let ratingTrend = ratingRows;
@@ -218,6 +223,8 @@ router.get('/aandeel/:symbol', wrap(async (req, res) => {
   const timeline = targetTimeline(series, timelineTargets);
   res.render('stock', {
     ratingTrend,
+    earningsHist: earningsRows.map(withReaction).reverse().map((h) => ({ ...h, label: er.quarterLabel(h.date) })),
+    nextEarn,
     title: profile ? `${profile.companyName} (${symbol})` : symbol,
     symbol,
     profile,
@@ -352,6 +359,96 @@ router.post('/volg', wrap(async (req, res) => {
   await q.toggleWatch(req.user.id, kind, kind === 'stock' ? ref.toUpperCase() : ref);
   const back = String(req.body.back || '/volglijst');
   res.redirect(back.startsWith('/') && !back.startsWith('//') ? back : '/volglijst');
+}));
+
+// ---------- Cijfers ----------
+const withReaction = (r) => {
+  const reaction = r.price_before > 0 && r.price_after > 0 ? r.price_after / r.price_before - 1 : null;
+  return { ...r, surprise: er.surprise(r.eps_actual, r.eps_estimated), revSurprise: er.surprise(r.revenue_actual, r.revenue_estimated), reaction, verdict: er.verdict(reaction, r.avg_change) };
+};
+
+router.get('/cijfers', wrap(async (req, res) => {
+  const tab = ['kalender', 'reacties', 'herzieningen'].includes(req.query.tab) ? req.query.tab : 'kalender';
+  const data = { tab };
+  const watched = req.user ? (await q.watchlist(req.user.id)).filter((i) => i.kind === 'stock').map((i) => i.ref) : [];
+  data.watched = new Set(watched);
+  if (tab === 'kalender') {
+    const only = req.query.mijn === '1';
+    const rows = await eq.upcoming({ days: 21, symbols: only ? watched : null });
+    const days = new Map();
+    for (const r of rows) {
+      if (!days.has(r.date)) days.set(r.date, []);
+      days.get(r.date).push(r);
+    }
+    Object.assign(data, { only, days: [...days.entries()].map(([date, list]) => ({ date, list })), count: rows.length });
+  }
+  if (tab === 'reacties') {
+    const period = [7, 30, 90].includes(Number(req.query.dagen)) ? Number(req.query.dagen) : 30;
+    const rows = (await eq.reactions({ days: period })).map(withReaction);
+    const scored = rows.filter((r) => r.reaction !== null && r.avg_change !== null && r.revisions >= 2);
+    const group = (k) => scored.filter((r) => r.verdict && r.verdict.key === k).sort((a, b) => Math.abs(b.reaction - b.avg_change) - Math.abs(a.reaction - a.avg_change)).slice(0, 12);
+    const beats = rows.filter((r) => r.surprise !== null);
+    Object.assign(data, {
+      period,
+      rows: rows.slice(0, 150),
+      scored,
+      groups: { up: group('koers-omlaag-doelen-omhoog'), down: group('koers-omhoog-doelen-omlaag') },
+      stats: {
+        reported: rows.length,
+        beatRate: beats.length ? beats.filter((r) => r.surprise > 0).length / beats.length : null,
+        avgReaction: scored.length ? scored.reduce((s2, r) => s2 + r.reaction, 0) / scored.length : null,
+        avgRevision: scored.length ? scored.reduce((s2, r) => s2 + r.avg_change, 0) / scored.length : null,
+      },
+    });
+  }
+  if (tab === 'herzieningen') {
+    const period = [7, 30, 90].includes(Number(req.query.dagen)) ? Number(req.query.dagen) : 30;
+    const [rows, span] = await Promise.all([eq.epsRevisions({ days: period }), eq.snapshotSpan()]);
+    const valid = rows.filter((r) => Number.isFinite(r.change) && Math.abs(r.change) < 2);
+    Object.assign(data, {
+      period,
+      span,
+      ups: valid.filter((r) => r.change > 0.001).sort((a, b) => b.change - a.change).slice(0, 25),
+      downs: valid.filter((r) => r.change < -0.001).sort((a, b) => a.change - b.change).slice(0, 25),
+      total: valid.length,
+    });
+  }
+  res.render('earnings', { title: 'Cijfers', ...data });
+}));
+
+router.get('/aandeel/:symbol/cijfers/:date', wrap(async (req, res) => {
+  const symbol = String(req.params.symbol).toUpperCase();
+  const date = String(req.params.date);
+  if (!SYMBOL_RE.test(symbol) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Onbekend cijfermoment.' });
+  const [row, revisions, history, stats, company] = await Promise.all([
+    eq.earningsRow(symbol, date),
+    eq.eventRevisions(symbol, date),
+    eq.reactions({ symbol, limit: 12 }),
+    q.symbolAnalystStats(symbol),
+    db.one('SELECT name, sector FROM companies WHERE symbol = $1', [symbol]),
+  ]);
+  if (!row) return res.status(404).render('error', { title: 'Niet gevonden', message: `Geen cijfers van ${symbol} op ${date}.` });
+  const ev = withReaction(history.find((h) => h.date === date) || { ...row });
+  const summary = er.summarizeRevisions(revisions);
+  // Wie voorspelde dit aandeel historisch het best?
+  const groups = new Map();
+  const meta = new Map();
+  for (const r of stats) {
+    const k = String(r.analyst_id);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+    meta.set(k, { slug: r.slug, name: r.name, firm: r.firm });
+  }
+  const experts = computeScores(groups).filter((x) => x.calls >= 2).slice(0, 6).map((x) => ({ ...x, ...meta.get(x.ref) }));
+  const from = new Date(new Date(date).getTime() - 45 * 864e5).toISOString().slice(0, 10);
+  const to = new Date(new Date(date).getTime() + 45 * 864e5).toISOString().slice(0, 10);
+  const [series, around] = await Promise.all([
+    db.many('SELECT date::text AS date, close::float8 AS close FROM prices WHERE symbol = $1 AND date BETWEEN $2 AND $3 ORDER BY date', [symbol, from, to]),
+    q.targetTimeline(symbol, from),
+  ]);
+  const timeline = targetTimeline(series, around.filter((t) => new Date(t.published_at) <= new Date(to)), { markers: [{ date, label: 'Cijfers' }], height: 300 });
+  const hist = history.map(withReaction).reverse().map((h) => ({ ...h, label: er.quarterLabel(h.date) }));
+  res.render('earnings-event', { title: `${symbol} cijfers ${fmt.date(date)}`, symbol, date, company, ev, revisions, summary, experts, timeline, hist });
 }));
 
 // ---------- Radar ----------

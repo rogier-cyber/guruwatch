@@ -20,6 +20,7 @@
     <nav class="nav">
       <a href="/analisten" class="<%= path.startsWith('/analist') || path.startsWith('/bank') ? 'on' : '' %>">Analisten</a>
       <a href="/radar" class="<%= path === '/radar' ? 'on' : '' %>">Radar</a>
+      <a href="/cijfers" class="<%= path === '/cijfers' || path.indexOf('/cijfers/') > 0 ? 'on' : '' %>">Cijfers</a>
       <a href="/insiders" class="<%= path.startsWith('/insider') ? 'on' : '' %>">Insiders</a>
       <a href="/fondsen" class="<%= path.startsWith('/fonds') ? 'on' : '' %>">Hedge funds</a>
       <a href="/mijn" class="<%= path.startsWith('/mijn') ? 'on' : '' %>">Mijn GuruWatch<% if (locals.unread) { %> <span class="badge"><%= unread > 99 ? '99+' : unread %></span><% } %></a>

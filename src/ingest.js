@@ -145,6 +145,11 @@ async function refreshRadar(opts) {
   return job('radar', () => radar.runRadar(opts));
 }
 
+async function refreshEarnings() {
+  const earnings = require('./earnings');
+  return job('earnings', () => earnings.runEarnings());
+}
+
 async function refreshAlerts() {
   const alerts = require('./alerts');
   return job('alerts', () => alerts.runAlerts());
@@ -170,7 +175,9 @@ function startScheduler() {
     await refreshFunds();
     await refreshScores();
     await refreshRadar();
+    await refreshEarnings();
   }, 5000);
+  setInterval(refreshEarnings, 3 * 60 * min);
   setInterval(refreshRadar, 60 * min);
   // Ochtendbriefing: elke 5 minuten kijken of het 08:00 (Amsterdam) is geweest.
   setInterval(briefings, 5 * min);
@@ -180,7 +187,7 @@ function startScheduler() {
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
+module.exports = { refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
 
 if (require.main === module) {
   (async () => {
