@@ -10,7 +10,8 @@
       <div class="hk"><span>Koersdoelen verhoogd (30 d)</span><strong><%= fmt.num(kpi.raised) %></strong> <em class="down">/ <%= fmt.num(kpi.lowered) %> verlaagd</em><%- charts.miniLine(revisionDays.map(function (d) { return d.pos - d.neg; }), { width: 200, height: 26, cls: 'light' }) %></div>
       <div class="hk"><span>Upgrades vs downgrades (30 d)</span><strong class="up"><%= fmt.num(kpi.upgrades) %></strong> <em class="down">/ <%= fmt.num(kpi.downgrades) %></em><%- charts.miniLine(gradeDays.map(function (d) { return d.pos - d.neg; }), { width: 200, height: 26, cls: 'light' }) %></div>
       <div class="hk"><span>Insiders kochten (30 d)</span><strong><%= fmt.money(kpi.insiderBuy) %></strong> <em class="down">verkochten <%= fmt.money(kpi.insiderSell) %></em></div>
-      <div class="hk"><span>In de database</span><strong><%= fmt.num(counts.analysts) %></strong> <em>analisten · <%= counts.funds %> fondsen</em></div>
+      <% var moodN = kpi.upgrades + kpi.downgrades + kpi.raised + kpi.lowered; var mood = moodN ? (kpi.upgrades + kpi.raised) / moodN : 0.5; var moodTxt = mood >= 0.65 ? 'Uitbundig' : mood >= 0.5 ? 'Positief' : mood >= 0.35 ? 'Voorzichtig' : 'Somber'; %>
+      <div class="hk hk-mood"><span>Stemming analisten (30 d)</span><div class="hk-mg"><%- viz.moodGauge(mood, { width: 120, label: 'Stemming analisten: ' + moodTxt }) %><div><strong><%= moodTxt %></strong><em><%= fmt.pct(mood, false) %> positief</em></div></div></div>
     </div>
   </div>
 </section>
@@ -77,10 +78,25 @@
     <% } %>
   </section>
   <section class="card">
+    <% if (together.length) { %>
+    <div class="card-h"><h2>Guru's kochten samen</h2><a href="/gurus" class="small">Alle guru's</a></div>
+    <p class="small muted">Nieuw of flink bijgekocht door 2+ guru's in hun laatste 13F.</p>
+    <div class="tg-list">
+      <% together.slice(0, 8).forEach(function (t, i) { %>
+      <div class="tg-row">
+        <span class="tg-n"><%= i + 1 %></span>
+        <%- ui.stock(t.symbol, t.name) %>
+        <span class="tg-who" title="<%= t.managers.join(', ') %>"><%= t.managers.slice(0, 2).join(', ') %><%= t.managers.length > 2 ? ' +' + (t.managers.length - 2) : '' %></span>
+        <span class="tg-c"><b><%= t.gurus %></b> guru's</span>
+      </div>
+      <% }) %>
+    </div>
+    <% } else { %>
     <div class="card-h"><h2>Favoriet bij de guru's</h2><a href="/gurus" class="small">Alle guru's</a></div>
     <p class="small muted">Meest gehouden door de gevolgde hedge funds.</p>
     <% if (!popular.length) { %><p class="empty">Nog geen 13F-data.</p><% } else { %>
     <%- charts.hbars(popular.map(function (p) { return { sym: p.symbol, name: p.name, value: p.funds, display: p.funds + ' fondsen · ' + fmt.money(p.value), href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %>
+    <% } %>
     <% } %>
   </section>
 </div>

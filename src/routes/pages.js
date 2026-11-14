@@ -22,6 +22,8 @@ const config = require('../config');
 const gq = require('../lib/guruQueries');
 const guru = require('../lib/guru');
 const guruCharts = require('../lib/guruCharts');
+const viz = require('../lib/vizCharts');
+const vq = require('../lib/vizQueries');
 
 const router = express.Router();
 
@@ -79,7 +81,8 @@ router.get('/', wrap(async (req, res) => {
     insiderBuy: sum(insiderDays, 'pos'),
     insiderSell: sum(insiderDays, 'neg'),
   };
-  res.render('home', { title: 'Overzicht', radarTop, radarBottom, grades, activity, buys, clusters, popular, counts, gradeDays, insiderDays, revisionDays, top, kpi });
+  const together = await safe(gq.consensusMoves(8), []);
+  res.render('home', { title: 'Overzicht', radarTop, radarBottom, grades, activity, buys, clusters, popular, counts, gradeDays, insiderDays, revisionDays, top, kpi, together, viz });
 }));
 
 // ---------- Analisten ----------
@@ -90,6 +93,20 @@ router.get('/analisten', wrap(async (req, res) => {
   if (tab === 'ranglijst') {
     data.leaders = data.scored ? await q.guruLeaderboard({ minCalls: 5, limit: 100 }) : await q.analystLeaderboard({ minCalls: 5, limit: 100 });
     data.dist = data.scored ? await q.scoreDistribution() : [];
+    if (data.scored) {
+      const [all, firms] = await Promise.all([q.guruLeaderboard({ minCalls: 5, limit: 2000 }), safe(vq.firmExtremes(30, 5), { best: [], worst: [] })]);
+      const med = (arr) => { const a = arr.filter(Number.isFinite).sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : null; };
+      data.buckets = Array.from({ length: 10 }, (_, i) => { const f = data.dist.find((d) => d.b === i + 1); return f ? f.n : 0; });
+      data.firms = firms;
+      data.kpi = {
+        analysts: all.length,
+        medHit: med(all.map((a) => Number(a.hit_rate))),
+        beat: all.length ? all.filter((a) => Number(a.avg_excess) > 0).length / all.length : null,
+        bestFirm: firms.best[0] || null,
+      };
+      data.mapPoints = all.filter((a) => a.calls >= 10).map((a) => ({ x: Number(a.hit_rate), y: Number(a.avg_excess), calls: a.calls, score: Number(a.score), label: a.name, sub: a.firm, href: `/analist/${a.slug}` }));
+      data.viz = viz;
+    }
   }
   if (tab === 'koersdoelen') data.targets = await q.latestTargets(150);
   if (tab === 'ratings') data.grades = await q.latestGrades({ limit: 150, action });
@@ -130,8 +147,37 @@ router.get('/methode', (req, res) => res.render('method', { title: 'Hoe de GuruS
 router.get('/insiders', wrap(async (req, res) => {
   const type = ['buy', 'sell', 'all'].includes(req.query.type) ? req.query.type : 'buy';
   const minValue = Number(req.query.min) > 0 ? Number(req.query.min) : undefined;
-  const [trades, clusters, flows] = await Promise.all([q.latestInsiders({ limit: 200, type, minValue }), q.insiderClusters(30, 15), q.dailyInsiderFlows(60)]);
-  res.render('insiders', { title: 'Insider trades', trades, clusters, type, minValue, flows });
+  const [trades, clusters, flows, buyMap, roles] = await Promise.all([
+    q.latestInsiders({ limit: 200, type, minValue }),
+    q.insiderClusters(30, 15),
+    q.dailyInsiderFlows(60),
+    safe(vq.insiderBuyMap(30, 40), []),
+    safe(vq.insiderByRole(30), []),
+  ]);
+  const last30 = flows.slice(-30);
+  const sum = (arr, k) => arr.reduce((t, d) => t + (Number(d[k]) || 0), 0);
+  const kpi = { buy: sum(last30, 'pos'), sell: sum(last30, 'neg'), clusters: clusters.filter((c) => c.insiders >= 3).length };
+  kpi.ratio = kpi.sell > 0 ? kpi.buy / kpi.sell : null;
+  // Functies samenvoegen tot een paar herkenbare groepen.
+  const group = (t) => {
+    const r = String(t || '').toLowerCase();
+    if (/chief executive|\bceo\b/.test(r)) return 'CEO';
+    if (/chief financial|\bcfo\b/.test(r)) return 'CFO';
+    if (/10\s*percent|10%/.test(r)) return 'Grootaandeelhouders';
+    if (/officer|president|chief|\bvp\b|vice/.test(r)) return 'Overige directie';
+    if (/director|chair/.test(r)) return 'Commissarissen';
+    return 'Overig';
+  };
+  const byRole = new Map();
+  for (const r of roles) {
+    const g = group(r.type_of_owner);
+    const cur = byRole.get(g) || { label: g, buy: 0, sell: 0 };
+    cur.buy += Number(r.buy) || 0;
+    cur.sell += Number(r.sell) || 0;
+    byRole.set(g, cur);
+  }
+  const roleRows = [...byRole.values()].filter((r) => r.buy > 0).sort((a, b) => b.buy - a.buy);
+  res.render('insiders', { title: 'Insider trades', trades, clusters, type, minValue, flows, buyMap, roleRows, kpi, gc: guruCharts });
 }));
 
 router.get('/insider/:cik', wrap(async (req, res) => {
