@@ -473,4 +473,214 @@ function pairBars(items, { width = 920, height = 230, aLabel = '', bLabel = '' }
   return `<svg viewBox="0 0 ${width} ${height}" class="cols" role="img" aria-label="${esc(aLabel)} en ${esc(bLabel)}">${grid}${groups}</svg>`;
 }
 
-module.exports = { pairBars, targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, hbars, heat, scatter, columns, ratingBar, ratingArea, rangeBar };
+const LEVEL_CLS = [['strong_sell', 'rb-ss', 'Sterk verkopen'], ['sell', 'rb-s', 'Verkopen'], ['hold', 'rb-h', 'Houden'], ['buy', 'rb-b', 'Kopen'], ['strong_buy', 'rb-sb', 'Sterk kopen']];
+const monthLabel = (m) => { const [y, mo] = m.split('-').map(Number); return `${MONTHS[mo - 1]} '${String(y).slice(2)}`; };
+
+// Gestapelde kolommen: aantal adviezen per maand ([{month, ratings:{strong_buy..}}]).
+function ratingColumns(months, { width = 560, height = 260 } = {}) {
+  const data = months.filter((m) => m.ratings);
+  if (data.length < 2) return '';
+  const pad = { l: 30, r: 6, t: 26, b: 26 };
+  const W = width - pad.l - pad.r;
+  const H = height - pad.t - pad.b;
+  const max = Math.max(1, ...data.map((m) => m.ratings.total));
+  const ticks = niceTicks(0, max, 4);
+  const top = Math.max(max, ticks[ticks.length - 1]);
+  const Y = (v) => pad.t + H - (v / top) * H;
+  const bw = W / data.length;
+  const w = Math.max(4, Math.min(26, bw * 0.68));
+  const grid = ticks.map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="tl-grid ${t === 0 ? 'zero' : ''}"/><text x="${pad.l - 6}" y="${(Y(t) + 4).toFixed(1)}" text-anchor="end" class="tl-axis">${t}</text>`).join('');
+  const step = Math.max(1, Math.ceil(data.length / 7));
+  const cols = data.map((m, i) => {
+    const x = pad.l + i * bw + (bw - w) / 2;
+    let acc = 0;
+    const segs = LEVEL_CLS.map(([k, cls]) => {
+      const v = m.ratings[k] || 0;
+      if (!v) return '';
+      const y1 = Y(acc + v);
+      const y0 = Y(acc);
+      acc += v;
+      return `<rect x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0.5, y0 - y1 - 0.8).toFixed(1)}" class="ra ${cls}"/>`;
+    }).join('');
+    const last = i === data.length - 1;
+    const tip = [...LEVEL_CLS].reverse().filter(([k]) => m.ratings[k]).map(([k, , l]) => `${m.ratings[k]} ${l.toLowerCase()}`).join(', ');
+    const lbl = i % step === (data.length - 1) % step ? `<text x="${(last ? x + w : x + w / 2).toFixed(1)}" y="${height - 8}" text-anchor="${last ? 'end' : 'middle'}" class="tl-axis${last ? ' strong-ax' : ''}">${monthLabel(m.month)}</text>` : '';
+    const tot = last ? `<text x="${(x + w / 2).toFixed(1)}" y="${(Y(m.ratings.total) - 6).toFixed(1)}" text-anchor="middle" class="col-v">${m.ratings.total}</text>` : '';
+    return `<g class="rc-col${last ? ' now' : ''}"><title>${monthLabel(m.month)}: ${tip}</title><rect x="${(pad.l + i * bw).toFixed(1)}" y="${pad.t}" width="${bw.toFixed(1)}" height="${H}" class="rc-hit"/>${segs}${tot}${lbl}</g>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${width} ${height}" class="rcols" role="img" aria-label="Adviezen per maand">${grid}${cols}</svg>`;
+}
+
+// Koers en koersdoelen per maand: band laagste–hoogste doel, gemiddeld doel en slotkoers.
+function targetBand(months, { width = 560, height = 260 } = {}) {
+  const data = months.filter((m) => m.close > 0 || m.mean > 0);
+  if (data.length < 3) return '';
+  const pad = { l: 50, r: 64, t: 14, b: 26 };
+  const W = width - pad.l - pad.r;
+  const H = height - pad.t - pad.b;
+  const vals = data.flatMap((m) => [m.close, m.low, m.high, m.mean]).filter((v) => v > 0);
+  let lo = Math.min(...vals);
+  let hi = Math.max(...vals);
+  const padV = (hi - lo) * 0.08 || hi * 0.1;
+  lo = Math.max(0, lo - padV);
+  hi += padV;
+  const X = (i) => pad.l + (i / (data.length - 1)) * W;
+  const Y = (v) => pad.t + (1 - (v - lo) / (hi - lo || 1)) * H;
+  const ticks = niceTicks(lo, hi, 5).filter((t) => t >= lo && t <= hi);
+  const grid = ticks.map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="tl-grid"/><text x="${pad.l - 6}" y="${(Y(t) + 4).toFixed(1)}" text-anchor="end" class="tl-axis">${fmtPrice(t)}</text>`).join('');
+  const path = (key) => {
+    let d = '';
+    let pen = false;
+    data.forEach((m, i) => {
+      if (m[key] > 0) { d += `${pen ? 'L' : 'M'}${X(i).toFixed(1)},${Y(m[key]).toFixed(1)}`; pen = true; } else pen = false;
+    });
+    return d;
+  };
+  const bandIdx = data.map((m, i) => (m.low > 0 && m.high > 0 ? i : -1)).filter((i) => i >= 0);
+  const band = bandIdx.length > 1
+    ? `<polygon points="${bandIdx.map((i) => `${X(i).toFixed(1)},${Y(data[i].high).toFixed(1)}`).concat(bandIdx.slice().reverse().map((i) => `${X(i).toFixed(1)},${Y(data[i].low).toFixed(1)}`)).join(' ')}" class="tb-band"/>`
+    : '';
+  const step = Math.max(1, Math.ceil(data.length / 7));
+  const xl = data.map((m, i) => (i % step === (data.length - 1) % step ? `<text x="${X(i).toFixed(1)}" y="${height - 8}" text-anchor="${i === data.length - 1 ? 'end' : 'middle'}" class="tl-axis">${monthLabel(m.month)}</text>` : '')).join('');
+  const last = data[data.length - 1];
+  const tags = [];
+  if (last.mean > 0) tags.push({ y: Y(last.mean), cls: 'tb-tag-t', txt: fmtPrice(last.mean) });
+  if (last.close > 0) tags.push({ y: Y(last.close), cls: 'tb-tag-p', txt: fmtPrice(last.close) });
+  if (tags.length === 2 && Math.abs(tags[0].y - tags[1].y) < 18) {
+    const mid = (tags[0].y + tags[1].y) / 2;
+    const up = tags[0].y <= tags[1].y ? 0 : 1;
+    tags[up].y = mid - 9;
+    tags[1 - up].y = mid + 9;
+  }
+  const tagSvg = tags.map((t) => `<g class="${t.cls}"><rect x="${pad.l + W + 6}" y="${(t.y - 9).toFixed(1)}" width="56" height="18" rx="5"/><text x="${pad.l + W + 34}" y="${(t.y + 4).toFixed(1)}" text-anchor="middle">${t.txt}</text></g>`).join('');
+  const hits = data.map((m, i) => {
+    const x0 = i === 0 ? pad.l : (X(i - 1) + X(i)) / 2;
+    const x1 = i === data.length - 1 ? pad.l + W : (X(i) + X(i + 1)) / 2;
+    const tip = `${monthLabel(m.month)}: koers ${m.close > 0 ? fmtPrice(m.close) : '–'}${m.mean > 0 ? `, gem. koersdoel ${fmtPrice(m.mean)} (${fmtPrice(m.low)}–${fmtPrice(m.high)}, ${m.analysts} analisten)` : ''}`;
+    return `<rect x="${x0.toFixed(1)}" y="${pad.t}" width="${(x1 - x0).toFixed(1)}" height="${H}" class="rc-hit"><title>${esc(tip)}</title></rect>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${width} ${height}" class="tband" role="img" aria-label="Koers en koersdoelen per maand">${grid}${band}
+    <path d="${path('mean')}" class="tb-mean"/><path d="${path('close')}" class="tb-price"/>
+    ${last.close > 0 ? `<circle cx="${X(data.length - 1).toFixed(1)}" cy="${Y(last.close).toFixed(1)}" r="4" class="tb-dot"/>` : ''}
+    ${xl}${tagSvg}${hits}</svg>`;
+}
+
+// Vijf kolommen: verdeling van de adviezen van sterk verkopen tot sterk kopen.
+function ratingDist(c, { width = 340, height = 170 } = {}) {
+  if (!c || !c.total) return '';
+  const pad = { l: 6, r: 6, t: 20, b: 34 };
+  const W = width - pad.l - pad.r;
+  const H = height - pad.t - pad.b;
+  const max = Math.max(1, ...LEVEL_CLS.map(([k]) => c[k] || 0));
+  const bw = W / 5;
+  const bars = LEVEL_CLS.map(([k, cls, label], i) => {
+    const v = c[k] || 0;
+    const h = (v / max) * H;
+    const x = pad.l + i * bw + bw * 0.16;
+    const w = bw * 0.68;
+    const words = label.split(' ');
+    return `<g><title>${label}: ${v}</title>
+      <rect x="${x.toFixed(1)}" y="${pad.t}" width="${w.toFixed(1)}" height="${H}" rx="7" class="rd-bg"/>
+      ${v ? `<rect x="${x.toFixed(1)}" y="${(pad.t + H - h).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(3, h).toFixed(1)}" rx="7" class="ra ${cls}"/>` : ''}
+      <text x="${(x + w / 2).toFixed(1)}" y="${(pad.t + H - h - 6).toFixed(1)}" text-anchor="middle" class="col-v">${v}</text>
+      ${words.map((wd, j) => `<text x="${(x + w / 2).toFixed(1)}" y="${(height - pad.b + 15 + j * 13).toFixed(1)}" text-anchor="middle" class="tl-axis">${wd}</text>`).join('')}</g>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${width} ${height}" class="rdist" role="img" aria-label="Verdeling van de adviezen">${bars}</svg>`;
+}
+
+// Halve meter voor het adviesoordeel (1 = sterk verkopen, 5 = sterk kopen).
+function gauge(value, { size = 180, min = 1, max = 5, label = '' } = {}) {
+  const has = Number.isFinite(value);
+  const w = size;
+  const h = Math.round(size * 0.62);
+  const cx = w / 2;
+  const cy = h - 14;
+  const r = size / 2 - 14;
+  const ang = (v) => Math.PI * (1 - (Math.max(min, Math.min(max, v)) - min) / (max - min));
+  const pt = (a, rr) => [cx + rr * Math.cos(a), cy - rr * Math.sin(a)];
+  const seg = (v0, v1, cls) => {
+    const [x0, y0] = pt(ang(v0), r);
+    const [x1, y1] = pt(ang(v1), r);
+    return `<path d="M${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}" class="gg-seg ${cls}"/>`;
+  };
+  const step = (max - min) / 5;
+  const segs = ['rb-ss', 'rb-s', 'rb-h', 'rb-b', 'rb-sb'].map((cls, i) => seg(min + i * step + 0.02, min + (i + 1) * step - 0.02, cls)).join('');
+  let needle = '';
+  if (has) {
+    const a = ang(value);
+    const [nx, ny] = pt(a, r - 16);
+    needle = `<line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" class="gg-needle"/><circle cx="${cx}" cy="${cy}" r="5.5" class="gg-hub"/>`;
+  }
+  return `<svg viewBox="0 0 ${w} ${h + 22}" class="gauge" width="${w}" role="img" aria-label="${esc(label)} ${has ? value.toFixed(2) : ''}">
+    ${segs}${needle}
+    <text x="${cx}" y="${h + 16}" text-anchor="middle" class="gg-v">${has ? value.toFixed(2).replace('.', ',') : '–'}</text>
+  </svg>`;
+}
+
+// Koershistorie (12 maanden) met een waaier naar het hoogste, gemiddelde en laagste koersdoel
+// over 12 maanden, plus een stip per koersdoel op de rechteras. targets: [{target, label}].
+function forecastFan(series, targets, { width = 920, height = 340 } = {}) {
+  const pts = series.filter((p) => p.close > 0);
+  const tv = targets.filter((t) => t.target > 0);
+  if (pts.length < 20 || !tv.length) return '';
+  const last = pts[pts.length - 1];
+  const t0 = new Date(pts[0].date).getTime();
+  const tNow = new Date(last.date).getTime();
+  const tEnd = tNow + 365 * DAY;
+  const vals = tv.map((t) => t.target);
+  const hi = Math.max(...vals);
+  const lo = Math.min(...vals);
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const all = pts.map((p) => p.close).concat(vals);
+  let yMin = Math.min(...all);
+  let yMax = Math.max(...all);
+  const pad0 = (yMax - yMin) * 0.06;
+  yMin = Math.max(0, yMin - pad0);
+  yMax += pad0;
+  const pad = { l: 54, r: 112, t: 14, b: 28 };
+  const W = width - pad.l - pad.r;
+  const H = height - pad.t - pad.b;
+  const X = (t) => pad.l + ((t - t0) / (tEnd - t0)) * W;
+  const Y = (v) => pad.t + (1 - (v - yMin) / (yMax - yMin || 1)) * H;
+  const ticks = niceTicks(yMin, yMax, 6).filter((t) => t >= yMin && t <= yMax);
+  const grid = ticks.map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="tl-grid"/><text x="${pad.l - 6}" y="${(Y(t) + 4).toFixed(1)}" text-anchor="end" class="tl-axis">${fmtPrice(t)}</text>`).join('');
+  const months = [];
+  const d = new Date(t0);
+  for (let m = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); m.getTime() < tEnd; m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 2, 1))) months.push(m);
+  const xl = months.map((m) => `<text x="${X(m.getTime()).toFixed(1)}" y="${height - 8}" text-anchor="middle" class="tl-axis">${MONTHS[m.getUTCMonth()]} '${String(m.getUTCFullYear()).slice(2)}</text>`).join('');
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(new Date(p.date).getTime()).toFixed(1)},${Y(p.close).toFixed(1)}`).join('');
+  const x0 = X(tNow);
+  const y0 = Y(last.close);
+  const xe = X(tEnd);
+  const fan = `<polygon points="${x0.toFixed(1)},${y0.toFixed(1)} ${xe.toFixed(1)},${Y(hi).toFixed(1)} ${xe.toFixed(1)},${Y(lo).toFixed(1)}" class="ff-band"/>`;
+  const ray = (v, cls) => `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${xe.toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ff-ray ${cls}"/>`;
+  // Labels rechts, uit elkaar geschoven als ze te dicht bij elkaar staan.
+  const labels = [
+    { v: hi, cls: 'hi', txt: `Hoogste ${fmtPrice(hi)}` },
+    { v: mean, cls: 'mid', txt: `Gem. ${fmtPrice(mean)}` },
+    { v: lo, cls: 'lo', txt: `Laagste ${fmtPrice(lo)}` },
+  ].map((l) => ({ ...l, y: Y(l.v) }));
+  for (let i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < 16) labels[i].y = labels[i - 1].y + 16;
+  const lab = labels.map((l) => `<text x="${xe + 22}" y="${(l.y + 4).toFixed(1)}" class="ff-lab ${l.cls}">${l.txt}</text>`).join('');
+  // Stippen per koersdoel, licht gespreid zodat gelijke doelen zichtbaar blijven.
+  const seen = new Map();
+  const dots = tv
+    .slice()
+    .sort((a, b) => a.target - b.target)
+    .map((t) => {
+      const key = Math.round(Y(t.target) / 6);
+      const k = seen.get(key) || 0;
+      seen.set(key, k + 1);
+      const cx = xe + 8 + (k % 3) * 5 - (k % 3 ? 0 : 0);
+      return `<circle cx="${(cx - 4).toFixed(1)}" cy="${Y(t.target).toFixed(1)}" r="4.5" class="ff-dot ${t.tone || ''}"><title>${esc(t.label)}</title></circle>`;
+    })
+    .join('');
+  return `<svg viewBox="0 0 ${width} ${height}" class="fan" role="img" aria-label="Koers en koersdoelen over 12 maanden">${grid}
+    <line x1="${x0.toFixed(1)}" x2="${x0.toFixed(1)}" y1="${pad.t}" y2="${pad.t + H}" class="ff-now"/>
+    <text x="${(x0 + 6).toFixed(1)}" y="${pad.t + 12}" class="tl-axis">vandaag</text>
+    ${fan}${ray(hi, 'hi')}${ray(mean, 'mid')}${ray(lo, 'lo')}
+    <path d="${line}" class="ff-price"/><circle cx="${x0.toFixed(1)}" cy="${y0.toFixed(1)}" r="4" class="tb-dot"/>
+    ${dots}${lab}${xl}</svg>`;
+}
+
+module.exports = { forecastFan, ratingColumns, targetBand, ratingDist, gauge, pairBars, targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, hbars, heat, scatter, columns, ratingBar, ratingArea, rangeBar };

@@ -68,7 +68,8 @@ async function refreshQuotes() {
     const rows = await db.many(`
       SELECT DISTINCT symbol FROM price_targets WHERE published_at > now() - interval '400 days'
       UNION SELECT DISTINCT symbol FROM grades WHERE published_at > now() - interval '30 days'
-      UNION SELECT DISTINCT symbol FROM insider_trades WHERE filing_date > now() - interval '30 days'`);
+      UNION SELECT DISTINCT symbol FROM insider_trades WHERE filing_date > now() - interval '30 days'
+      UNION SELECT DISTINCT symbol FROM index_members`);
     const symbols = rows.map((r) => r.symbol).filter((s) => /^[A-Z0-9.\-]{1,12}$/.test(s));
     let saved = 0;
     for (let i = 0; i < symbols.length; i += 200) {
@@ -150,6 +151,11 @@ async function refreshEarnings() {
   return job('earnings', () => earnings.runEarnings());
 }
 
+async function refreshIndexes() {
+  const indexes = require('./indexes');
+  return job('indexes', () => indexes.refreshIndexes());
+}
+
 async function refreshAlerts() {
   const alerts = require('./alerts');
   return job('alerts', () => alerts.runAlerts());
@@ -171,6 +177,7 @@ function startScheduler() {
   setTimeout(async () => {
     await store.syncFundList(funds).catch((e) => console.error('[ingest] fondsen', e.message));
     await runFeeds();
+    await refreshIndexes();
     await refreshQuotes();
     await refreshFunds();
     await refreshScores();
@@ -178,6 +185,7 @@ function startScheduler() {
     await refreshEarnings();
   }, 5000);
   setInterval(refreshEarnings, 3 * 60 * min);
+  setInterval(refreshIndexes, 24 * 60 * min);
   setInterval(refreshRadar, 60 * min);
   // Ochtendbriefing: elke 5 minuten kijken of het 08:00 (Amsterdam) is geweest.
   setInterval(briefings, 5 * min);
@@ -187,7 +195,7 @@ function startScheduler() {
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
+module.exports = { refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
 
 if (require.main === module) {
   (async () => {

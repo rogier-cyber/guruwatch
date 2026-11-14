@@ -1,0 +1,108 @@
+<%- include('partials/head') %>
+<%
+  const link = function (o) {
+    const p = Object.assign({ index: idx.key, sort: sort, dir: dir, weergave: view }, o);
+    return '/aandelen?index=' + encodeURIComponent(p.index) + (p.weergave !== 'alle' ? '&weergave=' + p.weergave : '') + (p.weergave === 'alle' && (p.sort !== 'naam' || p.dir !== 'op') ? '&sort=' + p.sort + '&dir=' + p.dir : '');
+  };
+  const th = function (key, label, cls) {
+    if (view !== 'alle') return '<th class="' + (cls || '') + '">' + label + '</th>';
+    const on = sort === key;
+    const def = key === 'naam' ? 'op' : 'af';
+    const next = on ? (dir === 'op' ? 'af' : 'op') : def;
+    return '<th class="' + (cls || '') + (on ? ' sorted' : '') + '"><a href="' + link({ sort: key, dir: next }) + '">' + label + (on ? (dir === 'op' ? ' ▲' : ' ▼') : '') + '</a></th>';
+  };
+%>
+<section class="hero hero-sm">
+  <div class="hero-in">
+    <div>
+      <h1>Aandelen <b><%= idx.label %></b></h1>
+      <p><%= intro || 'Koersdoelen en adviezen van analisten voor elk aandeel in de index. Klik op een kolom om te sorteren.' %></p>
+    </div>
+  </div>
+</section>
+
+<div class="ix-layout">
+  <aside class="card ix-side">
+    <h2>Indices</h2>
+    <% groups.forEach(function (g) { %>
+      <div class="ix-group">
+        <span class="ix-gl"><%= g.label %></span>
+        <% g.items.forEach(function (i) { %><a href="<%= link({ index: i.key, sort: 'naam', dir: 'op' }) %>" class="<%= i.key === idx.key ? 'on' : '' %>"><%= i.label %><span class="muted small"><%= counts[i.key] ? counts[i.key] : (i.endpoint ? '' : 'binnenkort') %></span></a><% }) %>
+      </div>
+    <% }) %>
+  </aside>
+
+  <div class="ix-main">
+    <nav class="tabs ix-tabs">
+      <% [['alle', 'Alle aandelen'], ['vandaag', 'Analisten vandaag'], ['meest', 'Meest aanbevolen'], ['minst', 'Minst aanbevolen'], ['potentieel', 'Grootste potentieel']].forEach(function (t) { %><a href="<%= link({ weergave: t[0], sort: 'naam', dir: 'op' }) %>" class="<%= view === t[0] ? 'on' : '' %>"><%= t[1] %></a><% }) %>
+    </nav>
+    <% if (!idx.endpoint) { %>
+    <section class="card ix-empty">
+      <h2><%= idx.label %> komt eraan</h2>
+      <p>Voor Europese aandelen heeft onze huidige databron nog bijna geen koersdoelen en adviezen. Zodra de Europese analistendata via Infront binnenkomt, verschijnen hier de aandelen uit de <%= idx.label %> met koers, koersdoel, potentieel en de verdeling van kopen, houden en verkopen.</p>
+      <p><a class="btn" href="/aandelen?index=sp500">Bekijk de S&amp;P 500</a></p>
+    </section>
+    <% } else if (!rows.length) { %>
+    <section class="card"><p class="empty">De samenstelling van de <%= idx.label %> wordt nog opgehaald. Kom over een paar minuten terug.</p></section>
+    <% } else { %>
+    <div class="stats">
+      <div class="stat"><span>Aandelen</span><strong><%= summary.stocks %></strong><em class="small muted"><%= summary.rated %> met adviezen</em></div>
+      <div class="stat"><span>Aandeel kopen-adviezen</span><strong class="pos"><%= fmt.pct(summary.buyShare, false) %></strong><em class="small muted">van alle adviezen</em></div>
+      <div class="stat"><span>Mediaan potentieel</span><strong class="<%= fmt.tone(summary.medianUpside) %>"><%= fmt.pct(summary.medianUpside) %></strong><em class="small muted">gem. koersdoel t.o.v. koers</em></div>
+    </div>
+    <% if (view === 'alle' && summary.topUpside.length) { %>
+    <section class="card">
+      <div class="card-h"><h2>Meeste potentieel volgens analisten</h2><span class="small muted">minimaal 5 adviezen</span></div>
+      <%- charts.hbars(summary.topUpside.map(function (r) { return { label: r.symbol, value: Math.max(0, r.upside), display: fmt.pct(r.upside), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'pos' }) %>
+    </section>
+    <% } %>
+    <% if (view === 'vandaag') { %>
+    <section class="card">
+      <div class="card-h"><h2>Analisten vandaag</h2><span class="small muted">acties op aandelen uit de <%= idx.label %>, laatste 3 dagen</span></div>
+      <% if (!today.length) { %><p class="empty">Geen nieuwe adviezen of koersdoelen in de laatste drie dagen.</p><% } else { %>
+      <div class="tbl-wrap"><table class="tbl acts">
+        <thead><tr><th>Datum</th><th>Aandeel</th><th>Actie</th><th>Analist</th><th>Advies</th><th class="r">Koersdoel</th><th class="r">Potentieel</th></tr></thead>
+        <tbody>
+        <% today.forEach(function (a) { var lv = a.level; var gt = lv >= 4 ? 'pos' : lv !== null && lv <= 2 ? 'neg' : ''; %>
+          <tr>
+            <td class="muted nowrap"><%= fmt.dateTime(a.date) %></td>
+            <td><a class="sym" href="/aandeel/<%= encodeURIComponent(a.symbol) %>"><%= a.symbol %></a> <span class="muted small rd-name"><%= a.name || '' %></span></td>
+            <td><span class="act act-<%= a.action.tone %>"><%= a.action.label %></span></td>
+            <td><%= a.firm || '' %><% if (a.analyst) { %><div class="muted small"><%= a.analyst %></div><% } %></td>
+            <td class="nowrap <%= gt %>"><% if (a.to_grade) { %><% if (a.from_grade) { %><span class="muted"><%= a.from_grade %></span> → <% } %><%= a.to_grade %><% } else { %><span class="muted">–</span><% } %></td>
+            <td class="r nowrap"><% if (a.to_target) { %><% if (a.from_target) { %><span class="muted"><%= fmt.price(a.from_target) %></span> → <% } %><strong><%= fmt.price(a.to_target) %></strong><% } else { %>–<% } %></td>
+            <td class="r nowrap <%= fmt.tone(a.upside) %>"><%= fmt.pct(a.upside) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div><% } %>
+    </section>
+    <% } else { %>
+    <section class="card">
+      <div class="card-h"><h2><%= { alle: rows.length + ' aandelen', meest: 'Meest aanbevolen aandelen', minst: 'Minst aanbevolen aandelen', potentieel: 'Aandelen met het grootste potentieel' }[view] %></h2><span class="small muted"><%= view === 'alle' ? 'koersdoel = gemiddelde van de laatste doelen per analist (12 maanden)' : view === 'potentieel' ? 'minimaal 3 koersdoelen' : 'minimaal 5 adviezen, gerangschikt op het oordeel van analisten' %></span></div>
+      <div class="tbl-wrap"><table class="tbl ix-tbl">
+        <thead><tr>
+          <%- th('naam', 'Aandeel') %><%- th('koers', 'Koers', 'r') %><th class="r">Koersdoel</th><%- th('potentieel', 'Potentieel', 'r') %><%- th('adviezen', 'Adviezen', 'r') %><%- th('verkoop', 'Verkopen', 'r') %><%- th('houd', 'Houden', 'r') %><%- th('koop', 'Kopen', 'r') %><%- th('oordeel', 'Sentiment') %>
+        </tr></thead>
+        <tbody>
+        <% rows.forEach(function (r) { %>
+          <tr>
+            <td><a class="sym" href="/aandeel/<%= encodeURIComponent(r.symbol) %>"><%= r.symbol %></a> <span class="muted small rd-name"><%= r.name || '' %></span></td>
+            <td class="r nowrap"><%= fmt.price(r.price) %><% if (r.change_pct !== null && r.change_pct !== undefined) { %><div class="small <%= fmt.tone(r.change_pct) %>"><%= fmt.pct(r.change_pct / 100) %></div><% } %></td>
+            <td class="r nowrap"><%= fmt.price(r.target) %></td>
+            <td class="r nowrap <%= fmt.tone(r.upside) %>"><b><%= fmt.pct(r.upside) %></b></td>
+            <td class="r"><%= r.total || '–' %></td>
+            <td class="r <%= r.sells ? 'neg' : 'muted' %>"><%= r.total ? r.sells : '–' %></td>
+            <td class="r <%= r.holds ? '' : 'muted' %>"><%= r.total ? r.holds : '–' %></td>
+            <td class="r <%= r.buys ? 'pos' : 'muted' %>"><%= r.total ? r.buys : '–' %></td>
+            <td class="ix-sent"><% if (r.total) { %><%- charts.ratingBar(r, { height: 9 }) %><span class="small vt-txt vt-<%= r.verdict.tone %>"><%= r.verdict.label %></span><% } else { %><span class="muted small">geen adviezen</span><% } %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+    </section>
+    <% } %>
+    <% } %>
+  </div>
+</div>
+<%- include('partials/foot') %>

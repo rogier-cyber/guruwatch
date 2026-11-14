@@ -1,4 +1,4 @@
-<form method="post" action="/volg" class="inline">
+<% if (!user) { %><a class="btn" href="/login?next=<%= encodeURIComponent(path) %>">☆ Volgen</a><% } else { %><form method="post" action="/volg" class="inline">
   <input type="hidden" name="kind" value="<%= kind %>"><input type="hidden" name="ref" value="<%= ref %>"><input type="hidden" name="back" value="<%= path %>">
   <button class="btn <%= watched ? 'btn-on' : '' %>"><%= watched ? '★ Gevolgd' : '☆ Volgen' %></button>
-</form>
+</form><% } %>
