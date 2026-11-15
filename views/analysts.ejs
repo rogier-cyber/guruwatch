@@ -44,7 +44,7 @@
   <div class="podium2">
     <% [1, 0, 2].forEach(function (k) { var a = leaders[k]; if (!a) return; %>
     <a class="pd pd-<%= k + 1 %>" href="/analist/<%= a.slug %>">
-      <span class="pd-rank"><%= k + 1 %></span>
+      <span class="pd-rank"><%- include('partials/cup', { rank: k + 1 }) %></span>
       <%- charts.scoreRing(a.score, k === 0 ? 92 : 74) %>
       <strong><%= fmt.person(a.name) %></strong>
       <span class="pd-firm"><%= a.firm %></span>

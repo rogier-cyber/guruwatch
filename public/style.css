@@ -913,8 +913,16 @@ a.sc:hover b { color: var(--accent); }
 .pd-1 { padding-top: 30px; padding-bottom: 24px; background: linear-gradient(180deg, #fff3d6, var(--card) 65%); border-color: #f2d58e; }
 .pd-1::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: linear-gradient(90deg, #f5b301, #d32f2f); }
 @media (prefers-color-scheme: dark) { .pd-1 { background: linear-gradient(180deg, #2a2212, var(--card) 65%); border-color: #6b5420; } }
-.pd-rank { position: absolute; top: 10px; left: 14px; font-size: 13px; font-weight: 800; color: var(--muted); }
-.pd-1 .pd-rank { color: #b7791f; }
+.pd-rank { position: absolute; top: 10px; left: 12px; line-height: 0; }
+.cup { width: 44px; height: 44px; display: inline-block; filter: drop-shadow(0 3px 5px rgba(20,33,61,.18)); }
+.pd-1 .cup { width: 54px; height: 54px; }
+.cup-sm { width: 20px; height: 20px; vertical-align: -4px; filter: none; }
+.pd-2::before, .pd-3::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; }
+.pd-2::before { background: linear-gradient(90deg, #d5dae3, #8a93a3); }
+.pd-3::before { background: linear-gradient(90deg, #e6a670, #9a5523); }
+.pd-2 { border-color: #d5dae3; }
+.pd-3 { border-color: #ecc7a6; }
+@media (prefers-color-scheme: dark) { .pd-2 { border-color: #4a5263; } .pd-3 { border-color: #6b4a2c; } }
 .pd strong { font-size: 16px; margin-top: 4px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pd-1 strong { font-size: 18px; }
 .pd-firm { font-size: 12.5px; color: var(--muted); margin-top: -4px; }
