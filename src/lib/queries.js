@@ -122,7 +122,21 @@ async function firmStats(limit = 40) {
 
 const INSIDER_TYPES = { buy: "transaction_type ILIKE 'P-%'", sell: "transaction_type ILIKE 'S-%'" };
 
-async function latestInsiders({ limit = 100, type, symbol, cik, minValue } = {}) {
+// Zoekterm (ticker of bedrijfsnaam) -> symbolen met insider trades. Exacte ticker gaat voor.
+async function insiderSymbolsFor(term) {
+  const t = String(term || '').trim().slice(0, 60);
+  if (!t) return [];
+  const rows = await db.many(
+    `SELECT DISTINCT i.symbol, (upper(i.symbol) = upper($1)) AS exact
+     FROM insider_trades i LEFT JOIN companies c ON c.symbol = i.symbol
+     WHERE upper(i.symbol) = upper($1) OR c.name ILIKE '%' || $1 || '%'
+     ORDER BY exact DESC LIMIT 25`,
+    [t]
+  );
+  return rows.some((r) => r.exact) ? rows.filter((r) => r.exact).map((r) => r.symbol) : rows.map((r) => r.symbol);
+}
+
+async function latestInsiders({ limit = 100, type, symbol, symbols, cik, minValue } = {}) {
   // Alleen echte transacties: geen Form 3-standen (aantal 0) en geen datums na de melding.
   const where = ['securities_transacted > 0', '(filing_date IS NULL OR transaction_date <= filing_date::date + 3)', 'transaction_date <= current_date'];
   const params = [];
@@ -130,6 +144,10 @@ async function latestInsiders({ limit = 100, type, symbol, cik, minValue } = {})
   if (symbol) {
     params.push(symbol);
     where.push(`symbol = $${params.length}`);
+  }
+  if (symbols) {
+    params.push(symbols);
+    where.push(`symbol = ANY($${params.length})`);
   }
   if (cik) {
     params.push(cik);
@@ -409,6 +427,7 @@ async function scoreDistribution() {
 }
 
 module.exports = {
+  insiderSymbolsFor,
   dailyGradeCounts,
   dailyInsiderFlows,
   dailyTargetRevisions,
