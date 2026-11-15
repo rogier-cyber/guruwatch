@@ -78,7 +78,7 @@
   <section class="card">
     <div class="card-h"><h2>Koersreactie versus koersdoelherziening</h2><span class="small muted"><%= scored.length %> bedrijven met 2+ herzieningen</span></div>
     <% if (!scored.length) { %><p class="empty">Nog te weinig cijfers met koersen en herzieningen in deze periode.</p><% } else { %>
-    <%- charts.scatter(scored.map(function (r) {
+    <%- charts.both.scatter(scored.map(function (r) {
       const hot = r.verdict && (r.verdict.key === 'koers-omlaag-doelen-omhoog' || r.verdict.key === 'koers-omhoog-doelen-omlaag');
       return { x: r.reaction, y: r.avg_change, label: r.symbol, href: '/aandeel/' + encodeURIComponent(r.symbol) + '/cijfers/' + r.date, tone: hot ? 'hot ' + (r.verdict.key === 'koers-omlaag-doelen-omhoog' ? 'doelen-stijgen' : 'doelen-dalen') : '',
         title: r.symbol + ' — koers ' + fmt.pct(r.reaction) + ', koersdoel ' + fmt.pct(r.avg_change) + ' (' + r.revisions + ' herzieningen)' };

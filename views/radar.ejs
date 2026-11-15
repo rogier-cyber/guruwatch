@@ -120,7 +120,7 @@
   <section class="card">
     <div class="card-h"><h2>Koers versus koersdoel, laatste <%= days %> dagen</h2><span class="small muted"><%= fmt.num(points.length) %> aandelen met 4+ analisten</span></div>
     <% if (!points.length) { %><p class="empty">Nog te weinig koershistorie. Deze grafiek vult zich zodra de koersen zijn binnengehaald.</p><% } else { %>
-    <%- charts.scatter(points.map(function (r) {
+    <%- charts.both.scatter(points.map(function (r) {
       return { x: r.price_chg, y: r.target_chg, label: r.symbol, href: '/aandeel/' + encodeURIComponent(r.symbol), tone: r.signal ? 'hot ' + r.signal : '',
         title: r.symbol + (r.name ? ' · ' + r.name : '') + ' — koers ' + fmt.pct(r.price_chg) + ', koersdoel ' + fmt.pct(r.target_chg) };
     }), { xLabel: 'Koersverandering', yLabel: 'Verandering gemiddeld koersdoel', quadrants: ['Koers daalt, doelen stijgen', 'Beide omhoog', 'Beide omlaag', 'Koers stijgt, doelen dalen'] }) %>
@@ -193,7 +193,7 @@
       <p class="empty">De backtest wordt berekend zodra de adviesgeschiedenis en koersen zijn binnengehaald.</p>
     <% } else { %>
       <p class="small muted">Voor elk aandeel en elke maand: welk deel van de analisten zei "kopen", en wat deed het aandeel de 12 maanden daarna ten opzichte van de S&amp;P 500?</p>
-      <%- charts.columns(backtest.buckets.map(function (b) { return { label: b.label, value: b.n >= 20 ? b.mean : NaN, sub: b.n ? (b.n + ' x · ' + Math.round((b.beat || 0) * 100) + '% wint') : '' }; }), { width: 760, height: 260 }) %>
+      <%- charts.both.columns(backtest.buckets.map(function (b) { return { label: b.label, value: b.n >= 20 ? b.mean : NaN, sub: b.n ? (b.n + ' x · ' + Math.round((b.beat || 0) * 100) + '% wint') : '' }; }), { width: 760, height: 260 }) %>
       <%
         const valid = backtest.buckets.filter(function (b) { return b.n >= 20; });
         const lo = valid[0], hi = valid[valid.length - 1];

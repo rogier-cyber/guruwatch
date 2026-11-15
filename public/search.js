@@ -117,11 +117,3 @@
   document.addEventListener('click', function (e) { if (!form.contains(e.target)) open(false); });
 })();
 
-// "Meer"-knop onder ingekorte tabellen: toont de verborgen rijen.
-document.addEventListener('click', function (e) {
-  var b = e.target.closest && e.target.closest('[data-more]');
-  if (!b) return;
-  var wrap = b.previousElementSibling;
-  if (wrap) wrap.querySelectorAll('tr[hidden]').forEach(function (r) { r.hidden = false; });
-  b.hidden = true;
-});

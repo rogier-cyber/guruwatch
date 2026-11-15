@@ -6,7 +6,7 @@
     <tr<%- maxR && i >= maxR ? ' class="ins-more" hidden' : '' %>>
       <td class="muted nowrap" title="Gemeld <%= fmt.date(t.filing_date) %>"><%= fmt.date(t.transaction_date) %></td>
       <% if (!locals.hideSymbol) { %><td><%- include('sym', { s: t.symbol }) %></td><% } %>
-      <% if (!locals.hidePerson) { %><td class="cell-who"><%- ui.who(t.reporting_name, fmt.role(t.type_of_owner), t.reporting_cik ? '/insider/' + t.reporting_cik : null) %></td><% } %>
+      <% if (!locals.hidePerson) { %><td class="cell-who"><%- ui.who(t.reporting_name, fmt.role(t.type_of_owner), t.reporting_cik ? '/insider/' + t.reporting_cik : null, fmt.person(t.reporting_name) + ' · ' + (fmt.role(t.type_of_owner) || 'insider') + '\n' + fmt.txType(t.transaction_type) + ' op ' + fmt.date(t.transaction_date) + (t.filing_date ? ', gemeld ' + fmt.date(t.filing_date) : '') + '\n' + fmt.num(t.securities_transacted) + ' aandelen' + (t.price > 0 ? ' à ' + fmt.price(t.price) + ' = ' + fmt.money(t.securities_transacted * t.price) : '') + (t.securities_owned ? '\nBezit daarna ' + fmt.num(t.securities_owned) + ' aandelen' : '')) %></td><% } %>
       <td><span class="tag <%= fmt.txTone(t.transaction_type) %>"><%= fmt.txType(t.transaction_type) %></span></td>
       <td class="r"><%= fmt.num(t.securities_transacted) %></td>
       <td class="r"><%= t.price > 0 ? fmt.price(t.price) : '–' %></td>
