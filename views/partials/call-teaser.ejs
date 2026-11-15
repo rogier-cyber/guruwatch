@@ -12,7 +12,7 @@ var outl = nl && nl.outlook ? nl.outlook.slice(0, 2) : [];
 var ex = callTeaser.ex;
 var exTopic = ex && ex.topics && ex.topics.length ? tr.lc(tr.topicLabel(ex.topics[0])) : null;
 %>
-<section class="card call-teaser" id="earnings-call">
+<section class="card call-teaser tint-amber" id="earnings-call">
   <div class="card-h"><h2>Earnings call <%= name %> Q<%= ct.quarter %> <%= ct.year %><% if (days <= 30) { %> <span class="ct-new">Nieuw</span><% } %></h2><span class="small muted"><%= fmt.date(ct.date) %></span></div>
   <p class="sec-txt">Wat zei het management van <%= name %> tegen de analisten van Wall Street? Hieronder de kern<%= nl ? ', in het Nederlands' : '' %>. Het hele verslag met alle vragen en antwoorden staat op de call-pagina.</p>
 
