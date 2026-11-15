@@ -749,7 +749,7 @@ pub.get('/aandelen', wrap(async (req, res) => {
     rated: rated.length,
     buyShare: rated.length ? rated.reduce((s, r) => s + r.buys, 0) / rated.reduce((s, r) => s + r.total, 0) : null,
     medianUpside: withUp.length ? withUp.map((r) => r.upside).sort((a, b) => a - b)[Math.floor(withUp.length / 2)] : null,
-    topUpside: withUp.filter((r) => r.total >= 5 && r.upside > 0).sort((a, b) => b.upside - a.upside).slice(0, 8),
+    topUpside: withUp.filter((r) => r.total >= 5 && r.upside > 0).sort((a, b) => b.upside - a.upside).slice(0, 10),
   };
   const base = config.publicUrl.replace(/\/$/, '');
   const VIEW_TITLES = { alle: 'koersdoelen en analistenadviezen per aandeel', vandaag: 'analistenadviezen van vandaag', meest: 'meest aanbevolen aandelen volgens analisten', minst: 'minst aanbevolen aandelen volgens analisten', potentieel: 'aandelen met het grootste koerspotentieel' };
@@ -770,11 +770,18 @@ pub.get('/aandelen', wrap(async (req, res) => {
     jsonld.push({ '@context': 'https://schema.org', '@type': 'ItemList', name: `${idx.label}: ${VIEW_TITLES[view]}`,
       itemListElement: list.slice(0, 30).map((r, i) => ({ '@type': 'ListItem', position: i + 1, name: r.name || r.symbol, url: `${base}/aandeel/${encodeURIComponent(r.symbol)}` })) });
   }
+  // Lijst 'alle aandelen': maximaal 50 per pagina (?pagina=2), of alles (?pagina=alles).
+  const PER = 50;
+  const pages = Math.max(1, Math.ceil(list.length / PER));
+  const all = req.query.pagina === 'alles';
+  const page = all ? 0 : Math.min(pages, Math.max(1, parseInt(req.query.pagina, 10) || 1));
+  const pageRows = view === 'alle' && !all ? list.slice((page - 1) * PER, page * PER) : list;
+  const pager = view === 'alle' && pages > 1 ? { page, pages, per: PER, total: list.length, all, from: all ? 1 : (page - 1) * PER + 1 } : null;
   res.render('stocks', {
     title: `${idx.label}: ${VIEW_TITLES[view]}`,
     intro,
     seo: { description: intro ? intro.slice(0, 300) : `Alle aandelen uit de ${idx.label} met koers, gemiddeld koersdoel, potentieel en de verdeling van kopen, houden en verkopen van analisten.`, canonical, jsonld },
-    idx, groups: indexes.GROUPS, counts, rows: list, allCount: rows.length, sort, dir, summary, view, today,
+    idx, groups: indexes.GROUPS, counts, rows: pageRows, allCount: rows.length, sort, dir, summary, view, today, pager,
   });
 }));
 

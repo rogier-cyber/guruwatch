@@ -1576,3 +1576,13 @@ main .qa-q, main .qa-q p, main .qa-ans p { max-width: 95ch; }
 /* Header blijft op één regel nu de content iets smaller is */
 @media (min-width: 641px) { .top-in { gap: 12px; } .nav a { padding: 7px 8px; } .search { min-width: 140px; } }
 @media (min-width: 641px) and (max-width: 1380px) { .brand img { width: 34px; height: 34px; } }
+
+/* Paginering van de aandelenlijst */
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.pager-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.pager-links a { padding: 6px 11px; border-radius: 9px; background: var(--soft-btn); border: 1px solid var(--soft-btn-b); color: var(--text); font-weight: 650; font-size: 13.5px; text-decoration: none; }
+.pager-links a:hover { background: var(--soft-btn-h); }
+.pager-links a.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+/* Uitloggen blijft naast de zoekbalk */
+.logout { flex: none; }
+.logout .link { white-space: nowrap; }

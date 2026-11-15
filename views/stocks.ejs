@@ -2,7 +2,7 @@
 <%
   const link = function (o) {
     const p = Object.assign({ index: idx.key, sort: sort, dir: dir, weergave: view }, o);
-    return '/aandelen?index=' + encodeURIComponent(p.index) + (p.weergave !== 'alle' ? '&weergave=' + p.weergave : '') + (p.weergave === 'alle' && (p.sort !== 'naam' || p.dir !== 'op') ? '&sort=' + p.sort + '&dir=' + p.dir : '');
+    return '/aandelen?index=' + encodeURIComponent(p.index) + (p.weergave !== 'alle' ? '&weergave=' + p.weergave : '') + (p.weergave === 'alle' && (p.sort !== 'naam' || p.dir !== 'op') ? '&sort=' + p.sort + '&dir=' + p.dir : '') + (p.pagina && p.pagina !== 1 ? '&pagina=' + p.pagina : '');
   };
   const th = function (key, label, cls) {
     if (view !== 'alle') return '<th class="' + (cls || '') + '">' + label + '</th>';
@@ -100,6 +100,15 @@
         <% }) %>
         </tbody>
       </table></div>
+      <% if (locals.pager) { %>
+      <nav class="pager" aria-label="Pagina's">
+        <span class="pager-info small muted"><%= pager.all ? 'Alle ' + pager.total + ' aandelen' : 'Aandelen ' + pager.from + '-' + Math.min(pager.total, pager.from + pager.per - 1) + ' van ' + pager.total %></span>
+        <span class="pager-links">
+        <% for (var pg = 1; pg <= pager.pages; pg++) { var a = (pg - 1) * pager.per + 1, b = Math.min(pager.total, pg * pager.per); %><a href="<%= link({ pagina: pg }) %>" class="<%= !pager.all && pg === pager.page ? 'on' : '' %>"><%= a %>-<%= b %></a><% } %>
+        <a href="<%= link({ pagina: 'alles' }) %>" class="<%= pager.all ? 'on' : '' %>">Toon alles</a>
+        </span>
+      </nav>
+      <% } %>
     </section>
     <% } %>
     <% } %>
