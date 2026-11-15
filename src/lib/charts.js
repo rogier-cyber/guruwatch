@@ -313,7 +313,8 @@ function treemap(items, { width = 920, height = 420, label = 'Verdeling van de p
       const fit = (t, px) => { const max = Math.max(2, Math.floor((n.w - 14) / px)); return t.length > max ? t.slice(0, max - 1).trimEnd() + '…' : t; };
       const shade = n.fill ? 1 : Math.max(0.35, 1 - i * 0.025);
       const style = n.fill ? `fill:${n.fill}` : `opacity:${shade.toFixed(2)}`;
-      return `<a href="${esc(n.href || '#')}"><g class="tm ${n.tone || ''}"><rect x="${(n.x + 1).toFixed(1)}" y="${(n.y + 1).toFixed(1)}" width="${Math.max(0, n.w - 2).toFixed(1)}" height="${Math.max(0, n.h - 2).toFixed(1)}" rx="4" style="${style}"><title>${esc(n.label)}${n.sub ? ' · ' + esc(n.sub) : ''}</title></rect>
+      const tipAttr = n.tip ? ` data-tip="${esc(n.tip)}"${n.logo ? ` data-tip-logo="${esc(n.logo)}"` : ''}` : '';
+      return `<a href="${esc(n.href || '#')}"><g class="tm ${n.tone || ''}"${tipAttr}><rect x="${(n.x + 1).toFixed(1)}" y="${(n.y + 1).toFixed(1)}" width="${Math.max(0, n.w - 2).toFixed(1)}" height="${Math.max(0, n.h - 2).toFixed(1)}" rx="4" style="${style}">${n.tip ? '' : `<title>${esc(n.label)}${n.sub ? ' · ' + esc(n.sub) : ''}</title>`}</rect>
         ${mid ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 18).toFixed(1)}" class="tm-l">${esc(fit(String(n.label), 7.4))}</text>` : ''}
         ${big && n.sub ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 34).toFixed(1)}" class="tm-s">${esc(fit(String(n.sub), 6.2))}</text>` : ''}</g></a>`;
     })
@@ -352,7 +353,7 @@ function hbars(items, { max, cls = '' } = {}) {
   const m = max || Math.max(1, ...items.map((x) => x.value));
   const stocky = items.some((x) => x.sym);
   return `<div class="hbars ${stocky ? 'hbars-stock ' : ''}${cls}">${items
-    .map((x) => `<a class="hb" href="${esc(x.href || '#')}"><span class="hb-l">${x.sym ? ui.stock(x.sym, x.name, { href: false }) : esc(x.label)}</span><span class="hb-t"><span class="hb-f" style="width:${Math.max(1.5, (x.value / m) * 100).toFixed(1)}%"></span></span><span class="hb-v">${esc(x.display ?? x.value)}</span></a>`)
+    .map((x) => `<a class="hb" href="${esc(x.href || '#')}"${x.tip ? ` data-tip="${esc(x.tip)}"${x.logo ? ` data-tip-logo="${esc(x.logo)}"` : ''}` : ''}><span class="hb-l">${x.sym ? ui.stock(x.sym, x.name, { href: false }) : esc(x.label)}</span><span class="hb-t"><span class="hb-f" style="width:${Math.max(1.5, (x.value / m) * 100).toFixed(1)}%"></span></span><span class="hb-v">${esc(x.display ?? x.value)}</span></a>`)
     .join('')}</div>`;
 }
 
