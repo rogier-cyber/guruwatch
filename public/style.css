@@ -1643,3 +1643,6 @@ main .qa-q, main .qa-q p, main .qa-ans p { max-width: 95ch; }
 main .kp-list li { max-width: none; }
 .sf-logo img { width: 40px; height: 40px; }
 .sf-wm { font-size: 21px; }
+/* Watermerk in de hero: guru mét de stijgende staafjes uit het logo */
+.hero::before { width: 230px; height: 230px; right: 14px; bottom: -16px; -webkit-mask-image: url("/static/img/guru-full-mask.webp"); mask-image: url("/static/img/guru-full-mask.webp"); }
+@media (max-width: 640px) { .hero::before { width: 140px; height: 140px; right: 4px; bottom: -8px; } }
