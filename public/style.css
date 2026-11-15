@@ -23,7 +23,7 @@
   }
 }
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable both-edges; }
+html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.55 "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -1517,3 +1517,62 @@ main .qa-q, main .qa-q p, main .qa-ans p { max-width: 95ch; }
   .oo-trio, .oo-feat, .oo-prin { grid-template-columns: minmax(0, 1fr); }
   .oo-iex { flex-direction: column; align-items: flex-start; }
 }
+
+/* ===== Signatuur: staafjes uit het logo + guru-figuur ===== */
+:root {
+  --gw-bars: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ef4b4b'/%3E%3Cstop offset='1' stop-color='%23b3171c'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg fill='url(%23g)'%3E%3Crect x='1' y='11' width='4.6' height='9' rx='.5'/%3E%3Crect x='7.7' y='6.5' width='4.6' height='13.5' rx='.5'/%3E%3Crect x='14.4' y='1.5' width='4.6' height='18.5' rx='.5'/%3E%3C/g%3E%3C/svg%3E");
+  --gw-guru: url("/static/img/guru-mask.webp");
+  --gw-guru-navy: var(--navy);
+}
+@media (prefers-color-scheme: dark) { :root { --gw-guru-navy: #c3cde3; } }
+.gw-bars { display: inline-block; width: 1em; height: 1em; background: var(--gw-bars) no-repeat center / contain; }
+.gw-guru { display: inline-block; width: 1em; height: 1em; background: var(--gw-guru-navy); -webkit-mask: var(--gw-guru) no-repeat center bottom / contain; mask: var(--gw-guru) no-repeat center bottom / contain; flex: none; }
+.gw-guru-navy { background: var(--gw-guru-navy); }
+.gw-guru-red { background: var(--red); }
+.gw-guru-gold { background: var(--amber); }
+.gw-guru-white { background: #fff; }
+.gw-guru-muted { background: var(--muted); }
+
+/* Staafjes achter de paginatitel (in plaats van de rode punt) */
+.hero h1::after, .page-title:not(.stock-name)::after { content: ""; display: inline-block; width: .5em; height: .5em; margin-left: .14em; background: var(--gw-bars) no-repeat center bottom / contain; vertical-align: baseline; }
+.page-title:not(.stock-name)::after { width: .46em; height: .46em; }
+
+/* Kaarttitels: drie rode staafjes in plaats van het rode streepje */
+.card-h h2::before, .card > h2:first-child::before { width: 14px; height: 14px; border-radius: 0; background: var(--gw-bars) no-repeat center bottom / contain; vertical-align: -1px; }
+
+/* Guru als watermerk rechtsonder in elke hero */
+.hero::before { content: ""; position: absolute; right: 18px; bottom: -14px; width: 190px; height: 190px; background: #fff; opacity: .055; -webkit-mask: var(--gw-guru) no-repeat center bottom / contain; mask: var(--gw-guru) no-repeat center bottom / contain; pointer-events: none; }
+@media (max-width: 640px) { .hero::before { width: 120px; height: 120px; right: 6px; bottom: -8px; } }
+
+/* Drie soorten guru's op de voorpagina, elk een eigen kleur */
+.trio-g { width: 42px; height: 42px; }
+.trio a:hover .trio-g { transform: translateY(-1px); }
+
+/* Lege staten: kleine grijze guru ervoor */
+.empty { display: flex; align-items: center; gap: 10px; }
+.empty::before { content: ""; flex: none; width: 26px; height: 26px; background: var(--muted); opacity: .55; -webkit-mask: var(--gw-guru) no-repeat center bottom / contain; mask: var(--gw-guru) no-repeat center bottom / contain; }
+
+/* Eigen opsommingstekens: mini-staafjes */
+.prose ul, .ct-kp:not(.ct-qs) { list-style: none; padding-left: 0; }
+.prose ul > li, .ct-kp:not(.ct-qs) > li { position: relative; padding-left: 22px; }
+.prose ul > li::before, .ct-kp:not(.ct-qs) > li::before { content: ""; position: absolute; left: 2px; top: .42em; width: 11px; height: 11px; background: var(--gw-bars) no-repeat center bottom / contain; }
+
+/* Tussenkopjes in lange teksten: dun lijntje met staafjes */
+.prose h2 { position: relative; padding-top: 18px; margin-top: 26px; border-top: 1px solid var(--line); }
+.prose h2::before { content: ""; position: absolute; top: -6px; left: 0; width: 12px; height: 12px; padding-right: 8px; background: var(--card) var(--gw-bars) no-repeat left bottom / 12px 12px; box-sizing: content-box; }
+.prose h1 + h2 { border-top: 0; padding-top: 0; margin-top: 12px; }
+.prose h1 + h2::before { display: none; }
+
+/* 404 / foutpagina */
+.err-card { padding: 40px 24px; }
+.err-art { display: flex; align-items: flex-end; justify-content: center; gap: 4px; margin-bottom: 14px; }
+.err-art .gw-guru { width: 110px; height: 110px; }
+.err-art .gw-bars { width: 46px; height: 46px; margin-bottom: 18px; opacity: .35; filter: grayscale(1); }
+.err-sub { max-width: 46ch; margin-left: auto; margin-right: auto; }
+
+/* Footer: witte guru naast het copyright */
+.sf-c { display: inline-flex; align-items: center; gap: 8px; }
+.sf-c .gw-guru { width: 22px; height: 22px; opacity: .9; }
+/* Header blijft op één regel nu de content iets smaller is */
+@media (min-width: 641px) { .top-in { gap: 12px; } .nav a { padding: 7px 8px; } .search { min-width: 140px; } }
+@media (min-width: 641px) and (max-width: 1380px) { .brand img { width: 34px; height: 34px; } }
