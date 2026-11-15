@@ -320,7 +320,14 @@ pub.get('/guru/:slug', wrap(async (req, res) => {
   for (const list of sectorHoldings.values()) list.sort((a, b) => b.weight - a.weight);
   const heat = guru.heatmap(upto, { top: 15, last: 8 });
   heat.rows.forEach((r) => { r.name = nameOf.get(r.symbol) || r.issuer; });
-  const valueSeries = totals.filter((t) => t.period <= cur.period).slice(-12);
+  const valueSeries = totals.filter((t) => t.period <= cur.period).slice(-40);
+  // S&P 500 met dezelfde startwaarde, ter vergelijking in "Waarde door de tijd".
+  if (valueSeries.length >= 2) {
+    const spy = await safe(gq.pricesFor(['SPY'], valueSeries[0].period), []);
+    const at = (d) => { let v = null; for (const p of spy) { if (p.date <= d) v = p.close; else break; } return v; };
+    const s0 = at(valueSeries[0].period) || (spy[0] && spy[0].date <= valueSeries[0].period.slice(0, 8) + '31' ? spy[0].close : null);
+    if (s0) valueSeries.forEach((v) => { const c = at(v.period); v.bench = c ? valueSeries[0].value * (c / s0) : null; });
+  }
   const top10 = cur.rows.slice(0, 10).reduce((s, r) => s + r.weight, 0);
 
   // Bubbels: wat er bijgekocht en verkocht is tegenover het potentieel volgens analisten.

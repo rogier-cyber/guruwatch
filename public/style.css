@@ -792,12 +792,17 @@ a.sc:hover b { color: var(--accent); }
 .gc-axt { font-weight: 600; }
 .gc-line { fill: none; stroke: var(--red); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
 .gc-line.bench { stroke: var(--navy-3); stroke-width: 2; stroke-dasharray: 5 4; }
+.gc-bench { fill: none; stroke: var(--navy-3); stroke-width: 1.8; stroke-dasharray: 5 4; stroke-linejoin: round; }
+.gc-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; }
+.gc-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.gc-legend i { display: inline-block; width: 18px; height: 0; border-top: 2.4px solid var(--pos); }
+.gc-legend i.lg-bench { border-top: 2px dashed var(--navy-3); }
 .gc-pt circle { fill: var(--card); stroke: var(--red); stroke-width: 2; }
 .gc-pt:hover circle { fill: var(--red); }
 .gc-end { fill: var(--red); stroke: var(--card); stroke-width: 2; }
 .gc-val { fill: var(--text); font-weight: 800; font-size: 13px; font-family: inherit; }
 .gc-tag { font-size: 12px; font-weight: 800; font-family: inherit; } .gc-tag.a { fill: var(--red); } .gc-tag.b { fill: var(--navy-3); }
-@media (prefers-color-scheme: dark) { .gc-line.bench { stroke: #8ea6dc; } .gc-tag.b { fill: #8ea6dc; } }
+@media (prefers-color-scheme: dark) { .gc-line.bench, .gc-bench { stroke: #8ea6dc; } .gc-legend i.lg-bench { border-top-color: #8ea6dc; } .gc-tag.b { fill: #8ea6dc; } }
 .sw-guru { background: var(--red); } .sw-bench { background: var(--navy-3); }
 .gu-pie { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 20px; align-items: center; }
 .pie { max-width: 200px; } .pie-bg { stroke: var(--line-2); } .pie-seg { transition: stroke-width .15s; } .pie-seg:hover { stroke-width: 36; }
@@ -1670,3 +1675,4 @@ main .kp-list li { max-width: none; }
 .faq-acc:first-of-type, .faq-item:first-of-type, .faq .faq-acc:first-of-type, .qa-acc-list { border-top: 0; }
 .qa-acc-list > :first-child { border-top: 0; }
 .hero h1 .h-mon { color: var(--red); }
+td.hm-zero { color: var(--muted); font-weight: 500; }
