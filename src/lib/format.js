@@ -25,7 +25,17 @@ function price(v) {
 // "Apple Inc." -> "Apple", "Deckers Outdoor Corporation" -> "Deckers Outdoor".
 function company(n) {
   const s = String(n || '').trim();
-  return s.replace(/,?\s+(inc\.?|incorporated|corporation|corp\.?|co\.|ltd\.?|limited|plc|n\.v\.|s\.a\.|se|ag|l\.p\.|lp)$/i, '').trim() || s;
+  // Aandelenklasse en "Common Stock" weg ("Zillow Group, Inc. Class C" -> "Zillow Group").
+  const k = s.replace(/[\s,]+(class\s+[a-z]\b.*|common\s+(stock|shares).*|ordinary\s+shares.*)$/i, '').trim() || s;
+  return k.replace(/,?\s+(inc\.?|incorporated|corporation|corp\.?|co\.|ltd\.?|limited|plc|n\.v\.|s\.a\.|se|ag|l\.p\.|lp)$/i, '').trim() || k;
+}
+
+// Portefeuillegewicht: kleine posities als "<0,1%" in plaats van "0,0%".
+function weight(v) {
+  if (!isNum(v)) return '–';
+  const x = Number(v);
+  if (x > 0 && x < 0.0005) return '<0,1%';
+  return pct(x, false);
 }
 
 // SEC-namen staan vaak in hoofdletters ("WANG CHUN KAI"): maak er "Wang Chun Kai" van.
@@ -184,4 +194,5 @@ function paras(text, max = 280) {
   return out;
 }
 
-module.exports = { paras, company, person, role, num, price, money, pct, date, dateTime, ago, gradeTone, action, actionTone, txType, txTone, tone, sparkline, isNum };
+module.exports = {
+  weight, paras, company, person, role, num, price, money, pct, date, dateTime, ago, gradeTone, action, actionTone, txType, txTone, tone, sparkline, isNum };

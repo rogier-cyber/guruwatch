@@ -355,6 +355,16 @@ pub.get('/guru/:slug', wrap(async (req, res) => {
     perf ? `Wie de portefeuille sinds ${fmt.date(perf.since)} elk kwartaal had nagebootst, haalde ${fmt.pct(perf.total)} rendement, tegenover ${fmt.pct(perf.benchTotal)} voor de S&P 500.` : '',
   ].filter(Boolean);
 
+  // Volledig verkocht: klassen van één bedrijf (Z + ZG) samen, grootste positie eerst.
+  const soldMap = new Map();
+  for (const m of mv.sells.filter((x) => x.kind === 'sold')) {
+    const name = nameOf.get(m.symbol) || m.issuer;
+    const key = (fmt.company(name) || m.symbol || '').toLowerCase();
+    const g = soldMap.get(key);
+    if (g) { g.prev_weight = (Number(g.prev_weight) || 0) + (Number(m.prev_weight) || 0); if (m.symbol) g.symbols.push(m.symbol); }
+    else soldMap.set(key, { ...m, name, prev_weight: Number(m.prev_weight) || 0, symbols: m.symbol ? [m.symbol] : [] });
+  }
+  const soldList = [...soldMap.values()].sort((a, b) => b.prev_weight - a.prev_weight);
   res.render('guru', {
     title,
     seo: { description: story.slice(0, 2).join(' ').slice(0, 300), canonical, jsonld: [
@@ -365,7 +375,7 @@ pub.get('/guru/:slug', wrap(async (req, res) => {
       ] },
     ] },
     fund, name, watched, empty: false, periods, selIdx, cur, prev, curTot, positions, sectors, heat, mv, valueSeries, top10, bubbles, perf, story, gc: guruCharts,
-    sold: mv.sells.filter((m) => m.kind === 'sold').map((m) => ({ ...m, name: nameOf.get(m.symbol) || m.issuer })),
+    sold: soldList,
     nameOf,
   });
 }));
