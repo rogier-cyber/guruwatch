@@ -119,32 +119,31 @@ function mapInsider(r) {
 
 // Zet 13F-regels om naar posities met gewicht; voegt dubbele CUSIP-regels samen.
 function mapHoldings(rows) {
+  const { canonical } = require('./shareClasses');
   const byKey = new Map();
   for (const r of rows || []) {
     const cusip = clean(r.securityCusip) || clean(r.cusip);
     if (!cusip) continue;
     const putCall = (clean(r.putCallShare) || '').toLowerCase() === 'share' ? '' : clean(r.putCallShare) || '';
-    const key = `${cusip}|${putCall}`;
+    const raw = clean(r.symbol) ? clean(r.symbol).toUpperCase() : null;
+    // Andere klasse van hetzelfde bedrijf (GOOGL, BRK-A, ...) telt mee bij de hoofdklasse.
+    const cls = canonical(raw);
+    const symbol = cls ? cls.symbol : raw;
+    const key = symbol ? `s:${symbol}|${putCall}` : `${cusip}|${putCall}`;
     const prev = byKey.get(key);
-    const shares = num(r.shares) || 0;
+    const shares = (num(r.shares) || 0) * (cls ? cls.ratio : 1);
     const value = num(r.value) || 0;
+    const row = { cusip, put_call: putCall, symbol, issuer: clean(r.nameOfIssuer), title_of_class: clean(r.titleOfClass), filing_date: date(r.filingDate), main: !cls };
     if (prev) {
       prev.shares += shares;
       prev.value += value;
+      // De hoofdklasse levert cusip en naam.
+      if (row.main && !prev.main) Object.assign(prev, { cusip: row.cusip, issuer: row.issuer, title_of_class: row.title_of_class, main: true });
     } else {
-      byKey.set(key, {
-        cusip,
-        put_call: putCall,
-        symbol: clean(r.symbol) ? clean(r.symbol).toUpperCase() : null,
-        issuer: clean(r.nameOfIssuer),
-        title_of_class: clean(r.titleOfClass),
-        shares,
-        value,
-        filing_date: date(r.filingDate),
-      });
+      byKey.set(key, { ...row, shares, value });
     }
   }
-  const list = [...byKey.values()];
+  const list = [...byKey.values()].map(({ main, ...h }) => h);
   const total = list.reduce((s, h) => s + (h.put_call ? 0 : h.value), 0);
   for (const h of list) h.weight = total > 0 && !h.put_call ? h.value / total : 0;
   list.sort((a, b) => b.value - a.value);
