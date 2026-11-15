@@ -104,4 +104,10 @@ async function content(symbol, year, quarter) {
   return db.one('SELECT content, nl FROM earnings_transcripts WHERE symbol = $1 AND year = $2 AND quarter = $3', [symbol, year, quarter]);
 }
 
-module.exports = { ensure, stored, runTranscripts, content, KEEP };
+// Alleen de Nederlandse samenvatting, prognose en kernpunten (zonder de vertaalde vragenronde).
+async function nlSummary(symbol, year, quarter) {
+  const r = await db.one("SELECT nl - 'exchanges' AS nl FROM earnings_transcripts WHERE symbol = $1 AND year = $2 AND quarter = $3", [symbol, year, quarter]);
+  return (r && r.nl) || null;
+}
+
+module.exports = { ensure, stored, runTranscripts, content, nlSummary, KEEP };

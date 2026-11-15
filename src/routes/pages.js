@@ -610,12 +610,28 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
   const transcripts = require('../transcripts');
   transcripts.ensure(symbol).catch(() => {});
   const lastCalls = await safe(transcripts.stored(symbol), []);
-  const callTeaser = lastCalls[0] && lastCalls[0].date && Date.now() - new Date(lastCalls[0].date).getTime() < 130 * 864e5
-    ? { cur: lastCalls[0], prev: lastCalls[1] || null, cmp: lastCalls[1] ? tr.compare(lastCalls[0].analysis, lastCalls[1].analysis) : null }
-    : null;
+  let callTeaser = null;
+  if (lastCalls[0] && lastCalls[0].date && Date.now() - new Date(lastCalls[0].date).getTime() < 130 * 864e5) {
+    const cur = lastCalls[0];
+    const prev = lastCalls[1] || null;
+    const cmp = prev ? tr.compare(cur.analysis, prev.analysis) : null;
+    const ev = resultsFor(earningsRows, cur.date);
+    const nl = await safe(transcripts.nlSummary(symbol, cur.year, cur.quarter));
+    // Toon van het management over de laatste calls (oud -> nieuw) voor het lijntje.
+    const toneHist = lastCalls.slice(0, 8).reverse().filter((c) => c.analysis && c.analysis.tone)
+      .map((c) => ({ label: callLabel(c), v: callCharts.score(c.analysis.tone.mgmt.net) }));
+    // Vraag die het meeste antwoord kreeg, als lokkertje naar de call-pagina.
+    const ex = (cur.analysis.exchanges || []).slice().sort((x, y) => (y.answerWords || 0) - (x.answerWords || 0))[0] || null;
+    callTeaser = {
+      cur, prev, cmp, ev, nl, toneHist, ex,
+      href: `/aandeel/${encodeURIComponent(symbol)}/earnings-calls/${callSlug(cur)}`,
+      story: nl && nl.summary ? [] : tr.story({ a: cur.analysis, cmp, prevLabel: prev ? callLabel(prev) : '', ev }),
+    };
+  }
   res.render('stock', {
     members,
     callTeaser,
+    callCharts,
     tr,
     ratingTrend,
     earningsHist: earningsRows.map(withReaction).reverse().map((h) => ({ ...h, label: er.quarterLabel(h.date) })),
