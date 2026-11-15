@@ -39,9 +39,12 @@
     return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
 
+  var mouseAt = null;
   function place(el) {
     var t = ensureTip();
     var r = el.getBoundingClientRect();
+    // Grote tegels: tooltip bij de muis in plaats van boven de hele tegel.
+    if (mouseAt && lastPointer === 'mouse' && el.classList && el.classList.contains('tl')) r = { left: mouseAt.x, right: mouseAt.x, top: mouseAt.y - 6, bottom: mouseAt.y + 6, width: 0, height: 12 };
     var tw = t.offsetWidth;
     var th = t.offsetHeight;
     var vw = document.documentElement.clientWidth;
@@ -80,6 +83,10 @@
   }
 
   document.addEventListener('pointerdown', function (e) { lastPointer = e.pointerType || 'mouse'; }, true);
+  document.addEventListener('mousemove', function (e) {
+    mouseAt = { x: e.clientX, y: e.clientY };
+    if (current && current.classList.contains('tl') && lastPointer !== 'touch') place(current);
+  }, { passive: true });
   document.addEventListener('mouseover', function (e) {
     if (lastPointer === 'touch') return;
     var el = target(e);

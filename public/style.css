@@ -1703,3 +1703,5 @@ td.hm-zero { color: var(--muted); font-weight: 500; }
 .gw-tip .tip-head b { margin: 0; }
 @media (max-width: 640px) { .tl b { font-size: 12px; } .tl-logo { width: 26px; height: 26px; } .tm-legend .tm-hint { margin-left: 0; } }
 .tl:hover, .tl:focus { text-decoration: none; }
+.tl.buy .tl-in { background: color-mix(in srgb, #0b6e4f calc(var(--k) * 100%), #9fd6bd); }
+.tm-legend i.lg-buy1 { background: color-mix(in srgb, #0b6e4f 50%, #9fd6bd); } .tm-legend i.lg-buy3 { background: #0b6e4f; }

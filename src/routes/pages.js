@@ -213,7 +213,25 @@ router.get('/insiders', wrap(async (req, res) => {
     byRole.set(g, cur);
   }
   const roleRows = [...byRole.values()].filter((r) => r.buy > 0).sort((a, b) => b.buy - a.buy);
-  res.render('insiders', { title: 'Insidermonitor: aankopen en verkopen van bestuurders', trades, clusters, type, minValue, flows, buyMap, roleRows, kpi, gc: guruCharts });
+  // Tegels "Waar kopen insiders?": tooltip met kopers, data, aantal en gemiddelde prijs.
+  const maxIns = Math.max(1, ...buyMap.map((b) => b.insiders));
+  const buyTiles = buyMap.map((b) => {
+    const buyers = Array.isArray(b.buyers) ? b.buyers : [];
+    const dates = b.first_date === b.last_date ? fmt.date(b.first_date) : `${fmt.date(b.first_date)} – ${fmt.date(b.last_date)}`;
+    const lines = [`${fmt.company(b.name || b.symbol)} (${b.symbol})`,
+      `Gekocht voor ${fmt.money(b.value)} door ${b.insiders} ${b.insiders === 1 ? 'insider' : 'insiders'}`,
+      ...buyers.slice(0, 4).map((x) => `• ${fmt.person(x.name)}${fmt.role(x.role) ? ` (${fmt.role(x.role)})` : ''}: ${fmt.money(x.value)}`),
+      ...(buyers.length > 4 ? [`• en nog ${buyers.length - 4} anderen`] : []),
+      `${b.shares >= 1e6 ? (b.shares / 1e6).toFixed(1).replace('.', ',') + ' mln' : fmt.num(Math.round(b.shares))} aandelen · gem. ${b.shares > 0 ? fmt.price(b.value / b.shares) : '–'}`,
+      `Transactiedatum ${dates}`];
+    return {
+      label: b.symbol, value: Math.sqrt(b.value), href: '/aandeel/' + encodeURIComponent(b.symbol), tone: 'buy',
+      big: fmt.money(b.value), chgLabel: `${b.insiders} ${b.insiders === 1 ? 'koper' : 'kopers'}`,
+      shade: 0.5 + 0.5 * (maxIns > 1 ? (b.insiders - 1) / (maxIns - 1) : 0),
+      tip: lines.join('\n'), logo: logoUrl(b.symbol),
+    };
+  });
+  res.render('insiders', { title: 'Insidermonitor: aankopen en verkopen van bestuurders', trades, clusters, type, minValue, flows, buyMap, buyTiles, roleRows, kpi, gc: guruCharts });
 }));
 
 router.get('/insider/:cik', wrap(async (req, res) => {
