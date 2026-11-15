@@ -72,7 +72,7 @@ function analystMap(points, { width = 920, height = 420, labels = 8 } = {}) {
     const r = R(p.calls);
     const fill = scoreColor(p.score);
     const t = `${p.label}${p.sub ? ' · ' + p.sub : ''} — GuruScore ${Math.round(p.score || 0)}, trefkans ${Math.round(p.x * 100)}%, ${pct(p.y, 1)} vs S&P, ${p.calls} adviezen`;
-    return `<a href="${esc(p.href || '#')}"><circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${r.toFixed(1)}" class="am-dot${top.has(p) ? ' top' : ''}" style="fill:${fill}"><title>${esc(t)}</title></circle></a>`;
+    return `<a href="${esc(p.href || '#')}" data-s="${Math.round(p.score || 0)}"><circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${r.toFixed(1)}" class="am-dot${top.has(p) ? ' top' : ''}" style="fill:${fill}"><title>${esc(t)}</title></circle></a>`;
   }).join('');
   // Namen bij de beste analisten, maar alleen waar ze niet over een ander label vallen.
   const placed = [{ x0: pad.l + W - 190, x1: pad.l + W, y0: pad.t, y1: pad.t + 22 }, { x0: pad.l, x1: pad.l + 170, y0: pad.t + H - 22, y1: pad.t + H }];
@@ -84,7 +84,7 @@ function analystMap(points, { width = 920, height = 420, labels = 8 } = {}) {
     const box = { x0: right ? x - w : x, x1: right ? x : x + w, y0: Y(p.y) - 8, y1: Y(p.y) + 6 };
     if (placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0)) return '';
     placed.push(box);
-    return `<text x="${x.toFixed(1)}" y="${(Y(p.y) + 4).toFixed(1)}" class="am-l"${right ? ' text-anchor="end"' : ''}>${esc(p.label)}</text>`;
+    return `<text x="${x.toFixed(1)}" y="${(Y(p.y) + 4).toFixed(1)}" class="am-l" data-s="${Math.round(p.score || 0)}"${right ? ' text-anchor="end"' : ''}>${esc(p.label)}</text>`;
   }).join('');
   return `<svg viewBox="0 0 ${width} ${height}" class="gc am" role="img" aria-label="Analisten: trefkans tegenover rendement boven de S&amp;P 500">
     ${best}${grid}${med}
