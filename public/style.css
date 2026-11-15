@@ -1764,3 +1764,7 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
 .h-guru .gw-guru-red { background: #ff6b6b; }
 .oo-gg { width: 56px; height: 56px; }
 .hero h1.no-bars::after { content: none; }
+
+.more-link { text-align: center; text-decoration: none; }
+.more-link:hover { text-decoration: none; filter: brightness(.97); }
+.cl-tbl .cl-who { min-width: 220px; max-width: 360px; line-height: 1.45; }

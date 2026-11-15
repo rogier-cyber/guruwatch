@@ -62,6 +62,7 @@
     <% if (!clusters.length) { %><p class="empty">Nog geen data.</p><% } else { %>
     <%- charts.hbars(clusters.map(function (c) { return { sym: c.symbol, name: c.name, value: c.insiders, display: c.insiders + (c.insiders === 1 ? ' insider · ' : ' insiders · ') + fmt.money(c.value) + ' gekocht', href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
     <% } %>
+    <a class="more-btn more-link" href="/insiders/meerdere-kopers">Bekijk de hele lijst van 2 maanden <span aria-hidden="true">→</span></a>
   </aside>
 </div>
 <%- include('partials/foot') %>

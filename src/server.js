@@ -120,7 +120,7 @@ app.use(pages.publicRouter);
 app.get('/mijn', (req, res, next) => {
   if (req.user) return next();
   const nextUrl = safeNext(req.query.next);
-  res.render('join', { title: 'Mijn GuruWatch: gratis account', next: nextUrl === '/' ? '/mijn' : nextUrl, seo: { description: 'Maak gratis een Guruwatch-account: volg aandelen, analisten, guru\'s en insiders, krijg meldingen en een ochtendbriefing.' } });
+  res.render('join', { title: 'Mijn GuruWatch: gratis account', next: nextUrl === '/' ? '/mijn' : nextUrl, seo: { description: 'Maak gratis een Guruwatch-account: volg aandelen, analisten, guru\'s en insiders, krijg meldingen en op zaterdag een weekoverzicht.' } });
 });
 app.use((req, res, next) => (PRIVATE.test(req.path) ? auth.requireUser(req, res, next) : next()), pages);
 
