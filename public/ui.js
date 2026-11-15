@@ -105,7 +105,7 @@ document.addEventListener('click', function (e) {
   var b = e.target.closest && e.target.closest('[data-more]');
   if (!b) return;
   var wrap = b.previousElementSibling;
-  if (wrap) wrap.querySelectorAll('tr[hidden]').forEach(function (r) { r.hidden = false; });
+  if (wrap) wrap.querySelectorAll('tr[hidden], .more-item[hidden]').forEach(function (r) { r.hidden = false; });
   b.hidden = true;
 });
 

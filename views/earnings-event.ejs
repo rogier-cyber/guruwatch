@@ -8,7 +8,7 @@
 </div>
 
 <div class="stats">
-  <div class="stat"><span>Winst per aandeel</span><strong><%= fmt.price(ev.eps_actual) %></strong><em class="small <%= fmt.tone(ev.surprise) %>"><%= ev.surprise == null ? 'verwacht ' + fmt.price(ev.eps_estimated) : fmt.pct(ev.surprise) + ' vs ' + fmt.price(ev.eps_estimated) %></em></div>
+  <div class="stat"><span>Winst per aandeel</span><strong><%= fmt.price(ev.eps_actual) %></strong><em class="small <%= fmt.tone(ev.surprise) %>"><%= ev.surprise == null ? 'verwacht ' + fmt.price(ev.eps_estimated) : fmt.pct(ev.surprise) + ' vs prognose ' + fmt.price(ev.eps_estimated) %></em></div>
   <div class="stat"><span>Omzet</span><strong><%= fmt.money(ev.revenue_actual) %></strong><em class="small <%= fmt.tone(ev.revSurprise) %>"><%= ev.revSurprise == null ? '' : fmt.pct(ev.revSurprise) + ' vs verwachting' %></em></div>
   <div class="stat"><span>Koersreactie</span><strong class="<%= fmt.tone(ev.reaction) %>"><%= fmt.pct(ev.reaction) %></strong><em class="small muted">dag ervoor tot dag erna</em></div>
   <div class="stat"><span>Koersdoelen in 10 dagen</span><strong><span class="pos">▲<%= summary.raises %></span> <span class="neg">▼<%= summary.cuts %></span></strong><em class="small <%= fmt.tone(summary.avgChange) %>">gemiddeld <%= fmt.pct(summary.avgChange) %></em></div>

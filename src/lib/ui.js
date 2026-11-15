@@ -35,4 +35,15 @@ function who(name, sub, href, tip) {
   return `<span class="who"><span class="who-n">${main}</span>${sub ? `<span class="who-s">${esc(sub)}</span>` : ''}</span>`;
 }
 
-module.exports = { esc, logo, stock, who };
+// Rond plaatje met initialen (we hebben geen foto's van analisten); kleur per bank.
+const AV_COLORS = ['#14213d', '#2a4073', '#d32f2f', '#0e9f6e', '#7c3aed', '#d97706', '#0f766e', '#be185d', '#2856d9', '#475569'];
+function avatar(name, firm) {
+  const parts = String(name || '?').replace(/[^A-Za-zÀ-ž .'-]/g, '').trim().split(/\s+/).filter(Boolean);
+  const ini = ((parts[0] || '?')[0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+  const key = String(firm || name || '');
+  let h = 0;
+  for (const c of key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return `<span class="an-av" style="background:${AV_COLORS[h % AV_COLORS.length]}" aria-hidden="true">${esc(ini)}</span>`;
+}
+
+module.exports = { esc, logo, stock, who, avatar };

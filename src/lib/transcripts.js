@@ -31,7 +31,7 @@ const NEG = /\b(declin(e|ed|es|ing)|weak(ness|er|ened|ening)?|challeng(e|es|ed|i
 const UNC = /\b(uncertain\w*|unclear|unpredictab\w*|volatil\w*|may|might|could|possibl[ey]|depend(s|ing|ent)?|approximately|roughly)\b/g;
 
 // Verhoog bij een betere analyse: opgeslagen calls worden dan opnieuw geanalyseerd.
-const VERSION = 4;
+const VERSION = 5;
 
 const count = (text, re) => {
   re.lastIndex = 0;
@@ -241,8 +241,23 @@ function pickSentences(list, n) {
   return out.sort((a, b) => a.i - b.i).map((x) => ({ text: x.snt, topics: x.t }));
 }
 
+// Prognose: zinnen over wat het bedrijf verwacht voor het komende kwartaal of jaar, met een getal.
+const OUTLOOK = /\b(we expect|we now expect|we anticipate|we are guiding|we're guiding|guidance|outlook|we project|we forecast|we plan to|for the (december|march|june|september|first|second|third|fourth|next|coming) quarter|next quarter|full[- ]year|fiscal (year )?20\d\d|calendar 20\d\d|next year|for 20\d\d)\b/i;
+
+function outlookSentences(list, n) {
+  const hits = list
+    .map((snt, i) => ({ snt, i, w: words(snt) }))
+    .filter((x) => x.w >= 8 && x.w <= 55 && !BOILER.test(x.snt) && OUTLOOK.test(x.snt) && NUMERIC.test(x.snt));
+  // Bij veel prognosezinnen: de rijkste (meeste getallen) houden, in de volgorde van de call.
+  const nums = (t) => (t.match(/\d[\d,.]*\s?(%|percent|billion|million|basis points)|\$\s?\d/gi) || []).length;
+  return hits.sort((a, b) => nums(b.snt) - nums(a.snt)).slice(0, n).sort((a, b) => a.i - b.i).map((x) => ({ text: x.snt, topics: topicsOf(x.snt) }));
+}
+
 function synopsis(preparedText, exchanges) {
-  const keyPoints = pickSentences(preparedText.flatMap(sentences), 5);
+  const all = preparedText.flatMap(sentences);
+  const outlook = outlookSentences(all, 6);
+  const used = new Set(outlook.map((o) => o.text));
+  const keyPoints = pickSentences(all.filter((x) => !used.has(x)), 7);
   const qa = exchanges
     .map((e) => {
       const best = pickSentences(e.answers.flatMap((a) => sentences(a.text)), 1)[0];
@@ -257,7 +272,7 @@ function synopsis(preparedText, exchanges) {
     seen.add(k);
     return true;
   }).slice(0, 4).map(({ score, ...x }) => x);
-  return { keyPoints, qaPoints };
+  return { outlook, keyPoints, qaPoints };
 }
 
 // Begin van een tekst: hele zinnen tot ongeveer n woorden.

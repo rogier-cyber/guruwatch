@@ -97,7 +97,8 @@ test('samenvatting, antwoorden en onze analyse', () => {
 
 test('disclaimers komen niet in de kernpunten', () => {
   const txt = 'Operator: Welcome.\nJane Smith: These statements involve risks and uncertainties that may cause actual results to differ materially from our forecast, including tariffs and 5% margins.\nTim Brook: We expect gross margin to be between 45% and 46% next quarter on strong demand.\nOperator: First question comes from Erik Woodring with Morgan Stanley.\nErik Woodring: What about AI demand and capex next year, can you help us?\nTim Brook: AI demand is strong.';
-  const k = tr.analyze(txt).synopsis.keyPoints.map((x) => x.text).join(' ');
+  const syn = tr.analyze(txt).synopsis;
+  const k = syn.keyPoints.concat(syn.outlook).map((x) => x.text).join(' ');
   assert.ok(!/differ materially/.test(k));
-  assert.ok(/gross margin/.test(k));
+  assert.ok(syn.outlook.some((x) => /gross margin to be between 45% and 46%/.test(x.text)), 'prognose herkend');
 });

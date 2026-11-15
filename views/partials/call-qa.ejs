@@ -1,10 +1,10 @@
-<% var list = locals.max ? exchanges.slice(0, max) : exchanges; %>
+<% var list = locals.max ? exchanges.slice(0, max) : exchanges; var show = locals.show || 6; %>
 <div class="qa-acc-list">
 <% list.forEach(function (e, i) { var l = locals.links && links.get(e.analyst.toLowerCase()); %>
-  <details class="qa-acc">
+  <details class="qa-acc<%= i >= show ? ' more-item' : '' %>"<%= i >= show ? ' hidden' : '' %>>
     <summary>
       <div class="qa-sum">
-        <div class="qa-who"><span class="qa-n"><%= i + 1 %></span><% if (l) { %><a href="/analist/<%= l.slug %>" data-tip-touch="0" data-tip="<%= e.analyst %>&#10;<%= l.firm || e.firm || '' %><%= l.score != null ? '&#10;GuruScore ' + Math.round(l.score) : '' %>"><b><%= e.analyst %></b></a><% } else { %><b><%= e.analyst %></b><% } %><% if (e.firm) { %> <span class="muted small"><%= e.firm %></span><% } %><% e.topics.forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div>
+        <div class="qa-who"><%- ui.avatar(e.analyst, e.firm) %><% if (l) { %><a href="/analist/<%= l.slug %>" data-tip-touch="0" data-tip="<%= e.analyst %>&#10;<%= l.firm || e.firm || '' %><%= l.score != null ? '&#10;GuruScore ' + Math.round(l.score) : '' %>"><b><%= e.analyst %></b></a><% } else { %><b><%= e.analyst %></b><% } %><% if (e.firm) { %> <span class="muted small"><%= e.firm %></span><% } %><% e.topics.forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div>
         <p class="qa-q">“<%= fullText && e.question ? e.question : e.excerpt %>”</p>
         <% if (e.answeredBy.length) { %><p class="small muted mb0">Antwoord van <%= e.answeredBy.join(', ') %> · <%= e.answerWords %> woorden</p><% } %>
       </div>
@@ -18,4 +18,5 @@
   </details>
 <% }) %>
 </div>
+<% if (list.length > show) { %><button class="more-btn" data-more>Meer vragen (<%= list.length - show %>)</button><% } %>
 <% if (!fullText) { %><p class="small muted mb0">Antwoorden zijn ingekort tot het begin. De volledige tekst tonen we zodra de licentie daarvoor rond is.</p><% } %>
