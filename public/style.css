@@ -836,9 +836,18 @@ a.sc:hover b { color: var(--accent); }
 .gu-wb { display: inline-block; width: 80px; height: 7px; background: var(--line-2); border-radius: 4px; overflow: hidden; margin-right: 8px; vertical-align: middle; }
 .gu-wb i { display: block; height: 100%; background: linear-gradient(90deg, var(--navy-3), var(--red)); border-radius: 4px; }
 .gu-tbl { min-width: 780px; }
-.sold-list { display: flex; flex-wrap: wrap; gap: 10px 22px; }
-.sold-it { display: inline-flex; align-items: center; gap: 8px; }
-.sold-it em { font-style: normal; font-size: 12px; color: var(--muted); }
+.sold-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 8px 14px; }
+.sold-it { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--line-2); min-width: 0; }
+.sold-it[hidden] { display: none; }
+.sold-n { min-width: 0; flex: 1; }
+.sold-n .sc { min-width: 0; max-width: 100%; }
+.sold-n .sc-t { min-width: 0; }
+.sold-n .sc-t em { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sold-cls { font-weight: 600; color: var(--muted); font-size: 12px; }
+.sold-w { flex: none; text-align: right; white-space: nowrap; font-size: 13.5px; }
+.sold-w em { font-style: normal; font-size: 12px; color: var(--muted); }
+.sold-w b { font-weight: 750; }
+.sold-grid + .more-btn { margin-top: 12px; }
 @media (max-width: 900px) { .gu-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
   .gk-hero-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
