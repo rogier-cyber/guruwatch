@@ -21,7 +21,7 @@
   <div class="stat" data-tip="Woorden als may, might, could, uncertain en volatile&#10;per 10.000 woorden van het management"><span>Onzekere woorden</span><strong><%= Math.round(tr.per10k(A.tone.mgmt.unc, A.tone.mgmt.words)) %></strong><em class="small muted">per 10.000 woorden<% if (cmp) { %> · <span class="<%= fmt.tone(-cmp.uncMgmt) %>"><%= cmp.uncMgmt >= 0 ? '+' : '' %><%= Math.round(cmp.uncMgmt) %></span><% } %></em></div>
 </div>
 
-<%- include('partials/call-synopsis', { a: latestFull || latest.analysis, ev: latest.ev, label: latest.label, dateTxt: latest.dateTxt, summary: summary }) %>
+<%- include('partials/call-synopsis', { a: latestFull || latest.analysis, ev: latest.ev, label: latest.label, dateTxt: latest.dateTxt, summary: summary, nl: nl }) %>
 
 <section class="card">
   <div class="card-h"><h2>Vragen van analisten in <%= latest.label %></h2><a class="small" href="<%= latest.href %>">Hele call bekijken →</a></div>
