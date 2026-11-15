@@ -1613,3 +1613,33 @@ main .qa-q, main .qa-q p, main .qa-ans p { max-width: 95ch; }
 .am-f-ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-weight: 600; padding: 0 15px; }
 .am-f-ticks span { width: 0; display: flex; justify-content: center; white-space: nowrap; }
 @media (max-width: 640px) { .am-f-row { gap: 10px; } .am-f-ticks span:nth-child(even) { visibility: hidden; } }
+
+/* Losse h2 bovenaan een kaart krijgt dezelfde scheidingslijn als .card-h */
+.card > h2:first-child { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line-2); }
+.card > h2:first-child::before { margin-right: 0; }
+@media (max-width: 640px) { .card > h2:first-child { margin-bottom: 12px; padding-bottom: 10px; } }
+
+/* Lichte achtergrondtinten per soort blok, overal hetzelfde */
+.tint-blue { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, var(--card)), var(--card) 65%); border-color: color-mix(in srgb, var(--accent) 22%, var(--line)); }
+.tint-amber { background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 8%, var(--card)), var(--card) 60%); border-color: color-mix(in srgb, var(--amber) 22%, var(--line)); }
+.tint-violet { background: linear-gradient(135deg, color-mix(in srgb, #7c3aed 6%, var(--card)), var(--card) 60%); border-color: color-mix(in srgb, #7c3aed 18%, var(--line)); }
+.tint-slate { background: linear-gradient(135deg, color-mix(in srgb, var(--navy) 5%, var(--card)), var(--card) 60%); }
+.tint-blue .card-h, .tint-amber .card-h, .tint-violet .card-h, .tint-slate .card-h { border-bottom-color: color-mix(in srgb, var(--navy) 10%, transparent); }
+
+/* Kernpunten: elk punt een eigen regel met rode staafjes, in tegels */
+.kp-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.kp-list li { position: relative; padding: 12px 14px 12px 42px; border-radius: 12px; background: color-mix(in srgb, var(--card) 80%, transparent); border: 1px solid color-mix(in srgb, var(--navy) 8%, var(--line)); font-size: 14.5px; line-height: 1.6; }
+.kp-list li::before { content: ""; position: absolute; left: 14px; top: 15px; width: 16px; height: 16px; background: var(--gw-bars) no-repeat center bottom / contain; }
+.kp-list li:first-child { grid-column: 1 / -1; font-size: 15px; }
+@media (max-width: 760px) { .kp-list { grid-template-columns: 1fr; } .kp-list li { padding: 11px 12px 11px 38px; } .kp-list li::before { left: 12px; top: 14px; } }
+
+/* Footer: volledig wit logo (guru, staafjes, woordmerk) */
+.sf-c { gap: 14px; flex-wrap: wrap; }
+.sf-logo { display: inline-flex; align-items: center; gap: 7px; color: #fff; text-decoration: none !important; }
+.sf-logo img { width: 34px; height: 34px; }
+.sf-wm { font-weight: 800; font-size: 19px; letter-spacing: -.02em; color: #fff; }
+.sf-wm b { color: #ff5a5f; font-weight: 800; }
+.sf-copy { opacity: .8; }
+main .kp-list li { max-width: none; }
+.sf-logo img { width: 40px; height: 40px; }
+.sf-wm { font-size: 21px; }

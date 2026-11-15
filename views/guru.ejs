@@ -45,9 +45,9 @@
 </nav>
 <% } %>
 
-<section class="card story">
-  <h2>In het kort</h2>
-  <% story.forEach(function (s) { %><p><%= s %></p><% }) %>
+<section class="card story tint-blue">
+  <div class="card-h"><h2>In het kort</h2></div>
+  <ul class="kp-list"><% story.forEach(function (s) { %><li><%= s %></li><% }) %></ul>
 </section>
 
 <div class="grid2">
