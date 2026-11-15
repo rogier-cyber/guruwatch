@@ -105,8 +105,13 @@ document.addEventListener('click', function (e) {
   var b = e.target.closest && e.target.closest('[data-more]');
   if (!b) return;
   var wrap = b.previousElementSibling;
-  if (wrap) wrap.querySelectorAll('tr[hidden], .more-item[hidden]').forEach(function (r) { r.hidden = false; });
-  b.hidden = true;
+  if (!wrap) return;
+  var rest = wrap.querySelectorAll('tr[hidden], .more-item[hidden]');
+  // data-more="25": telkens 25 extra tonen; leeg: alles in één keer.
+  var step = parseInt(b.getAttribute('data-more'), 10) || rest.length;
+  for (var i = 0; i < Math.min(step, rest.length); i++) rest[i].hidden = false;
+  var left = rest.length - step;
+  if (left > 0) { var n = b.querySelector('[data-more-n]'); if (n) n.textContent = left; } else b.hidden = true;
 });
 
 // Telefoon: actief menu-item in beeld schuiven.
