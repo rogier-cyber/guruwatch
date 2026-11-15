@@ -59,3 +59,24 @@ test('toon in woorden', () => {
   assert.equal(tr.toneWord(0), 'neutraal');
   assert.equal(tr.toneWord(null), 'onbekend');
 });
+
+test('bijnamen, "move next to" en vervangers krijgen de juiste bank', () => {
+  const txt = [
+    'Operator: Welcome to the call.',
+    'Tom Polen: We had a strong quarter with robust growth and record margins across the business.',
+    'Operator: Our first question comes from the line of C.J. Muse from Cantor Fitzgerald.',
+    'Christopher Muse: Can you talk about demand and margins into next year please, thank you very much?',
+    'Tom Polen: Sure.',
+    "Operator: Thank you. We'll move next to Travis Steed with Bank of America. Please go ahead.",
+    'Travis Steed: Hey, a question on pricing and the competitive environment in the coming year?',
+    'Tom Polen: Yes.',
+    'Operator: We will take our next question from David Begleiter with Deutsche Bank.',
+    'Emily Fusco: This is Emily on for Dave. Could you quantify the impact of tariffs on margins this year?',
+    'Tom Polen: Sure.',
+  ].join('\n');
+  const a = tr.analyze(txt);
+  const firm = (n) => (a.analysts.find((x) => x.name === n) || {}).firm;
+  assert.equal(firm('Christopher Muse'), 'Cantor Fitzgerald');
+  assert.equal(firm('Travis Steed'), 'Bank of America');
+  assert.equal(firm('Emily Fusco'), 'Deutsche Bank');
+});
