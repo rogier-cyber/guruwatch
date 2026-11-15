@@ -189,3 +189,29 @@ document.querySelectorAll('[data-scroll-end]').forEach(function (el) { el.scroll
     show(0);
   });
 })();
+
+// Filters, tabbladen en zoekvelden die dezelfde pagina herladen: blijf op dezelfde plek staan.
+(function () {
+  var KEY = 'gw-keep-scroll';
+  function save() { try { sessionStorage.setItem(KEY, JSON.stringify({ p: location.pathname, y: window.scrollY })); } catch (e) {} }
+  window.gwKeepScroll = save;
+  function samePage(url) { try { return new URL(url, location.href).pathname === location.pathname; } catch (e) { return false; } }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a || e.ctrlKey || e.metaKey || e.shiftKey || a.target) return;
+    if (a.closest('.filters, .tabs, .rd-subnav, .ins-search, .rd-filters') && samePage(a.href)) save();
+  });
+  document.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (f && (f.method || 'get').toLowerCase() === 'get' && samePage(f.action || location.href)) save();
+  });
+  try {
+    var k = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+    sessionStorage.removeItem(KEY);
+    if (k && k.p === location.pathname && k.y > 0) {
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      window.scrollTo(0, k.y);
+      window.addEventListener('load', function () { window.scrollTo(0, k.y); });
+    }
+  } catch (e) {}
+})();
