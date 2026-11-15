@@ -157,3 +157,25 @@ document.querySelectorAll('[data-scroll-end]').forEach(function (el) { el.scroll
     apply(null);
   });
 })();
+
+// Sectorendonut op guru-pagina's: hover of tik op een stuk of legendaregel toont de aandelen in die sector.
+(function () {
+  document.querySelectorAll('[data-secpie]').forEach(function (pie) {
+    var card = pie.closest('.card') || document;
+    var panels = card.querySelectorAll('.sec-panel');
+    var lis = pie.querySelectorAll('li[data-sec]');
+    var c = pie.querySelector('[data-pie-c]'), s = pie.querySelector('[data-pie-s]');
+    var c0 = c && c.textContent, s0 = s && s.textContent, fs0 = c && c.style.fontSize;
+    function show(i) {
+      panels.forEach(function (p) { p.hidden = p.getAttribute('data-sec') !== String(i); });
+      lis.forEach(function (li) { li.classList.toggle('on', li.getAttribute('data-sec') === String(i)); });
+      pie.querySelectorAll('.pie-seg').forEach(function (g) { g.classList.toggle('on', g.getAttribute('data-sec') === String(i)); });
+      var li = pie.querySelector('li[data-sec="' + i + '"]');
+      if (li && c && s) { c.textContent = li.getAttribute('data-w'); s.textContent = li.getAttribute('data-l'); c.style.fontSize = fs0; }
+    }
+    pie.addEventListener('mouseover', function (e) { var t = e.target.closest && e.target.closest('[data-sec]'); if (t) show(t.getAttribute('data-sec')); });
+    pie.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-sec]'); if (t) show(t.getAttribute('data-sec')); });
+    pie.addEventListener('focusin', function (e) { var t = e.target.closest && e.target.closest('[data-sec]'); if (t) show(t.getAttribute('data-sec')); });
+    show(0);
+  });
+})();

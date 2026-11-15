@@ -64,18 +64,21 @@ function pie(items, { size = 200, thickness = 30, center = '', sub = '' } = {}) 
   const c = 2 * Math.PI * r;
   let off = 0;
   const legend = [];
+  // Tekst in het midden altijd binnen de ring: lettergrootte krimpt mee met de lengte.
+  const inner = (size - 2 * thickness) * 0.84;
+  const fit = (t, max, k) => Math.max(9, Math.min(max, inner / (Math.max(1, String(t || '').length) * k))).toFixed(1);
   const arcs = segs.map((x, i) => {
     const color = x.label === 'Overig' || /onbekend/i.test(x.label) ? '#cbd5e1' : PALETTE[i % PALETTE.length];
     const len = (c * x.value) / total;
     legend.push({ label: x.label, weight: x.value / total, color });
-    const el = `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${thickness}" stroke-dasharray="${Math.max(0, len - 2).toFixed(2)} ${c.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${size / 2} ${size / 2})" class="pie-seg"><title>${esc(x.label)}: ${(100 * x.value / total).toFixed(1).replace('.', ',')}%</title></circle>`;
+    const el = `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${thickness}" stroke-dasharray="${Math.max(0, len - 2).toFixed(2)} ${c.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${size / 2} ${size / 2})" class="pie-seg" data-sec="${i}"><title>${esc(x.label)}: ${(100 * x.value / total).toFixed(1).replace('.', ',')}%</title></circle>`;
     off += len;
     return el;
   }).join('');
   const svg = `<svg viewBox="0 0 ${size} ${size}" class="gc pie" role="img" aria-label="Sectorverdeling">
     <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${thickness}" class="pie-bg"/>${arcs}
-    <text x="50%" y="47%" text-anchor="middle" class="pie-c">${esc(center)}</text>
-    <text x="50%" y="60%" text-anchor="middle" class="pie-s">${esc(sub)}</text></svg>`;
+    <text x="50%" y="47%" text-anchor="middle" class="pie-c" data-pie-c style="font-size:${fit(center, 26, 0.6)}px">${esc(center)}</text>
+    <text x="50%" y="60%" text-anchor="middle" class="pie-s" data-pie-s style="font-size:${fit(sub, 11, 0.55)}px">${esc(sub)}</text></svg>`;
   return { svg, legend };
 }
 
