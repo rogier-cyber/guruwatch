@@ -1,23 +1,70 @@
 <%- include('../partials/head') %>
+<%
+var ic = {
+  chart: '<path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6"/>',
+  star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  radar: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6-6"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  chat: '<path d="M4 5h16v11H8l-4 4z"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>',
+  pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/>'
+};
+var svg = function (k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ic[k] + '</svg>'; };
+%>
 <%- include('_nav', { page: 'over-ons' }) %>
-<article class="card prose">
-  <h1 class="page-title">Over Guruwatch</h1>
-  <p class="lead">Guruwatch volgt wat de guru's van de beurs doen, en rekent ze af op wat het oplevert. Kortom: welke guru geeft je een voorsprong?</p>
-  <h2>Drie soorten guru's</h2>
-  <div class="info-trio">
-    <a href="/analisten"><b>Analisten</b><span>De analisten van banken en brokers met hun koersdoelen en adviezen (kopen, houden, verkopen). Elke analist krijgt een GuruScore op basis van zijn trackrecord.</span></a>
-    <a href="/gurus"><b>Beleggersguru's</b><span>Bekende beleggers en hedge funds, zoals Warren Buffett. Wij laten zien wat er in hun portefeuille zit en wat ze kochten en verkochten.</span></a>
-    <a href="/insiders"><b>Insiders</b><span>Bestuurders en grootaandeelhouders die aandelen van hun eigen bedrijf kopen of verkopen. Zij weten vaak het best hoe het met het bedrijf gaat.</span></a>
+<section class="hero hero-sm oo-hero">
+  <div class="hero-in">
+    <div>
+      <span class="oo-k">Over Guruwatch</span>
+      <h1>Welke guru geeft je een <b>voorsprong</b>?</h1>
+      <p>Analisten, beroemde beleggers en insiders laten elke dag zien wat zij van een aandeel vinden. Guruwatch zet het allemaal op een rij en rekent ze af op hun resultaat. Zo zie je in één oogopslag wie je echt een voorsprong geeft.</p>
+      <div class="oo-cta"><a class="btn btn-primary" href="/analisten">Bekijk de beste analisten</a><a class="btn oo-btn-ghost" href="/aandelen">Zoek een aandeel</a></div>
+    </div>
   </div>
-  <h2>Hoe we werken</h2>
-  <ul>
-    <li><strong>Afgerekend op resultaat.</strong> Elk koersdoel van een analist volgen we 12 maanden. Hoe vaak werd het gehaald, en wat leverde het op vergeleken met de S&amp;P 500? <a href="/methode">Zo werkt de GuruScore</a>.</li>
-    <li><strong>Open over de methode.</strong> Alle berekeningen staan uitgelegd op de site. Geen zwarte doos.</li>
-    <li><strong>Recente data.</strong> Adviezen, insidertransacties en portefeuilles worden de hele dag bijgewerkt. Wat te oud is, laten we weg.</li>
-    <li><strong>Geen beleggingsadvies.</strong> Guruwatch laat zien wat anderen vinden en doen. Wat u daarmee doet, beslist u zelf. Lees ook de <a href="/disclaimer">disclaimer</a>.</li>
-  </ul>
-  <h2>Onderdeel van IEX Media</h2>
-  <p>Guruwatch.nl is onderdeel van <a href="https://www.iexmedia.nl" target="_blank" rel="noopener">IEX Media</a>, het grootste netwerk van websites voor particuliere en professionele beleggers in Nederland. Ook Beurs.nl hoort bij IEX Media.</p>
-  <p>Vragen, tips of een fout gezien? <a href="/contact">Neem contact op</a>.</p>
-</article>
+</section>
+
+<section class="card">
+  <div class="card-h"><h2>Drie soorten guru's, één overzicht</h2></div>
+  <p class="sec-txt">Wie weet het het best? De analist die het bedrijf al jaren volgt, de belegger met miljarden in beheer, of de bestuurder die het bedrijf van binnen kent? Bij Guruwatch zie je ze alle drie naast elkaar.</p>
+  <div class="oo-trio">
+    <a href="/analisten" class="oo-g oo-g1"><span class="oo-i"><%- svg('chart') %></span><b>Analisten</b><span>Koersdoelen en adviezen van honderden analisten van banken en brokers. Elke analist krijgt een <strong>GuruScore</strong> van 0 tot 100: haalde het koersdoel het, en versloeg het advies de markt?</span><em>Naar de ranglijst →</em></a>
+    <a href="/gurus" class="oo-g oo-g2"><span class="oo-i"><%- svg('star') %></span><b>Beleggersguru's</b><span>Wat zit er in de portefeuille van Warren Buffett en andere bekende beleggers en hedgefondsen? Wat kochten en verkochten ze, en welke aandelen kopen ze samen?</span><em>Naar de guru's →</em></a>
+    <a href="/insiders" class="oo-g oo-g3"><span class="oo-i"><%- svg('user') %></span><b>Insiders</b><span>Bestuurders en grootaandeelhouders die aandelen van hun eigen bedrijf kopen of verkopen. Kopen meerdere insiders tegelijk, dan zie je dat meteen als <strong>cluster buy</strong>.</span><em>Naar de insiders →</em></a>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-h"><h2>Wat Guruwatch je oplevert</h2></div>
+  <div class="oo-feat">
+    <div><span class="oo-i sm"><%- svg('star') %></span><div><b>Weten wie je kunt vertrouwen</b><p>De GuruScore laat zien welke analist vaak gelijk krijgt. Zo weet je welk koersdoel zwaar weegt en welk je met een korrel zout neemt.</p></div></div>
+    <div><span class="oo-i sm"><%- svg('radar') %></span><div><b>Kansen zien voordat anderen ze zien</b><p>De analistenradar toont waar het sentiment draait: welke aandelen er analistenliefde bij krijgen, waar koers en verwachting uit elkaar lopen en waar iedereen het (te) eens is.</p></div></div>
+    <div><span class="oo-i sm"><%- svg('cal') %></span><div><b>Kwartaalcijfers in één blik</b><p>Versloeg het bedrijf de verwachting, hoe reageerde de koers en wat deden analisten daarna met hun koersdoel? De Reaction Monitor laat het per kwartaal zien.</p></div></div>
+    <div><span class="oo-i sm"><%- svg('mic') %></span><div><b>Earnings calls in het Nederlands</b><p>Lees wat het management tegen de analisten van Wall Street zei: een Nederlandse samenvatting, de prognose, de belangrijkste punten en alle vragen en antwoorden.</p></div></div>
+    <div><span class="oo-i sm"><%- svg('chat') %></span><div><b>Zelf meedoen</b><p>Geef in de community je eigen koersdoel en zie hoe je het doet tegenover de profs. Ook jij krijgt een plek op de ranglijst.</p></div></div>
+    <div><span class="oo-i sm"><%- svg('bell') %></span><div><b>Nooit meer iets missen</b><p>Zet aandelen, analisten en guru's op je volglijst. Je krijgt een melding bij een nieuw advies, een insideraankoop of een nieuwe positie, en elke ochtend een korte briefing.</p></div></div>
+    <div><span class="oo-i sm"><%- svg('pen') %></span><div><b>Uitleg en achtergrond</b><p>Op de blog lees je artikelen over aandelen, analisten en de beurs, en op elke aandeelpagina vind je antwoord op de vragen die beleggers het vaakst stellen.</p></div></div>
+    <div><span class="oo-i sm"><%- svg('chart') %></span><div><b>Gratis en open</b><p>De hele site is open voor iedereen. Alleen voor je volglijst, meldingen en voorspellingen maak je een gratis account aan.</p></div></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-h"><h2>Zo werken we</h2></div>
+  <div class="oo-prin">
+    <div><b>Afgerekend op resultaat</b><p>Elk koersdoel volgen we 12 maanden. Hoe vaak werd het gehaald en wat leverde het op tegenover de S&amp;P 500? <a href="/methode">Zo werkt de GuruScore</a>.</p></div>
+    <div><b>Open over de methode</b><p>Alle berekeningen staan uitgelegd op de site. Geen zwarte doos.</p></div>
+    <div><b>Altijd actueel</b><p>Adviezen, insidertransacties en portefeuilles worden de hele dag bijgewerkt. Wat te oud is, laten we weg.</p></div>
+    <div><b>Geen beleggingsadvies</b><p>Guruwatch laat zien wat anderen vinden en doen. Wat je daarmee doet, beslis je zelf. Lees ook de <a href="/disclaimer">disclaimer</a>.</p></div>
+  </div>
+</section>
+
+<section class="card oo-iex">
+  <div>
+    <h2>Onderdeel van IEX Media</h2>
+    <p>Guruwatch.nl is onderdeel van <a href="https://www.iexmedia.nl" target="_blank" rel="noopener">IEX Media</a>, het grootste netwerk van websites voor particuliere en professionele beleggers in Nederland. Ook Beurs.nl hoort bij IEX Media.</p>
+    <p>Vragen, tips of een fout gezien? <a href="/contact">Neem contact op</a>.</p>
+  </div>
+  <a class="btn btn-primary" href="/login">Maak een gratis account</a>
+</section>
 <%- include('../partials/foot') %>
