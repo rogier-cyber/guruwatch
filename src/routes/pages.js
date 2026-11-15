@@ -124,7 +124,7 @@ router.get('/analisten', wrap(async (req, res) => {
     data.radar = { ...r, rtab: r.tab };
     data.viz = viz;
   }
-  res.render('analysts', { title: tab === 'radar' ? 'Analistenradar' : 'Analistenmonitor: elke analist afgerekend op zijn trackrecord', ...data });
+  res.render('analysts', { title: tab === 'radar' ? 'Analistenradar' : "Analisten Guru's: elke analist afgerekend op zijn trackrecord", ...data });
 }));
 
 router.get('/analist/:slug', wrap(async (req, res) => {
@@ -231,7 +231,7 @@ router.get('/insiders', wrap(async (req, res) => {
       tip: lines.join('\n'), logo: logoUrl(b.symbol),
     };
   });
-  res.render('insiders', { title: 'Insidermonitor: aankopen en verkopen van bestuurders', trades, clusters, type, minValue, flows, buyMap, buyTiles, roleRows, kpi, gc: guruCharts });
+  res.render('insiders', { title: "Insider Guru's: aankopen en verkopen van bestuurders", trades, clusters, type, minValue, flows, buyMap, buyTiles, roleRows, kpi, gc: guruCharts });
 }));
 
 router.get('/insider/:cik', wrap(async (req, res) => {
@@ -276,7 +276,7 @@ pub.get('/gurus', wrap(async (req, res) => {
   const base = config.publicUrl.replace(/\/$/, '');
   const totalValue = cards.reduce((t, f) => t + (Number(f.latest_value) || 0), 0);
   res.render('gurus', {
-    title: "Gurumonitor: de portefeuilles van de beste beleggers",
+    title: "Belegger Guru's: de portefeuilles van de beste beleggers",
     seo: {
       description: `Bekijk wat ${cards.length} bekende beleggers zoals Warren Buffett, Bill Ackman en Mohnish Pabrai kopen en verkopen, op basis van hun 13F-filings bij de SEC.`,
       canonical: `${base}/gurus`,
