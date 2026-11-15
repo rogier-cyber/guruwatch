@@ -39,7 +39,7 @@
     <% if (!revisions.length) { %><p class="empty">Nog geen koersdoelen in de 10 dagen na de cijfers.</p><% } else { %>
     <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Wanneer</th><th>Analist</th><th>Van</th><th>Naar</th><th>Wijziging</th></tr></thead><tbody>
     <% revisions.forEach(function (r, i) { const chg = r.prev > 0 ? r.t / r.prev - 1 : null; %>
-      <tr><td><%= i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : '' %><%= fmt.dateTime(r.published_at) %></td>
+      <tr><td><% if (i < 3) { %><%- include('partials/cup', { rank: i + 1, uid: 'e', cls: 'cup-sm' }) %> <% } %><%= fmt.dateTime(r.published_at) %></td>
         <td><% if (r.slug) { %><a href="/analist/<%= r.slug %>"><%= r.name %></a><% } else { %><%= r.analyst_name || '–' %><% } %> <span class="muted small"><%= r.analyst_firm || '' %></span><% if (r.score != null) { %> <%- include('partials/score', { score: r.score, size: 24 }) %><% } %></td>
         <td class="muted"><%= r.prev ? fmt.price(r.prev) : 'nieuw' %></td><td><b><%= fmt.price(r.t) %></b></td>
         <td class="<%= fmt.tone(chg) %>"><%= fmt.pct(chg) %></td></tr>
