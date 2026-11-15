@@ -310,6 +310,14 @@ pub.get('/guru/:slug', wrap(async (req, res) => {
       prev_weight: p ? p.weight : 0, price: x.price, upside: x.upside, targets: x.targets };
   });
   const sectors = guru.sectors(cur.rows, sectorOf);
+  // Per sector de aandelen (voor de sectorendonut: hover/tik toont wat erin zit).
+  const sectorHoldings = new Map();
+  for (const r of cur.rows) {
+    const s = (r.symbol && sectorOf.get(r.symbol)) || 'Overig / onbekend';
+    if (!sectorHoldings.has(s)) sectorHoldings.set(s, []);
+    sectorHoldings.get(s).push({ symbol: r.symbol, name: nameOf.get(r.symbol) || r.issuer, weight: r.weight });
+  }
+  for (const list of sectorHoldings.values()) list.sort((a, b) => b.weight - a.weight);
   const heat = guru.heatmap(upto, { top: 15, last: 8 });
   heat.rows.forEach((r) => { r.name = nameOf.get(r.symbol) || r.issuer; });
   const valueSeries = totals.filter((t) => t.period <= cur.period).slice(-12);
@@ -374,7 +382,7 @@ pub.get('/guru/:slug', wrap(async (req, res) => {
         { '@type': 'ListItem', position: 2, name, item: canonical },
       ] },
     ] },
-    fund, name, watched, empty: false, periods, selIdx, cur, prev, curTot, positions, sectors, heat, mv, valueSeries, top10, bubbles, perf, story, gc: guruCharts,
+    fund, name, watched, empty: false, periods, selIdx, cur, prev, curTot, positions, sectors, sectorHoldings, heat, mv, valueSeries, top10, bubbles, perf, story, gc: guruCharts,
     sold: soldList,
     nameOf,
   });

@@ -58,11 +58,19 @@
   <section class="card">
     <div class="card-h"><h2>Sectoren</h2><span class="small muted">verdeling van de waarde</span></div>
     <% var pz = gc.pie(sectors, { center: sectors.length ? fmt.pct(sectors[0].weight, false) : '', sub: sectors.length ? String(sectors[0].label).slice(0, 18) : '' }); %>
-    <div class="gu-pie">
+    <div class="gu-pie" data-secpie>
       <%- pz.svg %>
       <ul class="gu-leg">
-        <% pz.legend.forEach(function (l) { %><li><i style="background:<%= l.color %>"></i><span><%= l.label %></span><b><%= fmt.pct(l.weight, false) %></b></li><% }) %>
+        <% pz.legend.forEach(function (l, i) { %><li data-sec="<%= i %>" data-w="<%= fmt.pct(l.weight, false) %>" data-l="<%= String(l.label).slice(0, 18) %>" tabindex="0"><i style="background:<%= l.color %>"></i><span><%= l.label %></span><b><%= fmt.pct(l.weight, false) %></b></li><% }) %>
       </ul>
+    </div>
+    <div class="sec-panels" data-secpanels>
+    <% pz.legend.forEach(function (l, i) { var hs = i < 9 || sectors.length <= 10 ? (sectorHoldings.get(sectors[i] && sectors[i].label) || []) : [].concat.apply([], sectors.slice(9).map(function (s) { return sectorHoldings.get(s.label) || []; })).sort(function (a, b) { return b.weight - a.weight; }); %>
+      <div class="sec-panel" data-sec="<%= i %>"<%- i ? ' hidden' : '' %>>
+        <div class="sec-ph"><i style="background:<%= l.color %>"></i><b><%= l.label %></b><span class="small muted"><%= hs.length %> <%= hs.length === 1 ? 'aandeel' : 'aandelen' %> · <%= fmt.pct(l.weight, false) %> van de portefeuille</span></div>
+        <div class="sec-list"><% hs.slice(0, 12).forEach(function (h) { %><a class="sec-it" href="<%= h.symbol ? '/aandeel/' + encodeURIComponent(h.symbol) : '#' %>"><%- h.symbol ? ui.logo(h.symbol) : '' %><b><%= h.symbol || fmt.company(h.name) %></b><em><%= fmt.weight(h.weight) %></em></a><% }) %><% if (hs.length > 12) { %><span class="sec-more small muted">+<%= hs.length - 12 %> meer</span><% } %></div>
+      </div>
+    <% }) %>
     </div>
   </section>
 </div>
