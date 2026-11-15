@@ -113,10 +113,12 @@ function targetTimeline(prices, targets, { width = 920, height = 320, markers = 
   const xTicks = [];
   const start = new Date(x0);
   const monthsSpan = (x1 - x0) / (30 * DAY);
-  const stepM = monthsSpan > 30 ? 6 : monthsSpan > 12 ? 3 : 1;
+  const maxTicks = Math.max(3, Math.floor((width - pad.l - pad.r) / 64));
+  const stepM = [1, 2, 3, 6, 12, 24].find((m) => monthsSpan / m <= maxTicks) || 24;
+  const stepW = Math.max(1, Math.ceil((monthsSpan * 30 / 7) / maxTicks));
   if (monthsSpan < 3.5) {
     // Korte periode: een label per week.
-    for (let t = x0 + 3 * DAY; t <= x1 - 2 * DAY; t += 7 * DAY) {
+    for (let t = x0 + 3 * DAY; t <= x1 - 2 * DAY; t += 7 * stepW * DAY) {
       const d = new Date(t);
       xTicks.push(`<text x="${sx(t).toFixed(1)}" y="${height - 6}" text-anchor="middle" class="tl-axis">${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}</text>`);
     }
@@ -164,7 +166,10 @@ function scoreRing(score, size = 44) {
   const c = 2 * Math.PI * r;
   const tone = !has ? 'na' : v >= 70 ? 'hi' : v >= 45 ? 'mid' : 'lo';
   const fs = Math.round(size * 0.36);
-  return `<svg class="ring ring-${tone}" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${has ? 'GuruScore ' + Math.round(v) : 'Nog geen GuruScore'}">
+  const tip = has
+    ? `GuruScore ${Math.round(v)} · ${v >= 70 ? 'uitstekend' : v >= 45 ? 'gemiddeld' : 'zwak'}\nHoe vaak koersdoelen uitkwamen en het rendement daarna ten opzichte van de S&P 500\n70+ uitstekend · 45-70 gemiddeld · onder 45 zwak`
+    : 'Nog geen GuruScore\nEr zijn nog te weinig beoordeelde koersdoelen (minimaal 3, ouder dan 12 maanden)';
+  return `<svg class="ring ring-${tone}" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${has ? 'GuruScore ' + Math.round(v) : 'Nog geen GuruScore'}" data-tip="${tip}">
     <circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-bg" stroke-width="${stroke}" fill="none"/>
     ${has ? `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-fg" stroke-width="${stroke}" fill="none" stroke-linecap="round" stroke-dasharray="${((c * v) / 100).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 ${size / 2} ${size / 2})"/>` : ''}
     <text x="50%" y="50%" dy="0.35em" text-anchor="middle" class="ring-txt" font-size="${fs}">${has ? Math.round(v) : '–'}</text>
@@ -665,7 +670,7 @@ function forecastFan(series, targets, { width = 920, height = 340 } = {}) {
   const grid = ticks.map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="tl-grid"/><text x="${pad.l - 6}" y="${(Y(t) + 4).toFixed(1)}" text-anchor="end" class="tl-axis">${fmtPrice(t)}</text>`).join('');
   const months = [];
   const d = new Date(t0);
-  for (let m = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); m.getTime() < tEnd; m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 2, 1))) months.push(m);
+  for (let m = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); m.getTime() < tEnd; m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + (width < 600 ? 4 : 2), 1))) months.push(m);
   const xl = months.map((m) => `<text x="${X(m.getTime()).toFixed(1)}" y="${height - 8}" text-anchor="middle" class="tl-axis">${MONTHS[m.getUTCMonth()]} '${String(m.getUTCFullYear()).slice(2)}</text>`).join('');
   const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(new Date(p.date).getTime()).toFixed(1)},${Y(p.close).toFixed(1)}`).join('');
   const x0 = X(tNow);
@@ -691,7 +696,7 @@ function forecastFan(series, targets, { width = 920, height = 340 } = {}) {
       const k = seen.get(key) || 0;
       seen.set(key, k + 1);
       const cx = xe + 8 + (k % 3) * 5 - (k % 3 ? 0 : 0);
-      return `<circle cx="${(cx - 4).toFixed(1)}" cy="${Y(t.target).toFixed(1)}" r="4.5" class="ff-dot ${t.tone || ''}"><title>${esc(t.label)}</title></circle>`;
+      return `<g class="ff-hit"><circle cx="${(cx - 4).toFixed(1)}" cy="${Y(t.target).toFixed(1)}" r="5" class="ff-dot ${t.tone || ''}"/><circle cx="${(cx - 4).toFixed(1)}" cy="${Y(t.target).toFixed(1)}" r="11" class="hit"/><title>${esc(t.label)}</title></g>`;
     })
     .join('');
   return `<svg viewBox="0 0 ${width} ${height}" class="fan" role="img" aria-label="Koers en koersdoelen over 12 maanden">${grid}
@@ -702,4 +707,28 @@ function forecastFan(series, targets, { width = 920, height = 340 } = {}) {
     ${dots}${lab}${xl}</svg>`;
 }
 
-module.exports = { forecastFan, ratingColumns, targetBand, ratingDist, gauge, pairBars, targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, hbars, heat, scatter, columns, ratingBar, ratingArea, rangeBar };
+// Telefoonversies: dezelfde grafiek nog eens getekend op telefoonbreedte, zodat tekst leesbaar blijft.
+// De CSS toont op schermen tot 640px de telefoonversie en verbergt de brede.
+const MOBILE = {
+  forecastFan: { width: 340, height: 300 },
+  targetTimeline: { width: 340, height: 260 },
+  scatter: { width: 340, height: 340 },
+  columns: { width: 340, height: 230 },
+  divergingBars: { width: 340, height: 150 },
+  pairBars: { width: 340, height: 210 },
+  ratingColumns: { width: 340, height: 230 },
+  targetBand: { width: 340, height: 230 },
+};
+const rsp = (d, m) => (d ? `<div class="rsp"><div class="rsp-d">${d}</div><div class="rsp-m">${m || d}</div></div>` : d);
+const FNS = { forecastFan, targetTimeline, scatter, columns, divergingBars, pairBars, ratingColumns, targetBand };
+const both = Object.fromEntries(Object.entries(FNS).map(([name, fn]) => [name, (...args) => {
+  const idx = fn.length;
+  const d = fn(...args);
+  const a2 = args.slice();
+  a2[idx] = { ...(args[idx] || {}), ...MOBILE[name] };
+  const m = fn(...a2);
+  if (d && typeof d === 'object') return { ...d, svg: rsp(d.svg, m && m.svg) };
+  return rsp(d, m);
+}]));
+
+module.exports = { both, forecastFan, ratingColumns, targetBand, ratingDist, gauge, pairBars, targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, hbars, heat, scatter, columns, ratingBar, ratingArea, rangeBar };

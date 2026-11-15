@@ -1095,3 +1095,52 @@ a.sc:hover b { color: var(--accent); }
 
 .more-btn { display: block; width: 100%; margin-top: 10px; font: inherit; font-weight: 650; font-size: 14px; color: var(--accent); background: var(--neutral-soft); border: 0; border-radius: 10px; padding: 9px; cursor: pointer; }
 .more-btn:hover { background: var(--accent-soft); }
+
+/* Tooltips (muis en vinger) */
+.gw-tip { position: absolute; z-index: 60; max-width: min(300px, calc(100vw - 16px)); background: var(--navy); color: #fff; border-radius: 10px; padding: 9px 12px; font-size: 13px; line-height: 1.45; box-shadow: 0 10px 30px -10px rgba(10, 20, 40, .55); pointer-events: none; }
+.gw-tip b { display: block; font-weight: 750; margin-bottom: 2px; }
+.gw-tip span { display: block; color: rgba(255, 255, 255, .85); }
+@media (prefers-color-scheme: dark) { .gw-tip { background: #e8ecf5; color: #0b1020; } .gw-tip span { color: #334; } }
+[data-tip] { cursor: pointer; }
+svg .hit { fill: transparent; stroke: none; }
+.ff-hit.tip-on .ff-dot, .ff-hit:hover .ff-dot { stroke: var(--navy); stroke-width: 2; fill-opacity: 1; }
+svg .tip-on:not(g) { stroke: var(--navy); stroke-width: 2; }
+
+/* Telefoonversies van grafieken */
+.rsp-m { display: none; }
+@media (max-width: 640px) {
+  .rsp-d { display: none; }
+  .rsp-m { display: block; }
+  /* Grotere raakvlakken en stippen voor vingers */
+  .tl-dot, .sc-dot, .gc-pt circle { r: 5; }
+  .logout .link { padding: 10px 6px; }
+  .foot a { display: inline-block; padding: 10px 4px; }
+  .crumbs a { display: inline-block; padding: 6px 0; }
+  .wb-s em, .wb-t i { font-size: 11.5px; }
+  .gw-tip { font-size: 13.5px; }
+}
+@media (max-width: 640px) {
+  .hk-mood { grid-column: 1 / -1; }
+  .hk-mg svg { width: 84px; }
+}
+
+/* Telefoonkop: logo + uitloggen, menu als één veegbare rij, zoekbalk eronder */
+@media (max-width: 640px) {
+  .top { position: static; }
+  .top-in { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand side" "nav nav" "search search"; gap: 4px 10px; padding-top: 8px; padding-bottom: 10px; min-height: 0; }
+  .brand { grid-area: brand; }
+  .brand img { width: 32px; height: 32px; }
+  .wordmark { font-size: 20px; }
+  .logout, .top-cta { grid-area: side; justify-self: end; }
+  .top-cta .btn { padding: 8px 14px; }
+  .nav { grid-area: nav; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px; gap: 4px; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a { flex: none; padding: 9px 13px; white-space: nowrap; background: var(--neutral-soft); }
+  .search { grid-area: search; min-width: 0; }
+  .search input { padding-top: 11px; padding-bottom: 11px; font-size: 16px; }
+}
+@media (max-width: 640px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .stats .stat { padding: 12px; }
+  .stats .stat strong { font-size: 18px; }
+}

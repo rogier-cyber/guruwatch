@@ -7,7 +7,6 @@ const fmp = require('../lib/fmp');
 const eodhd = require('../lib/eodhd');
 const ingest = require('../ingest');
 const { consensus: calcConsensus, computeScores } = require('../lib/scoring');
-const { targetTimeline } = require('../lib/charts');
 const charts = require('../lib/charts');
 const fmt = require('../lib/format');
 const rq = require('../lib/radarQueries');
@@ -416,7 +415,7 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     .map((x) => ({ ...x, ...meta.get(x.ref) }));
 
   const series = dbSeries.length >= 60 ? dbSeries : sortedHistory;
-  const timeline = targetTimeline(series, timelineTargets);
+  const timeline = charts.both.targetTimeline(series, timelineTargets);
 
   // Analistenblok: oordeel door de tijd, per maand, acties en vergelijking.
   const gc = gradesConsensus;
@@ -558,7 +557,7 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     if (k && !gradeByFirm.has(k)) gradeByFirm.set(k, g.new_grade);
   }
   const yearAgo = new Date(Date.now() - 365 * day).toISOString().slice(0, 10);
-  const fan = charts.forecastFan(series.filter((p) => p.date >= yearAgo).concat(price > 0 ? [{ date: new Date().toISOString().slice(0, 10), close: price }] : [])
+  const fan = charts.both.forecastFan(series.filter((p) => p.date >= yearAgo).concat(price > 0 ? [{ date: new Date().toISOString().slice(0, 10), close: price }] : [])
     .filter((p, i, a) => i === a.length - 1 || p.date !== a[a.length - 1].date),
     latest.filter((t) => Number(t.price_target) > 0).map((t) => {
       const grade = gradeByFirm.get(String(t.analyst_firm || '').toLowerCase());
@@ -1068,7 +1067,7 @@ pub.get('/aandeel/:symbol/cijfers/:date', wrap(async (req, res) => {
     db.many('SELECT date::text AS date, close::float8 AS close FROM prices WHERE symbol = $1 AND date BETWEEN $2 AND $3 ORDER BY date', [symbol, from, to]),
     q.targetTimeline(symbol, from),
   ]);
-  const timeline = targetTimeline(series, around.filter((t) => new Date(t.published_at) <= new Date(to)), { markers: [{ date, label: 'Cijfers' }], height: 300 });
+  const timeline = charts.both.targetTimeline(series, around.filter((t) => new Date(t.published_at) <= new Date(to)), { markers: [{ date, label: 'Cijfers' }], height: 300 });
   const hist = history.map(withReaction).reverse().map((h) => ({ ...h, label: er.quarterLabel(h.date) }));
   res.render('earnings-event', { title: `${symbol} cijfers ${fmt.date(date)}`, symbol, date, company, ev, revisions, summary, experts, timeline, hist });
 }));

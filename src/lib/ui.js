@@ -22,13 +22,15 @@ function stock(symbol, name, opts = {}) {
   const n = name ? fmt.company(name) : '';
   const tag = opts.href === false ? 'span' : 'a';
   const href = opts.href === false ? '' : ` href="${esc(opts.href || '/aandeel/' + encodeURIComponent(s))}"`;
-  return `<${tag} class="sc${n ? '' : ' sc-1'}"${href}${n ? ` title="${esc(name)}"` : ''}>${logo(s)}<span class="sc-t"><b>${esc(s)}${opts.extra || ''}</b>${n ? `<em>${esc(n)}</em>` : ''}</span></${tag}>`;
+  const tip = [n ? `${name} (${s})` : '', opts.tip || ''].filter(Boolean).join('\n');
+  return `<${tag} class="sc${n ? '' : ' sc-1'}"${href}${tip ? ` data-tip="${esc(tip)}"${opts.tip ? '' : ' data-tip-touch="0"'}` : ''}>${logo(s)}<span class="sc-t"><b>${esc(s)}${opts.extra || ''}</b>${n ? `<em>${esc(n)}</em>` : ''}</span></${tag}>`;
 }
 
 // Persoon met daaronder de bank of functie, beide afgekapt.
-function who(name, sub, href) {
+function who(name, sub, href, tip) {
   const n = name ? fmt.person(name) : '';
-  const main = n ? (href ? `<a href="${esc(href)}">${esc(n)}</a>` : esc(n)) : '';
+  const dt = tip ? ` data-tip="${esc(tip)}"` : '';
+  const main = n ? (href ? `<a href="${esc(href)}"${dt}>${esc(n)}</a>` : `<span${dt}>${esc(n)}</span>`) : '';
   if (!main) return `<span class="who"><span class="who-n">${esc(sub || '–')}</span></span>`;
   return `<span class="who"><span class="who-n">${main}</span>${sub ? `<span class="who-s">${esc(sub)}</span>` : ''}</span>`;
 }

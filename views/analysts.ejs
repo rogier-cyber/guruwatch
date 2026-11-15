@@ -71,7 +71,7 @@
     <% leaders.forEach(function (a, i) { var ex = Number(a.avg_excess) || 0; %>
       <tr>
         <td class="muted an-rank"><%= i + 1 %></td>
-        <td><%- ui.who(fmt.person(a.name), a.firm, '/analist/' + a.slug) %></td>
+        <td><%- ui.who(fmt.person(a.name), a.firm, '/analist/' + a.slug, fmt.person(a.name) + (a.firm ? ' · ' + a.firm : '') + '\nGuruScore ' + Math.round(a.score) + ' · nr. ' + (i + 1) + '\nTrefkans ' + fmt.pct(a.hit_rate, false) + ' (koersdoel gehaald binnen 12 maanden)\nGemiddeld ' + fmt.pct(ex) + ' ten opzichte van de S&P 500\n' + a.calls + ' beoordeelde adviezen') %></td>
         <td><%- charts.scoreRing(a.score, 36) %></td>
         <td class="only-desk-cell"><span class="an-bar"><i style="width:<%= Math.round((Number(a.hit_rate) || 0) * 100) %>%"></i></span><span class="an-bar-v"><%= fmt.pct(a.hit_rate, false) %></span></td>
         <td class="r"><span class="an-ex"><span class="an-ex-bar <%= ex >= 0 ? 'pos' : 'neg' %>" style="width:<%= Math.round(Math.abs(ex) / maxEx * 48) %>px"></span><b class="<%= fmt.tone(ex) %>"><%= fmt.pct(ex) %></b></span></td>

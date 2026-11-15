@@ -127,7 +127,7 @@
   <section class="card">
     <div class="card-h"><h2>Adviezen per maand</h2><span class="small muted">laatste 2 jaar</span></div>
     <% if (sx.ratings) { %><p class="sec-txt"><%= sx.ratings %></p><% } %>
-    <%- charts.ratingColumns(months, { width: 560, height: 260 }) %>
+    <%- charts.both.ratingColumns(months, { width: 560, height: 260 }) %>
     <p class="small rb-legend"><i class="rb-sb"></i>Sterk kopen <i class="rb-b"></i>Kopen <i class="rb-h"></i>Houden <i class="rb-s"></i>Verkopen <i class="rb-ss"></i>Sterk verkopen</p>
   </section>
   <% } %>
@@ -135,7 +135,7 @@
   <section class="card">
     <div class="card-h"><h2>Koersdoelen per maand</h2><span class="small muted">laatste 2 jaar</span></div>
     <% if (sx.targets) { %><p class="sec-txt"><%= sx.targets %></p><% } %>
-    <%- charts.targetBand(months, { width: 560, height: 260 }) %>
+    <%- charts.both.targetBand(months, { width: 560, height: 260 }) %>
     <p class="small tb-legend"><i class="p"></i>Koers <i class="t"></i>Gemiddeld koersdoel <i class="b"></i>Laagste tot hoogste koersdoel</p>
   </section>
   <% } %>
@@ -189,7 +189,7 @@
       <tr>
         <td class="muted nowrap"><%= fmt.date(a.date) %></td>
         <td><span class="act act-<%= a.action.tone %>"><%= a.action.label %></span></td>
-        <td><div class="id-row sm"><%- include('partials/score', { score: a.score }) %><div><% if (a.analyst_slug) { %><a class="an-n" href="/analist/<%= a.analyst_slug %>"><%= a.analyst %></a><div class="muted small"><%= a.firm %></div><% } else { %><% if (a.firm) { %><a class="an-n" href="/bank/<%= encodeURIComponent(a.firm) %>"><%= a.firm %></a><% } %><% if (a.analyst) { %><div class="muted small"><%= a.analyst %></div><% } %><% } %></div></div></td>
+        <td><div class="id-row sm"><%- include('partials/score', { score: a.score }) %><div><% if (a.analyst_slug) { %><a class="an-n" href="/analist/<%= a.analyst_slug %>" data-tip="<%= a.analyst %><%= a.firm ? ' · ' + a.firm : '' %>&#10;<%= a.score != null ? 'GuruScore ' + Math.round(a.score) : 'Nog geen GuruScore' %>&#10;<%= fmt.date(a.date) %>: <%= a.action.label %><%= a.to_grade ? ' · ' + a.to_grade : '' %><%= a.to_target ? '\nKoersdoel ' + (a.from_target ? fmt.price(a.from_target) + ' → ' : '') + fmt.price(a.to_target) : '' %><%= a.upside != null ? ' (' + fmt.pct(a.upside) + ' vanaf nu)' : '' %>&#10;Klik voor het volledige trackrecord"><%= a.analyst %></a><div class="muted small"><%= a.firm %></div><% } else { %><% if (a.firm) { %><a class="an-n" href="/bank/<%= encodeURIComponent(a.firm) %>"><%= a.firm %></a><% } %><% if (a.analyst) { %><div class="muted small"><%= a.analyst %></div><% } %><% } %></div></div></td>
         <td class="nowrap <%= gt %>"><% if (a.to_grade) { %><% if (a.from_grade) { %><span class="muted"><%= a.from_grade %></span> → <% } %><%= a.to_grade %><% } else { %><span class="muted">–</span><% } %></td>
         <td class="r nowrap"><% if (a.to_target) { %><% if (a.from_target) { %><span class="muted"><%= fmt.price(a.from_target) %></span> → <% } %><strong class="<%= a.from_target ? (a.to_target > a.from_target ? 'pos' : 'neg') : '' %>"><%= fmt.price(a.to_target) %></strong><% } else { %><span class="muted">–</span><% } %></td>
         <td class="r nowrap <%= fmt.tone(a.upside) %>"><%= a.upside === null ? '–' : (a.upside >= 0 ? '▲ ' : '▼ ') + fmt.pct(a.upside) %></td>
@@ -242,7 +242,7 @@
   <% if (sx.earnings) { %><p class="sec-txt"><%= sx.earnings %></p><% } %>
   <% if (nextEarn) { %><p class="next-earn">Volgende cijfers: <b><%= fmt.date(nextEarn.date) %></b><% if (nextEarn.eps_estimated != null) { %> · verwachte winst per aandeel <b><%= fmt.price(nextEarn.eps_estimated) %></b><% } %><% if (nextEarn.revenue_estimated) { %> · omzet <b><%= fmt.money(nextEarn.revenue_estimated) %></b><% } %></p><% } %>
   <% if (earningsHist.length) { %>
-  <%- charts.pairBars(earningsHist.map(function (h) { return { label: h.label, a: h.surprise, b: h.reaction, href: '/aandeel/' + encodeURIComponent(symbol) + '/cijfers/' + h.date }; }), { aLabel: 'Winstverrassing', bLabel: 'Koersreactie', height: 200 }) %>
+  <%- charts.both.pairBars(earningsHist.map(function (h) { return { label: h.label, a: h.surprise, b: h.reaction, href: '/aandeel/' + encodeURIComponent(symbol) + '/cijfers/' + h.date }; }), { aLabel: 'Winstverrassing', bLabel: 'Koersreactie', height: 200 }) %>
   <% var lastE = earningsHist[earningsHist.length - 1]; %>
   <p class="small">Laatste cijfers (<%= fmt.date(lastE.date) %>): winst <span class="<%= fmt.tone(lastE.surprise) %>"><%= fmt.pct(lastE.surprise) %></span> t.o.v. verwachting, koers <span class="<%= fmt.tone(lastE.reaction) %>"><%= fmt.pct(lastE.reaction) %></span>, <span class="pos">▲<%= lastE.raises %></span> <span class="neg">▼<%= lastE.cuts %></span> koersdoelen. <a href="/aandeel/<%= encodeURIComponent(symbol) %>/cijfers/<%= lastE.date %>">Open de Earnings Reaction Monitor</a></p>
   <% } %>

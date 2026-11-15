@@ -61,7 +61,7 @@
 <% if (hist.length > 1) { %>
 <section class="card">
   <div class="card-h"><h2>Eerdere cijfers van <%= symbol %></h2><span class="small pb-legend"><i class="a"></i>Winstverrassing <i class="b"></i>Koersreactie</span></div>
-  <%- charts.pairBars(hist.map(function (h) { return { label: h.label, a: h.surprise, b: h.reaction, href: '/aandeel/' + encodeURIComponent(symbol) + '/cijfers/' + h.date }; }), { aLabel: 'Winstverrassing', bLabel: 'Koersreactie' }) %>
+  <%- charts.both.pairBars(hist.map(function (h) { return { label: h.label, a: h.surprise, b: h.reaction, href: '/aandeel/' + encodeURIComponent(symbol) + '/cijfers/' + h.date }; }), { aLabel: 'Winstverrassing', bLabel: 'Koersreactie' }) %>
 </section>
 <% } %>
 <p class="small muted">De koersreactie loopt van het slot op de handelsdag vóór de cijfers tot het slot op de handelsdag erna, zodat cijfers voor en na de opening allebei goed worden gemeten. Herzieningen tellen in de 10 dagen vanaf de cijferdatum.</p>
