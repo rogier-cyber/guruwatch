@@ -1665,3 +1665,7 @@ main .kp-list li { max-width: none; }
 .sec-it em { font-style: normal; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .sec-more { align-self: center; padding-left: 4px; }
 .gu-leg li[data-sec], .pie-seg { -webkit-tap-highlight-color: transparent; outline: none; }
+
+/* Geen streep boven de eerste vraag: onder de titel staat al een scheidingslijn */
+.faq-acc:first-of-type, .faq-item:first-of-type, .faq .faq-acc:first-of-type, .qa-acc-list { border-top: 0; }
+.qa-acc-list > :first-child { border-top: 0; }
