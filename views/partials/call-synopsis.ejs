@@ -15,6 +15,7 @@
   <% if (nl && nl.summary) { %>
   <div class="syn-mg"><h3 class="syn-h">Wat het management vertelde</h3><% fmt.paras(nl.summary).forEach(function (t) { %><p><%= t %></p><% }) %></div>
   <% } %>
+  <% if (nl) { %>
   <div class="syn-cols">
     <div>
       <h3 class="syn-h">Prognose van het management</h3>
@@ -27,6 +28,9 @@
       <ul class="syn-list"><% syn.keyPoints.forEach(function (k) { %><li><%= k.text %><% k.topics.slice(0, 1).forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></li><% }) %></ul><% } %>
     </div>
   </div>
+  <% } else { %>
+  <p class="syn-wait">De Nederlandse samenvatting met de prognose en de belangrijkste punten van het management wordt nu gemaakt. Kom over een paar minuten terug.</p>
+  <% } %>
   <% if (nl) { %><p class="small muted mb0">Onze analyse telt Guruwatch zelf met woordenlijsten. De samenvatting, prognose, kernpunten en de vertaling van vragen en antwoorden zijn gemaakt door AI (Claude) op basis van het Engelse transcript.</p>
-  <% } else { %><p class="small muted mb0">Onze analyse en de keuze van de citaten zijn automatisch, op basis van woordtellingen (geen AI). De punten van het management zijn letterlijk uit de call (Engels); de Nederlandse versie volgt.</p><% } %>
+  <% } else { %><p class="small muted mb0">Onze analyse is automatisch, op basis van woordtellingen (geen AI).</p><% } %>
 </section>

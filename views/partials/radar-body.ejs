@@ -1,39 +1,20 @@
-<%- include('partials/head') %>
 <%
   const qs = function (extra) {
-    const p = Object.assign({ tab: tab, sector: filters.sector, cap: filters.cap }, extra || {});
+    const p = Object.assign({ tab: 'radar', radar: tab, sector: filters.sector, cap: filters.cap }, extra || {});
     return '?' + Object.keys(p).filter(function (k) { return p[k] !== '' && p[k] !== undefined && p[k] !== null; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&');
   };
   const stockCell = function (r) { return ui.stock(r.symbol, r.name); };
 %>
-<section class="hero hero-sm">
-  <div class="hero-in">
-    <div>
-      <h1>Analisten<b>radar</b></h1>
-      <p>Waar draait het sentiment? Welke aandelen krijgen er analistenliefde bij, waar lopen koers en verwachting uit elkaar, en waar is iedereen het (te) eens?</p>
-    </div>
-    <% if (tab === 'momentum') { var rdN = totals.pos + totals.neg; var rdShare = rdN ? totals.pos / rdN : 0.5; %>
-    <div class="rd-hero-kpis">
-      <div class="rd-mood"><%- viz.moodGauge(rdShare, { width: 150, label: 'Aandeel aandelen met verbeterend sentiment' }) %><div><strong><%= Math.round(rdShare * 100) %>%</strong><span>van de aandelen krijgt er analistenliefde bij</span></div></div>
-      <div class="gk-hero-kpis rd-k">
-        <div><strong class="kp-pos"><%= fmt.num(totals.pos) %></strong><span>sentiment verbetert</span></div>
-        <div><strong class="kp-neg"><%= fmt.num(totals.neg) %></strong><span>sentiment verslechtert</span></div>
-        <div><strong><%= fmt.num(herds.length) %></strong><span>kuddes deze week</span></div>
-      </div>
-    </div>
-    <% } %>
-  </div>
-</section>
 
-<nav class="tabs">
-  <a href="<%= qs({ tab: 'momentum' }) %>" class="<%= tab === 'momentum' ? 'on' : '' %>">Momentum</a>
-  <a href="<%= qs({ tab: 'verrassing' }) %>" class="<%= tab === 'verrassing' ? 'on' : '' %>">Koers vs verwachting</a>
-  <a href="<%= qs({ tab: 'potentieel' }) %>" class="<%= tab === 'potentieel' ? 'on' : '' %>">Koersdoelpotentieel</a>
-  <a href="<%= qs({ tab: 'contrair' }) %>" class="<%= tab === 'contrair' ? 'on' : '' %>">Contrair</a>
+<nav class="filters rd-subnav" aria-label="Onderdelen van de radar">
+  <a href="<%= qs({ radar: 'momentum' }) %>" class="<%= tab === 'momentum' ? 'on' : '' %>">Momentum</a>
+  <a href="<%= qs({ radar: 'verrassing' }) %>" class="<%= tab === 'verrassing' ? 'on' : '' %>">Koers vs verwachting</a>
+  <a href="<%= qs({ radar: 'potentieel' }) %>" class="<%= tab === 'potentieel' ? 'on' : '' %>">Koersdoelpotentieel</a>
+  <a href="<%= qs({ radar: 'contrair' }) %>" class="<%= tab === 'contrair' ? 'on' : '' %>">Contrair</a>
 </nav>
 
-<form class="rd-filters" method="get" action="/radar">
-  <input type="hidden" name="tab" value="<%= tab %>">
+<form class="rd-filters" method="get" action="/analisten">
+  <input type="hidden" name="tab" value="radar"><input type="hidden" name="radar" value="<%= tab %>">
   <% if (locals.days) { %><input type="hidden" name="dagen" value="<%= days %>"><% } %>
   <% if (locals.minAnalysts) { %><input type="hidden" name="min" value="<%= minAnalysts %>"><input type="hidden" name="sort" value="<%= sort %>"><% } %>
   <label>Sector
@@ -222,4 +203,3 @@
   </div>
   <p class="small muted rb-legend"><i class="rb-sb"></i>Sterk kopen <i class="rb-b"></i>Kopen <i class="rb-h"></i>Houden <i class="rb-s"></i>Verkopen <i class="rb-ss"></i>Sterk verkopen</p>
 <% } %>
-<%- include('partials/foot') %>

@@ -25,7 +25,7 @@
   <div class="card-h"><h2>Alle vragen van analisten</h2><span class="small muted"><%= A.exchanges.length %> vragen</span></div>
   <% if (!full.exchanges.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
   <p class="sec-txt small">Tik op de grijze knop onder een vraag om het antwoord van het management te lezen.</p>
-  <%- include('partials/call-qa', { exchanges: full.exchanges, links: links, show: 8 }) %>
+  <%- include('partials/call-qa', { exchanges: full.exchanges, links: links, show: 8, titles: full.titles }) %>
   <% } %>
 </section>
 
@@ -54,7 +54,7 @@
 <section class="card">
   <div class="card-h"><h2>Volledig transcript</h2></div>
   <div class="transcript">
-  <% turns.forEach(function (t) { fmt.paras(t.text).forEach(function (x, k) { %><p><% if (!k) { %><b><%= t.speaker %>:</b> <% } %><%= x %></p><% }) }) %>
+  <% turns.forEach(function (t) { fmt.paras(t.text).forEach(function (x, k) { %><p><% if (!k) { %><b><%= tr.withTitle(t.speaker, full.titles) %>:</b> <% } %><%= x %></p><% }) }) %>
   </div>
 </section>
 <% } %>

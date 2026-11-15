@@ -31,7 +31,7 @@ const NEG = /\b(declin(e|ed|es|ing)|weak(ness|er|ened|ening)?|challeng(e|es|ed|i
 const UNC = /\b(uncertain\w*|unclear|unpredictab\w*|volatil\w*|may|might|could|possibl[ey]|depend(s|ing|ent)?|approximately|roughly)\b/g;
 
 // Verhoog bij een betere analyse: opgeslagen calls worden dan opnieuw geanalyseerd.
-const VERSION = 6;
+const VERSION = 7;
 
 const count = (text, re) => {
   re.lastIndex = 0;
@@ -206,6 +206,7 @@ function analyze(content, { full = false } = {}) {
     topics: { mgmt: topicsM, analysts: topicsA },
     analysts: [...analysts.values()].map((a) => ({ name: a.name, firm: a.firm, questions: exchanges.filter((e) => e.analyst === a.name).length || 1, words: a.words, topics: topTopics(topicCounts(a.text.join(' ')), 3) })),
     management: [...mgmt.values()].sort((a, b) => b.words - a.words),
+    titles: mgmtTitles(turns.map((t) => t.text).join(' '), [...mgmt.keys()]),
     exchanges: exchanges.map((e) => ({ analyst: e.analyst, firm: e.firm, excerpt: firstWords(e.q, 40), topics: topTopics(topicCounts(e.q), 2), answeredBy: e.answeredBy, answerWords: e.answerWords,
       ...(full ? { question: e.q, answers: e.answers } : {}) })),
     synopsis: synopsis(preparedText, exchanges),
@@ -328,6 +329,52 @@ function story({ a, cmp = null, prevLabel = '', ev = null }) {
   return out;
 }
 
+// Functie van iemand van het bedrijf (CEO, CFO, ...) uit de tekst van de call: de functietitel die het dichtst
+// bij de naam staat, bv. "Joining me are Tim Cook, our CEO, and Kevan Parekh, CFO".
+const TITLES = [
+  [/chief executive officer|\bCEO\b/gi, 'CEO'], [/chief financial officer|\bCFO\b/gi, 'CFO'], [/chief operating officer|\bCOO\b/gi, 'COO'],
+  [/chief technology officer|\bCTO\b/gi, 'CTO'], [/chief revenue officer|\bCRO\b/gi, 'CRO'], [/chief commercial officer/gi, 'commercieel directeur'],
+  [/investor relations(?! website| site| page| section)/gi, 'hoofd investor relations'], [/treasurer/gi, 'treasurer'],
+  [/\bpresident\b/gi, 'president'], [/executive chair(?:man|woman)?|chair(?:man|woman)?\b/gi, 'voorzitter'],
+];
+function mgmtTitles(text, names) {
+  const out = {};
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const hits = [];
+  TITLES.forEach(([re, label], rank) => { re.lastIndex = 0; let m; while ((m = re.exec(text))) hits.push({ i: m.index, end: m.index + m[0].length, label, rank }); });
+  const variants = (name) => {
+    const parts = name.replace(/\b[A-Z]\.\s*/g, '').split(/\s+/).filter(Boolean);
+    return [...new Set([name, parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1]}` : null, parts.length > 1 ? parts[parts.length - 1] : null].filter(Boolean))];
+  };
+  const others = (name) => names.filter((n) => n !== name).flatMap(variants).filter((v) => v.length > 3);
+  for (const name of names) {
+    const oth = others(name);
+    const clean = (between) => !/[.;!?:\n]/.test(between) && !oth.some((o) => between.includes(o));
+    let best = null;
+    // Volledige naam (en voornaam + achternaam); de achternaam alleen geeft te veel valse treffers.
+    for (const v of variants(name).slice(0, 2)) {
+      const re = new RegExp(esc(v), 'g');
+      let m;
+      while ((m = re.exec(text))) {
+        const a = m.index, b = m.index + m[0].length;
+        for (const h of hits) {
+          // Na de naam ("Tim Cook, our CEO") tot 70 tekens, of direct ervoor ("our CEO, Tim Cook").
+          const after = h.i >= b && h.i - b <= 70 && clean(text.slice(b, h.i));
+          const before = h.end <= a && /^\s*,?\s*$/.test(text.slice(h.end, a));
+          if (!after && !before) continue;
+          const score = h.rank * 10 + (after ? 0 : 5);
+          if (!best || score < best.score) best = { score, label: h.label };
+        }
+      }
+    }
+    if (best) out[name] = best.label;
+  }
+  return out;
+}
+
+// "CEO Tim Cook", of de naam alleen als we de functie niet weten.
+const withTitle = (name, titles) => (titles && titles[name] ? `${titles[name]} ${name}` : name);
+
 function topTopics(counts, n) {
   return Object.entries(counts).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k);
 }
@@ -371,4 +418,4 @@ function toneWord(net) {
   return 'negatief';
 }
 
-module.exports = { lc, story, VERSION, excerpt, sentences, TOPICS, parseTurns, analystIntros, analyze, compare, topicLabel, topTopics, per10k, toneWord, tone };
+module.exports = { mgmtTitles, withTitle, lc, story, VERSION, excerpt, sentences, TOPICS, parseTurns, analystIntros, analyze, compare, topicLabel, topTopics, per10k, toneWord, tone };

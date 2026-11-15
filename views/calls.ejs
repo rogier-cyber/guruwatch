@@ -27,7 +27,7 @@
   <div class="card-h"><h2>Vragen van analisten in <%= latest.label %></h2><a class="small" href="<%= latest.href %>">Hele call bekijken →</a></div>
   <% var LX = (latestFull && latestFull.exchanges) || A.exchanges; if (!LX.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
   <p class="sec-txt small">Tik op de grijze knop onder een vraag om het antwoord van het management te lezen.</p>
-  <%- include('partials/call-qa', { exchanges: LX, show: 6 }) %>
+  <%- include('partials/call-qa', { exchanges: LX, show: 6, titles: (latestFull && latestFull.titles) || A.titles }) %>
   <% } %>
 </section>
 

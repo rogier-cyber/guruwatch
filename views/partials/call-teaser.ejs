@@ -32,19 +32,16 @@ var exTopic = ex && ex.topics && ex.topics.length ? tr.lc(tr.topicLabel(ex.topic
       <h3 class="syn-h">Belangrijk voor beleggers</h3>
       <ul class="ct-kp"><% kps.forEach(function (k) { %><li><%= k.text %></li><% }) %></ul>
       <% } %>
+      <% if (!kps.length && ca.exchanges.length) { var exs = ca.exchanges.filter(function (e) { return e.topics && e.topics.length; }).slice(0, 3); if (exs.length) { %>
+      <h3 class="syn-h">Wat analisten vroegen</h3>
+      <ul class="ct-kp ct-qs"><% exs.forEach(function (e) { %><li>Analist <b><%= e.analyst %></b><%= e.firm ? ' (' + e.firm + ')' : '' %> vroeg naar <%= e.topics.map(function (k) { return tr.lc(tr.topicLabel(k)); }).join(' en ') %><% if (e.answeredBy && e.answeredBy.length) { %>; antwoord van <%= e.answeredBy.map(function (n) { return tr.withTitle(n, ca.titles); }).join(' en ') %><% } %>.</li><% }) %></ul>
+      <% } } %>
       <% if (outl.length) { %>
       <h3 class="syn-h">Prognose van het management</h3>
       <ul class="ct-kp ct-out"><% outl.forEach(function (k) { %><li><%= k.text %></li><% }) %></ul>
       <% } %>
-    </div>
-    <div class="ct-viz">
-      <div class="ct-box">
-        <div class="ct-box-h"><span>Toon van het management</span><% if (cc && cc.toneMgmt != null && Math.abs(cc.toneMgmt) >= 0.05) { %><em class="small <%= fmt.tone(cc.toneMgmt) %>"><%= cc.toneMgmt > 0 ? '▲ positiever' : '▼ minder positief' %> dan vorige call</em><% } %></div>
-        <div class="ct-gauge" data-tip="Toon van het management&#10;<%= ca.tone.mgmt.pos %> positieve en <%= ca.tone.mgmt.neg %> negatieve woorden<%= tonePrev != null ? '&#10;Streepje = vorige call' : '' %>"><%- callCharts.toneGauge(toneNow, tonePrev) %><b class="<%= fmt.tone(ca.tone.mgmt.net) %>"><%= tr.toneWord(ca.tone.mgmt.net) %></b></div>
-        <% var spark = callCharts.toneSpark(callTeaser.toneHist); if (spark) { %><div class="ct-spark"><span class="small muted">Toon in de laatste <%= callTeaser.toneHist.length %> calls</span><div class="only-desk"><%- spark %></div><div class="only-phone"><%- callCharts.toneSpark(callTeaser.toneHist, { width: 300, height: 80 }) %></div></div><% } %>
-      </div>
       <% if (topics.length) { %>
-      <div class="ct-box">
+      <div class="ct-box ct-box-topics">
         <div class="ct-box-h"><span>Waar ging het over?</span><em class="small muted"><%= ca.exchanges.length %> vragen van <%= ca.analysts.length %> analisten</em></div>
         <div class="ct-topics">
         <% topics.forEach(function (t) { var d = t.p == null ? null : t.v - t.p; %>
@@ -54,12 +51,19 @@ var exTopic = ex && ex.topics && ex.topics.length ? tr.lc(tr.topicLabel(ex.topic
       </div>
       <% } %>
     </div>
+    <div class="ct-viz">
+      <div class="ct-box">
+        <div class="ct-box-h"><span>Toon van het management</span><% if (cc && cc.toneMgmt != null && Math.abs(cc.toneMgmt) >= 0.05) { %><em class="small <%= fmt.tone(cc.toneMgmt) %>"><%= cc.toneMgmt > 0 ? '▲ positiever' : '▼ minder positief' %> dan vorige call</em><% } %></div>
+        <div class="ct-gauge" data-tip="Toon van het management&#10;<%= ca.tone.mgmt.pos %> positieve en <%= ca.tone.mgmt.neg %> negatieve woorden<%= tonePrev != null ? '&#10;Streepje = vorige call' : '' %>"><%- callCharts.toneGauge(toneNow, tonePrev) %><b class="<%= fmt.tone(ca.tone.mgmt.net) %>"><%= tr.toneWord(ca.tone.mgmt.net) %></b></div>
+        <% var spark = callCharts.toneSpark(callTeaser.toneHist); if (spark) { %><div class="ct-spark"><span class="small muted">Toon in de laatste <%= callTeaser.toneHist.length %> calls</span><div class="only-desk"><%- spark %></div><div class="only-phone"><%- callCharts.toneSpark(callTeaser.toneHist, { width: 300, height: 80 }) %></div></div><% } %>
+      </div>
+    </div>
   </div>
 
   <a class="ct-cta" href="<%= callTeaser.href %>">
     <span class="ct-cta-t">
       <b>Lees de hele call: <%= ca.exchanges.length %> vragen en alle antwoorden<%= nl ? ' in het Nederlands' : '' %></b>
-      <span><% if (ex) { %>Wat wilde <%= ex.analyst %><%= ex.firm ? ' van ' + ex.firm : '' %> weten<%= exTopic ? ' over ' + exTopic : '' %>, en wat antwoordde <%= ex.answeredBy && ex.answeredBy[0] ? ex.answeredBy[0] : 'het management' %>? Lees het verslag.<% } else { %>Alle vragen van analisten en de antwoorden van het management op een rij.<% } %></span>
+      <span><% if (ex) { var ans = ex.answeredBy && ex.answeredBy[0]; var ansTxt = !ans ? 'het management' : (ca.titles && ca.titles[ans] ? tr.withTitle(ans, ca.titles) : ans + ' van ' + name); %>Wat wilde analist <%= ex.analyst %><%= ex.firm ? ' van ' + ex.firm : '' %> weten<%= exTopic ? ' over ' + exTopic : '' %>, en wat antwoordde <%= ansTxt %>? Lees het verslag.<% } else { %>Alle vragen van analisten en de antwoorden van het management op een rij.<% } %></span>
     </span>
     <span class="ct-cta-go" aria-hidden="true">→</span>
   </a>
