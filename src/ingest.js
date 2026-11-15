@@ -225,7 +225,7 @@ async function refreshAlerts() {
 
 async function briefings() {
   const alerts = require('./alerts');
-  return job('briefing', async () => ({ sent: await alerts.sendBriefings() }));
+  return job('briefing', async () => ({ sent: await alerts.sendBriefings(), weekly: await alerts.sendWeekly() }));
 }
 
 function startScheduler() {

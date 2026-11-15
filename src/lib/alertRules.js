@@ -114,4 +114,12 @@ function briefingDue(lastSentAt, now = new Date()) {
   return amsterdamParts(new Date(lastSentAt)).day !== p.day;
 }
 
-module.exports = { RULES, KINDS, DEFAULT_KINDS, normalizeParams, describe, amsterdamParts, briefingDue };
+// Weekmail: zaterdag tussen 09:00 en 13:00 (Amsterdam), één keer per zaterdag.
+function weeklyDue(lastSentAt, now = new Date()) {
+  const p = amsterdamParts(now);
+  if (p.weekday !== 'Sat' || p.hour < 9 || p.hour >= 13) return false;
+  if (!lastSentAt) return true;
+  return amsterdamParts(new Date(lastSentAt)).day !== p.day;
+}
+
+module.exports = { RULES, KINDS, DEFAULT_KINDS, normalizeParams, describe, amsterdamParts, briefingDue, weeklyDue };
