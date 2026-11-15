@@ -1727,3 +1727,26 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
 .ins-found { margin: -4px 0 12px; color: var(--muted); }
 @media (prefers-color-scheme: dark) { .ins-search { border-color: #33405e; } .ins-search button { background: #e8ecf5; color: #0b1020; } }
 @media (max-width: 640px) { .ins-search { max-width: none; flex-basis: 100%; } }
+
+/* Mijn GuruWatch voor bezoekers zonder account */
+.join { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; margin-top: 4px; }
+.join-benefits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.join-b { position: relative; padding-top: 22px; margin: 0; }
+.join-b h2 { font-size: 19px; margin: 6px 0 8px; }
+.join-b h2::before { display: none !important; }
+.join-b p { margin: 0 0 8px; line-height: 1.55; }
+.join-n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--navy); color: #fff; font-weight: 800; font-size: 14px; }
+.join-note { color: var(--muted); margin: 0 !important; }
+.join-note::before { content: '✓ '; color: var(--pos); font-weight: 800; }
+.join-form { position: sticky; top: 84px; margin: 0; border-top: 4px solid var(--red); overflow: hidden; }
+.join-form h2 { font-size: 22px; margin: 4px 0 6px; }
+.join-form h2::before { display: none !important; }
+.join-guru { position: absolute; right: -6px; bottom: -6px; width: 120px; height: 120px; opacity: .06; pointer-events: none; }
+.join-form .form { margin-top: 12px; }
+.join-form input[type=email] { font: inherit; padding: 11px 13px; border: 1.5px solid #cfd6e4; border-radius: 10px; background: var(--card); color: var(--text); }
+.join-form input[type=email]:focus { outline: none; border-color: var(--navy-3, #3d4c6e); box-shadow: 0 0 0 3px var(--accent-soft); }
+.join-btn { padding: 12px 16px; font-size: 16px; border-radius: 10px; }
+.join-checks { list-style: none; padding: 0; margin: 16px 0 12px; display: grid; gap: 6px; font-size: 14px; }
+.join-checks li::before { content: '✓'; color: var(--pos); font-weight: 800; margin-right: 8px; }
+@media (max-width: 900px) { .join { grid-template-columns: 1fr; } .join-form { position: relative; top: 0; } }
+@media (max-width: 640px) { .join-benefits { grid-template-columns: 1fr; gap: 12px; } }

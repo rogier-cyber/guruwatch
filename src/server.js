@@ -116,6 +116,12 @@ app.get('/uit', async (req, res, next) => {
 // eigen voorspellingen, status) vragen om in te loggen.
 const PRIVATE = /^\/(mijn|volglijst|volg|status|community\/(nieuw|voorspelling|profiel|intrekken))(\/|$)/;
 app.use(pages.publicRouter);
+// Niet ingelogd op Mijn GuruWatch: uitleg wat een account oplevert, met direct aanmelden.
+app.get('/mijn', (req, res, next) => {
+  if (req.user) return next();
+  const nextUrl = safeNext(req.query.next);
+  res.render('join', { title: 'Mijn GuruWatch: gratis account', next: nextUrl === '/' ? '/mijn' : nextUrl, seo: { description: 'Maak gratis een Guruwatch-account: volg aandelen, analisten, guru\'s en insiders, krijg meldingen en een ochtendbriefing.' } });
+});
 app.use((req, res, next) => (PRIVATE.test(req.path) ? auth.requireUser(req, res, next) : next()), pages);
 
 app.use((req, res) => res.status(404).render('error', { title: 'Niet gevonden', message: 'Deze pagina bestaat niet.' }));

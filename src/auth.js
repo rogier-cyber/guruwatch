@@ -134,7 +134,8 @@ async function loadUser(req, res, next) {
 function requireUser(req, res, next) {
   if (req.user) return next();
   const back = encodeURIComponent(req.originalUrl || '/');
-  return res.redirect(`/login?next=${back}`);
+  // Niet ingelogd: eerst uitleg wat een account oplevert, daarna terug naar wat je wilde doen.
+  return res.redirect(`/mijn?next=${back}`);
 }
 
 async function logout(req, res) {
