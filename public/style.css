@@ -1786,3 +1786,4 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
 .stk-search .ins-search { flex: 1 1 320px; max-width: 520px; }
 @media (max-width: 640px) { .stk-search { padding: 14px; } .stk-search .ins-search { max-width: none; } }
 @media (max-width: 640px) { .ins-search .sx-list { position: absolute; top: calc(100% + 8px); left: -2px; right: auto; width: calc(100vw - 40px); margin-top: 0; } }
+@media (max-width: 640px) { .stk-search { display: none; } }
