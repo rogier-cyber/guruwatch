@@ -100,11 +100,11 @@ function gwSuggest(input, list, mode) {
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active - 1); }
     else if (e.key === 'Escape') { open(false); }
     else if (e.key === 'Enter') {
-      if (active >= 0 && items[active]) { e.preventDefault(); location.href = items[active]; return; }
+      if (active >= 0 && items[active]) { e.preventDefault(); if (window.gwKeepScroll && ins) window.gwKeepScroll(); location.href = items[active]; return; }
       // Precies een ticker getypt? Dan meteen naar het aandeel.
       var data = cache[input.value.trim()];
       var up = input.value.trim().toUpperCase();
-      if (data && data.stocks[0] && data.stocks[0].symbol.toUpperCase() === up) { e.preventDefault(); location.href = stockHref(data.stocks[0].symbol); }
+      if (data && data.stocks[0] && data.stocks[0].symbol.toUpperCase() === up) { e.preventDefault(); if (window.gwKeepScroll && ins) window.gwKeepScroll(); location.href = stockHref(data.stocks[0].symbol); }
     }
   });
   list.addEventListener('mousemove', function (e) {
