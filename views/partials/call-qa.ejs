@@ -6,7 +6,7 @@
       <div class="qa-sum">
         <div class="qa-who"><%- ui.avatar(e.analyst, e.firm) %><% if (l) { %><a href="/analist/<%= l.slug %>" data-tip-touch="0" data-tip="<%= e.analyst %>&#10;<%= l.firm || e.firm || '' %><%= l.score != null ? '&#10;GuruScore ' + Math.round(l.score) : '' %>"><b><%= e.analyst %></b></a><% } else { %><b><%= e.analyst %></b><% } %><% if (e.firm) { %> <span class="muted small"><%= e.firm %></span><% } %><% e.topics.forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div>
         <p class="qa-q">“<%= fullText && e.question ? e.question : e.excerpt %>”</p>
-        <% if (e.answeredBy.length) { %><p class="small muted mb0">Antwoord van <%= e.answeredBy.join(', ') %> · <%= e.answerWords %> woorden</p><% } %>
+        <% if (e.answeredBy.length) { var who = e.answeredBy.length > 1 ? e.answeredBy.slice(0, -1).join(', ') + ' en ' + e.answeredBy[e.answeredBy.length - 1] : e.answeredBy[0]; %><span class="qa-btn"><span class="qa-btn-open">Lees antwoord van <%= who %></span><span class="qa-btn-close">Verberg antwoord</span><i aria-hidden="true"></i></span> <span class="small muted qa-len"><%= e.answerWords %> woorden</span><% } else { %><span class="qa-btn"><span class="qa-btn-open">Bekijk details</span><span class="qa-btn-close">Verberg</span><i aria-hidden="true"></i></span><% } %>
       </div>
       <span class="faq-chev" aria-hidden="true"></span>
     </summary>
