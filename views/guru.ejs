@@ -78,9 +78,9 @@
 
 <section class="card">
   <div class="card-h"><h2>De portefeuille in één oogopslag</h2><span class="small muted">grootte = gewicht<%= prev ? ', kleur = wat er veranderde' : '' %></span></div>
-  <%- charts.treemap(positions.slice(0, 40).map(function (p) { return { label: p.symbol || fmt.company(p.issuer), value: p.value, sub: fmt.pct(p.weight, false) + (p.kind === 'new' ? ' · nieuw' : p.kind === 'added' ? ' · bijgekocht' : p.kind === 'reduced' ? ' · verlaagd' : ''), href: p.symbol ? '/aandeel/' + encodeURIComponent(p.symbol) : '#', tone: prev ? p.kind : '' }; }), { width: 920, height: 360 }).replace('class="treemap"', 'class="treemap only-desk"') %>
-  <div class="only-phone"><%- charts.hbars(positions.filter(function (p) { return p.symbol; }).slice(0, 12).map(function (p) { return { sym: p.symbol, name: p.name, value: p.weight, display: fmt.pct(p.weight, false), href: '/aandeel/' + encodeURIComponent(p.symbol) }; })) %></div>
-  <% if (prev) { %><div class="tm-legend"><span><i style="background:var(--navy-2)"></i>Ongewijzigd</span><span><i style="background:var(--pos)"></i>Nieuw</span><span><i style="background:#0f766e"></i>Bijgekocht</span><span><i style="background:var(--red)"></i>Verlaagd</span></div><% } %>
+  <%- charts.tiles(tileItems, { width: 920, height: 420, cls: 'only-desk' }) %>
+  <%- charts.tiles(tileItems.slice(0, 24), { width: 360, height: 460, cls: 'only-phone' }) %>
+  <div class="tm-legend"><% if (prev) { %><span><i class="lg-new"></i>Nieuw</span><span><i class="lg-added"></i>Bijgekocht</span><span><i class="lg-reduced"></i>Verlaagd</span><span><i class="lg-same"></i>Ongewijzigd</span><span class="tm-hint">hoe feller, hoe groter de wijziging</span><% } %><span class="tm-hint">beweeg of tik voor details</span></div>
 </section>
 
 <% if (prev) { var maxImp = Math.max(0.001, ...mv.buys.slice(0, 10).map(function (m) { return m.impact; }), ...mv.sells.slice(0, 10).map(function (m) { return -m.impact; })); %>
@@ -149,7 +149,7 @@
     <thead><tr><th class="r">#</th><th>Aandeel</th><th>Sector</th><th>Gewicht</th><th class="r">Waarde</th><th class="r">Aantal</th><th>Wijziging</th><th class="r">Potentieel</th></tr></thead>
     <tbody>
     <% var wmax = positions.length ? positions[0].weight : 1; positions.forEach(function (p, i) { %>
-      <tr>
+      <tr<%= i >= 25 ? ' hidden' : '' %>>
         <td class="r muted"><%= i + 1 %></td>
         <td><% if (p.symbol) { %><%- ui.stock(p.symbol, p.name) %><% } else { %><span class="sc sc-1"><span class="sc-t"><b><%= fmt.company(p.issuer) %></b></span></span><% } %></td>
         <td class="muted small nowrap"><%= p.sector || '–' %></td>
@@ -162,6 +162,7 @@
     <% }) %>
     </tbody>
   </table></div>
+  <% if (positions.length > 25) { %><button type="button" class="more-btn" data-more>Toon alle <%= positions.length %> posities <span aria-hidden="true">↓</span></button><% } %>
 </section>
 
 <% if (sold.length) { %>

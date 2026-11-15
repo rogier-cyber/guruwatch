@@ -252,10 +252,10 @@ function miniLine(values, { width = 120, height = 34, cls = '' } = {}) {
   return `<svg class="mini ${cls || (up ? 'up' : 'down')}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true"><path d="${area}" class="mini-area"/><polyline points="${pts.join(' ')}" class="mini-line"/></svg>`;
 }
 
-// Squarified treemap voor portefeuilles: [{label, value, sub, href, tone}].
-function treemap(items, { width = 920, height = 420, label = 'Verdeling van de portefeuille' } = {}) {
+// Squarified layout: items met value -> rechthoeken {x, y, w, h} binnen width x height.
+function squarify(items, width, height) {
   const data = items.filter((x) => x.value > 0).sort((a, b) => b.value - a.value);
-  if (!data.length) return '';
+  if (!data.length) return [];
   const total = data.reduce((s, x) => s + x.value, 0);
   const scale = (width * height) / total;
   const nodes = data.map((d) => ({ ...d, area: d.value * scale }));
@@ -299,6 +299,13 @@ function treemap(items, { width = 920, height = 420, label = 'Verdeling van de p
     }
   }
   if (row.length) layoutRow(row);
+  return out;
+}
+
+// Squarified treemap voor portefeuilles: [{label, value, sub, href, tone}].
+function treemap(items, { width = 920, height = 420, label = 'Verdeling van de portefeuille' } = {}) {
+  const out = squarify(items, width, height);
+  if (!out.length) return '';
   const cells = out
     .map((n, i) => {
       const big = n.w > 70 && n.h > 38;
@@ -316,6 +323,30 @@ function treemap(items, { width = 920, height = 420, label = 'Verdeling van de p
 
 // Horizontale staven [{label, value, display, href}].
 // Met `sym` (en eventueel `name`) wordt het label een aandeel met logo, ticker en naam eronder.
+// Portefeuille als tegels (HTML, à la Finviz): logo in grote tegels, korte labels, nooit afgekapte tekst.
+// items: [{label, value, weight, href, tone, chg, tip, logo}]; posities in % zodat het meeschaalt.
+function tiles(items, { width = 920, height = 400, cls = '' } = {}) {
+  const out = squarify(items, width, height);
+  if (!out.length) return '';
+  const pc = (v, t) => ((v / t) * 100).toFixed(3) + '%';
+  const cells = out.map((n) => {
+    const area = n.w * n.h;
+    const size = n.w >= 118 && n.h >= 92 ? 'xl' : n.w >= 82 && n.h >= 60 ? 'l' : n.w >= 52 && n.h >= 38 ? 'm' : n.w >= 34 && n.h >= 22 ? 's' : 'xs';
+    const fs = size === 'xl' ? Math.min(26, 13 + Math.sqrt(area) / 22) : 0;
+    const label = String(n.label || '');
+    // Label alleen als het past; anders weglaten (de tooltip vertelt de rest).
+    const fitsLabel = (px) => label.length * px <= n.w - 12;
+    const lbl = size === 'xs' ? '' : fitsLabel(size === 's' ? 7.2 : size === 'm' ? 8.2 : fs ? fs * 0.66 : 9) ? label : '';
+    const w = n.weight != null ? (n.weight < 0.001 ? '<0,1%' : (n.weight * 100).toFixed(1).replace('.', ',') + '%') : '';
+    const chg = n.chgLabel && (size === 'xl' || size === 'l') ? `<span class="tl-c">${esc(n.chgLabel)}</span>` : '';
+    const logo = n.logo && (size === 'xl' || size === 'l') ? `<span class="tl-logo"><img src="${esc(n.logo)}" alt="" loading="lazy" onload="this.parentNode.classList.add('ok')" onerror="this.parentNode.remove()"></span>` : '';
+    const body = `${logo}${lbl ? `<b${fs ? ` style="font-size:${fs.toFixed(1)}px"` : ''}>${esc(lbl)}</b>` : ''}${w && size !== 's' && size !== 'xs' ? `<span class="tl-w">${w}</span>` : ''}${chg}`;
+    const st = `left:${pc(n.x, width)};top:${pc(n.y, height)};width:${pc(n.w, width)};height:${pc(n.h, height)}${n.shade != null ? `;--k:${n.shade.toFixed(2)}` : ''}`;
+    return `<a class="tl tl-${size} ${n.tone || 'same'}" href="${esc(n.href || '#')}" style="${st}"${n.tip ? ` data-tip="${esc(n.tip)}"` : ''}${n.logo ? ` data-tip-logo="${esc(n.logo)}"` : ''}><span class="tl-in">${body}</span></a>`;
+  }).join('');
+  return `<div class="tiles ${cls}" style="aspect-ratio:${width} / ${height}" role="list">${cells}</div>`;
+}
+
 function hbars(items, { max, cls = '' } = {}) {
   const ui = require('./ui');
   const m = max || Math.max(1, ...items.map((x) => x.value));
@@ -731,4 +762,4 @@ const both = Object.fromEntries(Object.entries(FNS).map(([name, fn]) => [name, (
   return rsp(d, m);
 }]));
 
-module.exports = { both, forecastFan, ratingColumns, targetBand, ratingDist, gauge, pairBars, targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, hbars, heat, scatter, columns, ratingBar, ratingArea, rangeBar };
+module.exports = { both, forecastFan, ratingColumns, targetBand, ratingDist, gauge, pairBars, targetTimeline, rollingConsensus, scoreRing, donut, divergingBars, miniLine, treemap, tiles, hbars, heat, scatter, columns, ratingBar, ratingArea, rangeBar };
