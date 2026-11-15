@@ -57,13 +57,23 @@ function mapPriceTarget(r) {
     analyst_name: name,
     analyst_firm: firm,
     analyst_slug: analystKey(name, firm),
-    price_target: num(r.priceTarget),
+    // Na een aandelensplitsing: het voor de split aangepaste doel (zelfde schaal als de koers).
+    price_target: splitTarget(num(r.priceTarget), num(r.adjPriceTarget), num(r.priceWhenPosted)),
+    raw_price_target: num(r.priceTarget),
     adj_price_target: num(r.adjPriceTarget),
     price_when_posted: num(r.priceWhenPosted),
     news_title: clean(r.newsTitle),
     news_url: clean(r.newsURL),
     news_publisher: clean(r.newsPublisher),
   };
+}
+
+// Kies het koersdoel op de schaal van de (split-gecorrigeerde) koers. FMP geeft naast het originele doel een
+// split-gecorrigeerd doel; we nemen dat als het dichter bij de koers van dat moment ligt (of die koers ontbreekt).
+function splitTarget(raw, adj, pwp) {
+  if (!(adj > 0) || !(raw > 0) || Math.abs(adj / raw - 1) <= 0.01) return raw ?? adj ?? null;
+  if (!(pwp > 0)) return adj;
+  return Math.abs(Math.log(adj / pwp)) < Math.abs(Math.log(raw / pwp)) ? adj : raw;
 }
 
 function mapGrade(r) {
@@ -182,4 +192,5 @@ function scoreTarget({ price_target, price_when_posted, current_price }) {
   };
 }
 
-module.exports = { hash, slugify, num, ts, date, clean, analystKey, mapPriceTarget, mapGrade, mapInsider, mapHoldings, diffHoldings, scoreTarget };
+module.exports = {
+  splitTarget, hash, slugify, num, ts, date, clean, analystKey, mapPriceTarget, mapGrade, mapInsider, mapHoldings, diffHoldings, scoreTarget };
