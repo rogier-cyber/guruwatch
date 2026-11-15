@@ -58,7 +58,10 @@
     if (!txt) return;
     var t = ensureTip();
     var lines = txt.split('\n');
-    t.innerHTML = '<b>' + esc(lines[0]) + '</b>' + lines.slice(1).map(function (l) { return '<span>' + esc(l) + '</span>'; }).join('');
+    var logo = el.getAttribute('data-tip-logo');
+    var head = '<b>' + esc(lines[0]) + '</b>';
+    if (logo) head = '<div class="tip-head"><img src="' + esc(logo) + '" alt="" onerror="this.remove()">' + head + '</div>';
+    t.innerHTML = head + lines.slice(1).map(function (l) { return '<span>' + esc(l) + '</span>'; }).join('');
     t.hidden = false;
     if (current && current !== el) current.classList.remove('tip-on');
     current = el;

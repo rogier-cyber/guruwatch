@@ -28,6 +28,7 @@ const translate = require('../translate');
 const callCharts = require('../lib/callCharts');
 const vq = require('../lib/vizQueries');
 const cm = require('../lib/community');
+const { logoUrl } = require('../lib/logos');
 
 const router = express.Router();
 
@@ -309,6 +310,29 @@ pub.get('/guru/:slug', wrap(async (req, res) => {
     return { ...r, name: nameOf.get(r.symbol) || r.issuer, sector: sectorOf.get(r.symbol) || null, kind, change_pct: p && p.shares ? r.shares / p.shares - 1 : null,
       prev_weight: p ? p.weight : 0, price: x.price, upside: x.upside, targets: x.targets };
   });
+  // Tegels "De portefeuille in één oogopslag": korte labels, logo en een tooltip met de details.
+  const shareFmt = (n) => (Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace('.', ',')} mln` : fmt.num(Math.round(n)));
+  const tileItems = positions.slice(0, 40).map((p) => {
+    const kindTxt = { new: 'Nieuwe positie', added: 'Bijgekocht', reduced: 'Verlaagd', same: 'Ongewijzigd' }[p.kind] || '';
+    const prevShares = p.change_pct != null ? p.shares / (1 + p.change_pct) : 0;
+    const diff = p.shares - prevShares;
+    const lines = [`${fmt.company(p.name)}${p.symbol ? ` (${p.symbol})` : ''}`,
+      `Gewicht ${fmt.pct(p.weight, false)} · waarde ${fmt.money(p.value)}`,
+      `${shareFmt(p.shares)} aandelen`];
+    if (p.kind === 'new') lines.push('Nieuwe positie dit kwartaal');
+    else if (p.kind === 'added' || p.kind === 'reduced') lines.push(`${kindTxt}: ${diff > 0 ? '+' : '−'}${shareFmt(Math.abs(diff))} aandelen (${fmt.pct(p.change_pct)})`);
+    else if (p.kind === 'same') lines.push('Aantal aandelen ongewijzigd');
+    if (p.kind && p.prev_weight != null) lines.push(`Gewicht vorig kwartaal ${p.prev_weight ? fmt.pct(p.prev_weight, false) : '0%'}`);
+    lines.push(`13F over ${guruCharts.qLabel(cur.period)}${p.filing_date ? ` · ingediend ${fmt.date(p.filing_date)}` : ''}`);
+    const mag = p.change_pct != null ? Math.min(1, Math.abs(p.change_pct) / 0.5) : 1;
+    return {
+      label: p.symbol || fmt.company(p.issuer).split(' ')[0], value: p.value, weight: p.weight,
+      href: p.symbol ? '/aandeel/' + encodeURIComponent(p.symbol) : '#', tone: prev ? p.kind : 'same',
+      chgLabel: p.kind === 'new' ? 'nieuw' : (p.kind === 'added' || p.kind === 'reduced') && p.change_pct != null ? fmt.pct(p.change_pct) : '',
+      shade: p.kind === 'added' || p.kind === 'reduced' ? 0.55 + 0.45 * mag : null,
+      tip: lines.join('\n'), logo: p.symbol ? logoUrl(p.symbol) : null,
+    };
+  });
   const sectors = guru.sectors(cur.rows, sectorOf);
   // Per sector de aandelen (voor de sectorendonut: hover/tik toont wat erin zit).
   const sectorHoldings = new Map();
@@ -389,7 +413,7 @@ pub.get('/guru/:slug', wrap(async (req, res) => {
         { '@type': 'ListItem', position: 2, name, item: canonical },
       ] },
     ] },
-    fund, name, watched, empty: false, periods, selIdx, cur, prev, curTot, positions, sectors, sectorHoldings, heat, mv, valueSeries, top10, bubbles, perf, story, gc: guruCharts,
+    fund, name, watched, empty: false, periods, selIdx, cur, prev, curTot, positions, tileItems, sectors, sectorHoldings, heat, mv, valueSeries, top10, bubbles, perf, story, gc: guruCharts,
     sold: soldList,
     nameOf,
   });

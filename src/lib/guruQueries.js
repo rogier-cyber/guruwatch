@@ -9,7 +9,7 @@ async function fundHistory(cik, { periods = 12, perPeriod = 150 } = {}) {
     `WITH p AS (SELECT DISTINCT period FROM fund_holdings WHERE cik = $1 ORDER BY period DESC LIMIT $2),
      h AS (SELECT h.*, row_number() OVER (PARTITION BY h.period ORDER BY h.value DESC) AS rn
            FROM fund_holdings h WHERE h.cik = $1 AND h.period IN (SELECT period FROM p) AND h.put_call = '')
-     SELECT period::text AS period, cusip, symbol, issuer, put_call, shares::float8 AS shares, value::float8 AS value, weight::float8 AS weight
+     SELECT period::text AS period, cusip, symbol, issuer, put_call, shares::float8 AS shares, value::float8 AS value, weight::float8 AS weight, filing_date::text AS filing_date
      FROM h WHERE rn <= $3 ORDER BY period, value DESC`,
     [cik, periods, perPeriod]
   );
