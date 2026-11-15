@@ -3,8 +3,8 @@
   <div class="card-h"><h2>Samenvatting van de call <%= label %></h2><span class="small muted"><%= dateTxt %></span></div>
   <% if (ev) { %>
   <div class="syn-res">
-    <div data-tip="Winst per aandeel&#10;Werkelijk <%= fmt.price(ev.eps_actual) %>, verwacht <%= fmt.price(ev.eps_estimated) %>"><span>Winst per aandeel</span><b><%= fmt.price(ev.eps_actual) %></b><em class="small <%= fmt.tone(ev.surprise) %>"><%= ev.surprise == null ? 'verwacht ' + fmt.price(ev.eps_estimated) : fmt.pct(ev.surprise) + ' vs ' + fmt.price(ev.eps_estimated) %></em></div>
-    <div data-tip="Omzet&#10;Werkelijk <%= fmt.money(ev.revenue_actual) %>, verwacht <%= fmt.money(ev.revenue_estimated) %>"><span>Omzet</span><b><%= fmt.money(ev.revenue_actual) %></b><em class="small <%= fmt.tone(ev.revSurprise) %>"><%= ev.revSurprise == null ? (ev.revenue_estimated ? 'verwacht ' + fmt.money(ev.revenue_estimated) : '') : fmt.pct(ev.revSurprise) + ' vs ' + fmt.money(ev.revenue_estimated) %></em></div>
+    <div data-tip="Winst per aandeel&#10;Werkelijk <%= fmt.price(ev.eps_actual) %>, prognose <%= fmt.price(ev.eps_estimated) %>"><span>Winst per aandeel</span><b><%= fmt.price(ev.eps_actual) %></b><em class="small <%= fmt.tone(ev.surprise) %>"><%= ev.surprise == null ? 'prognose ' + fmt.price(ev.eps_estimated) : fmt.pct(ev.surprise) + ' vs prognose ' + fmt.price(ev.eps_estimated) %></em></div>
+    <div data-tip="Omzet&#10;Werkelijk <%= fmt.money(ev.revenue_actual) %>, prognose <%= fmt.money(ev.revenue_estimated) %>"><span>Omzet</span><b><%= fmt.money(ev.revenue_actual) %></b><em class="small <%= fmt.tone(ev.revSurprise) %>"><%= ev.revSurprise == null ? (ev.revenue_estimated ? 'prognose ' + fmt.money(ev.revenue_estimated) : '') : fmt.pct(ev.revSurprise) + ' vs prognose ' + fmt.money(ev.revenue_estimated) %></em></div>
     <div data-tip="Koersreactie&#10;Slotkoers de dag voor de cijfers tot de dag erna"><span>Koersreactie</span><b class="<%= fmt.tone(ev.reaction) %>"><%= fmt.pct(ev.reaction) %></b><em class="small muted">dag ervoor tot dag erna</em></div>
     <div><span>Koersdoelen erna</span><b><span class="pos">▲<%= ev.raises %></span> <span class="neg">▼<%= ev.cuts %></span></b><em class="small"><a href="/aandeel/<%= encodeURIComponent(symbol) %>/cijfers/<%= ev.date %>">Reaction Monitor →</a></em></div>
   </div>
@@ -14,16 +14,15 @@
   <% } %>
   <div class="syn-cols">
     <div>
-      <h3 class="syn-h">Wat het management aangaf</h3>
-      <% if (!syn.keyPoints.length) { %><p class="small muted">Geen duidelijke kernpunten gevonden.</p><% } else { %>
-      <ul class="syn-list"><% syn.keyPoints.forEach(function (k) { %><li><span class="syn-q">“<%= k.text %>”</span><% k.topics.forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></li><% }) %></ul><% } %>
+      <h3 class="syn-h">Prognose van het management</h3>
+      <% if (!(syn.outlook || []).length) { %><p class="small muted">Het management gaf in deze call geen concrete prognose met cijfers.</p><% } else { %>
+      <ul class="syn-list syn-outlook"><% syn.outlook.forEach(function (k) { %><li><%= k.text %><% k.topics.slice(0, 1).forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></li><% }) %></ul><% } %>
     </div>
     <div>
-      <h3 class="syn-h">Uit de vragenronde</h3>
-      <% if (!syn.qaPoints.length) { %><p class="small muted">Geen vragenronde gevonden.</p><% } else { %>
-      <ul class="syn-list"><% syn.qaPoints.forEach(function (p) { %><li><b><%= p.analyst %></b><% if (p.firm) { %> <span class="muted small"><%= p.firm %></span><% } %><% if (p.topics[0]) { %> over <b><%= tr.lc(tr.topicLabel(p.topics[0])) %></b><% } %>
-        <div class="small muted syn-qq">“<%= p.question %>”</div><div class="syn-q">→ “<%= p.answer %>”</div></li><% }) %></ul><% } %>
+      <h3 class="syn-h">Belangrijkste punten voor beleggers</h3>
+      <% if (!syn.keyPoints.length) { %><p class="small muted">Geen duidelijke kernpunten gevonden.</p><% } else { %>
+      <ul class="syn-list"><% syn.keyPoints.forEach(function (k) { %><li><%= k.text %><% k.topics.slice(0, 1).forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></li><% }) %></ul><% } %>
     </div>
   </div>
-  <p class="small muted mb0">Onze analyse en de keuze van de citaten zijn automatisch, op basis van woordtellingen (geen AI). De citaten zijn letterlijk uit de call, in het Engels.</p>
+  <p class="small muted mb0">Onze analyse en de keuze van de citaten zijn automatisch, op basis van woordtellingen (geen AI). De punten van het management zijn letterlijk uit de call (Engels).</p>
 </section>

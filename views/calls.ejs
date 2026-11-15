@@ -23,6 +23,14 @@
 
 <%- include('partials/call-synopsis', { a: latestFull || latest.analysis, ev: latest.ev, label: latest.label, dateTxt: latest.dateTxt, summary: summary }) %>
 
+<section class="card">
+  <div class="card-h"><h2>Vragen van analisten in <%= latest.label %></h2><a class="small" href="<%= latest.href %>">Hele call bekijken →</a></div>
+  <% var LX = (latestFull && latestFull.exchanges) || A.exchanges; if (!LX.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
+  <p class="sec-txt small">Tik op een vraag om het antwoord van het management te lezen.</p>
+  <%- include('partials/call-qa', { exchanges: LX, show: 6 }) %>
+  <% } %>
+</section>
+
 <% if (cmp) { var chip = function (r, f, cur, prv) { return '<span class="tp-chip" data-tip="' + r.label + '&#10;Deze call: ' + r[cur] + 'x&#10;Vorige call: ' + r[prv] + 'x&#10;' + (r[f] >= 0 ? '+' : '') + Math.round(r[f]) + ' per 10.000 woorden">' + r.label + '</span>'; }; %>
 <section class="card">
   <div class="card-h"><h2>Wat veranderde sinds <%= prev.label %>?</h2><span class="small muted"><%= latest.label %> vergeleken met de call ervoor</span></div>
@@ -55,21 +63,13 @@
   <%- callCharts.topicHeat(asc, { who: who }) %>
 </section>
 
-<section class="card">
-  <div class="card-h"><h2>Vragen van analisten in <%= latest.label %></h2><a class="small" href="<%= latest.href %>">Hele call bekijken →</a></div>
-  <% var LX = (latestFull && latestFull.exchanges) || A.exchanges; if (!LX.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
-  <p class="sec-txt small">Tik op een vraag om het antwoord van het management te lezen.</p>
-  <%- include('partials/call-qa', { exchanges: LX, max: 10 }) %>
-  <% if (LX.length > 10) { %><p class="small"><a href="<%= latest.href %>">Alle <%= LX.length %> vragen bekijken →</a></p><% } %>
-  <% } %>
-</section>
 
 <% if (analysts.length) { %>
 <section class="card">
   <div class="card-h"><h2>Welke analisten stellen vragen?</h2><span class="small muted">over de laatste <%= calls.length %> calls</span></div>
   <div class="tbl-wrap"><table class="tbl call-an"><thead><tr><th>Analist</th><th>Calls</th><th>Vragen</th><th>Vraagt vooral naar</th></tr></thead><tbody>
   <% analysts.forEach(function (a, i) { %>
-    <tr<%- i >= 12 ? ' class="ins-more" hidden' : '' %>><td><% if (a.link) { %><a href="/analist/<%= a.link.slug %>" data-tip="<%= a.name %>&#10;<%= a.firm || a.link.firm || '' %><%= a.link.score != null ? '&#10;GuruScore ' + Math.round(a.link.score) : '' %>"><b><%= a.name %></b></a><% } else { %><b><%= a.name %></b><% } %><% if (a.firm) { %> <span class="muted small"><%= a.firm %></span><% } %><% if (a.inLatest) { %> <span class="tp-chip sm only-desk">laatste call</span><% } %></td>
+    <tr<%- i >= 12 ? ' class="ins-more" hidden' : '' %>><td><div class="an-cell"><%- ui.avatar(a.name, a.firm) %><div><% if (a.link) { %><a href="/analist/<%= a.link.slug %>" data-tip="<%= a.name %>&#10;<%= a.firm || a.link.firm || '' %><%= a.link.score != null ? '&#10;GuruScore ' + Math.round(a.link.score) : '' %>"><b><%= a.name %></b></a><% } else { %><b><%= a.name %></b><% } %><% if (a.firm) { %> <span class="muted small"><%= a.firm %></span><% } %><% if (a.inLatest) { %> <span class="tp-chip sm only-desk">laatste call</span><% } %></div></div></td>
       <td data-tip="<%= a.calls.join(', ') %>"><%= a.calls.length %>/<%= calls.length %></td><td><%= a.questions %></td><td class="small"><%= a.top.join(', ') || '–' %></td></tr>
   <% }) %>
   </tbody></table></div>

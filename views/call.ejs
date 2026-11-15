@@ -21,6 +21,14 @@
 
 <%- include('partials/call-synopsis', { a: full, ev: ev, label: call.label, dateTxt: call.dateTxt, summary: summary }) %>
 
+<section class="card">
+  <div class="card-h"><h2>Alle vragen van analisten</h2><span class="small muted"><%= A.exchanges.length %> vragen</span></div>
+  <% if (!full.exchanges.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
+  <p class="sec-txt small">Tik op een vraag om het antwoord van het management te lezen.</p>
+  <%- include('partials/call-qa', { exchanges: full.exchanges, links: links, show: 8 }) %>
+  <% } %>
+</section>
+
 <div class="grid2">
   <section class="card">
     <div class="card-h"><h2>Onderwerpen</h2><span class="small pb-legend"><i class="a"></i>Management <i class="b"></i>Analisten</span></div>
@@ -41,13 +49,6 @@
   </section>
 </div>
 
-<section class="card">
-  <div class="card-h"><h2>Alle vragen van analisten</h2><span class="small muted"><%= A.exchanges.length %> vragen</span></div>
-  <% if (!full.exchanges.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
-  <p class="sec-txt small">Tik op een vraag om het antwoord van het management te lezen.</p>
-  <%- include('partials/call-qa', { exchanges: full.exchanges, links: links }) %>
-  <% } %>
-</section>
 
 <% if (turns) { %>
 <section class="card">
