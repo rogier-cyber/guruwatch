@@ -181,10 +181,13 @@ router.get('/methode', (req, res) => res.render('method', { title: 'Hoe de GuruS
 
 // ---------- Insiders ----------
 router.get('/insiders', wrap(async (req, res) => {
-  const type = ['buy', 'sell', 'all'].includes(req.query.type) ? req.query.type : 'buy';
+  const zoek = String(req.query.zoek || '').trim().slice(0, 60);
+  // Bij zoeken standaard alle transacties tonen (aan- en verkopen).
+  const type = ['buy', 'sell', 'all'].includes(req.query.type) ? req.query.type : zoek ? 'all' : 'buy';
   const minValue = Number(req.query.min) > 0 ? Number(req.query.min) : undefined;
+  const zoekSyms = zoek ? await safe(q.insiderSymbolsFor(zoek), []) : null;
   const [trades, clusters, flows, buyMap, roles] = await Promise.all([
-    q.latestInsiders({ limit: 200, type, minValue }),
+    zoekSyms && !zoekSyms.length ? [] : q.latestInsiders({ limit: 200, type, minValue, symbols: zoekSyms || undefined }),
     q.insiderClusters(30, 15),
     q.dailyInsiderFlows(60),
     safe(vq.insiderBuyMap(30, 40), []),
@@ -231,7 +234,7 @@ router.get('/insiders', wrap(async (req, res) => {
       tip: lines.join('\n'), logo: logoUrl(b.symbol),
     };
   });
-  res.render('insiders', { title: "Insider Guru's: aankopen en verkopen van bestuurders", trades, clusters, type, minValue, flows, buyMap, buyTiles, roleRows, kpi, gc: guruCharts });
+  res.render('insiders', { title: "Insider Guru's: aankopen en verkopen van bestuurders", trades, clusters, type, minValue, zoek, zoekSyms, flows, buyMap, buyTiles, roleRows, kpi, gc: guruCharts });
 }));
 
 router.get('/insider/:cik', wrap(async (req, res) => {

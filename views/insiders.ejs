@@ -34,15 +34,26 @@
 </section>
 <div class="grid-side">
   <section class="card">
-    <div class="filters">
-      <a href="?type=buy<%= minValue ? '&min=' + minValue : '' %>" class="<%= type === 'buy' ? 'on' : '' %>">Aankopen</a>
-      <a href="?type=sell<%= minValue ? '&min=' + minValue : '' %>" class="<%= type === 'sell' ? 'on' : '' %>">Verkopen</a>
-      <a href="?type=all<%= minValue ? '&min=' + minValue : '' %>" class="<%= type === 'all' ? 'on' : '' %>">Alles</a>
-      <span class="sep"></span>
-      <a href="?type=<%= type %>" class="<%= !minValue ? 'on' : '' %>">Elk bedrag</a>
-      <a href="?type=<%= type %>&min=100000" class="<%= minValue === 100000 ? 'on' : '' %>">&gt; $100k</a>
-      <a href="?type=<%= type %>&min=1000000" class="<%= minValue === 1000000 ? 'on' : '' %>">&gt; $1 mln</a>
+    <% var zq = zoek ? '&zoek=' + encodeURIComponent(zoek) : ''; %>
+    <div class="ins-bar">
+      <div class="filters">
+        <a href="?type=buy<%= minValue ? '&min=' + minValue : '' %><%= zq %>" class="<%= type === 'buy' ? 'on' : '' %>">Aankopen</a>
+        <a href="?type=sell<%= minValue ? '&min=' + minValue : '' %><%= zq %>" class="<%= type === 'sell' ? 'on' : '' %>">Verkopen</a>
+        <a href="?type=all<%= minValue ? '&min=' + minValue : '' %><%= zq %>" class="<%= type === 'all' ? 'on' : '' %>">Alles</a>
+        <span class="sep"></span>
+        <a href="?type=<%= type %><%= zq %>" class="<%= !minValue ? 'on' : '' %>">Elk bedrag</a>
+        <a href="?type=<%= type %>&min=100000<%= zq %>" class="<%= minValue === 100000 ? 'on' : '' %>">&gt; $100k</a>
+        <a href="?type=<%= type %>&min=1000000<%= zq %>" class="<%= minValue === 1000000 ? 'on' : '' %>">&gt; $1 mln</a>
+      </div>
+      <form class="ins-search" method="get" action="/insiders" role="search">
+        <input type="hidden" name="type" value="<%= type %>"><% if (minValue) { %><input type="hidden" name="min" value="<%= minValue %>"><% } %>
+        <input type="search" name="zoek" value="<%= zoek %>" placeholder="Bedrijf of ticker, bv. Apple" aria-label="Zoek insider trades van een aandeel" autocomplete="off">
+        <button type="submit">Zoek</button>
+      </form>
     </div>
+    <% if (zoek) { %><p class="ins-found small">
+      <% if (zoekSyms && zoekSyms.length) { %>Insider trades voor <b><%= zoekSyms.slice(0, 6).join(', ') %><%= zoekSyms.length > 6 ? ' …' : '' %></b> (<%= trades.length %><%= trades.length >= 200 ? '+' : '' %>)<% } else { %>Geen aandeel met insider trades gevonden voor <b>“<%= zoek %>”</b>.<% } %>
+      · <a href="/insiders">wis zoekopdracht</a><% if (zoekSyms && zoekSyms.length === 1) { %> · <a href="/aandeel/<%= encodeURIComponent(zoekSyms[0]) %>">naar de aandeelpagina</a><% } %></p><% } %>
     <%- include('partials/insiders', { rows: trades }) %>
   </section>
   <aside class="card">
