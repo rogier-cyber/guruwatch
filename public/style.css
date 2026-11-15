@@ -1787,3 +1787,12 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
 @media (max-width: 640px) { .stk-search { padding: 14px; } .stk-search .ins-search { max-width: none; } }
 @media (max-width: 640px) { .ins-search .sx-list { position: absolute; top: calc(100% + 8px); left: -2px; right: auto; width: calc(100vw - 40px); margin-top: 0; } }
 @media (max-width: 640px) { .stk-search { display: none; } }
+
+/* Telefoonkop: meer lucht en een groter logo */
+@media (max-width: 640px) {
+  .top-in { row-gap: 12px; padding-top: 14px; padding-bottom: 16px; }
+  .brand { gap: 9px; }
+  .brand img { width: 42px; height: 42px; }
+  .wordmark { font-size: 25px; }
+  .nav { padding-top: 2px; padding-bottom: 2px; }
+}
