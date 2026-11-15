@@ -9,7 +9,7 @@
     <div>
       <h1>Mijn <b>GuruWatch</b></h1>
       <p>Je aandelen, analisten en fondsen op één plek, met meldingen als het ertoe doet en op zaterdag een weekoverzicht van je volglijst.</p>
-      <div class="mine-actions"><a class="btn btn-primary" href="/mijn/meldingen">Meldingen instellen</a> <a class="btn btn-ghost" href="/mijn/briefing">Bekijk de briefing</a></div>
+      <div class="mine-actions"><a class="btn btn-primary" href="/mijn/meldingen">Meldingen instellen</a> <a class="btn btn-ghost" href="/mijn/briefing">Bekijk het weekoverzicht</a></div>
     </div>
     <div class="mine-gauge">
       <%- avg === null ? '' : charts.scoreRing(avg, 118) %>
@@ -21,7 +21,7 @@
 <% if (!items.length) { %>
 <section class="card">
   <h2>Begin met volgen</h2>
-  <p>Klik op <strong>☆ Volgen</strong> bij een aandeel, analist of fonds. Dan krijg je meldingen als topanalisten bewegen, en een persoonlijke ochtendbriefing.</p>
+  <p>Klik op <strong>☆ Volgen</strong> bij een aandeel, analist of fonds. Dan krijg je meldingen als topanalisten bewegen, en op zaterdag een persoonlijk weekoverzicht.</p>
   <p class="small"><a href="/analisten?tab=radar">Ontdek aandelen op de radar</a> · <a href="/analisten">Bekijk de beste analisten</a> · <a href="/gurus">Volg een guru</a></p>
 </section>
 <% } %>
@@ -75,7 +75,7 @@
     </section>
     <section class="card brief-card">
       <h2>Weekoverzicht op zaterdag</h2>
-      <p class="small">Elke zaterdag in je mailbox als er iets gebeurde bij jouw aandelen: nieuwe koersdoelen, up- en downgrades, insiders en komende cijfers. Liever elke werkdag om 08:00? Zet de ochtendbriefing aan onder <a href="/mijn/meldingen">Meldingen</a>.</p>
+      <p class="small">Elke zaterdag in je mailbox als er iets gebeurde bij jouw aandelen: nieuwe koersdoelen, up- en downgrades, insiders en komende cijfers. Aan of uit te zetten onder <a href="/mijn/meldingen">Meldingen</a>.</p>
       <a class="btn" href="/mijn/briefing">Voorbeeld bekijken</a>
     </section>
   </aside>
