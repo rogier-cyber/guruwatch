@@ -31,7 +31,7 @@ const NEG = /\b(declin(e|ed|es|ing)|weak(ness|er|ened|ening)?|challeng(e|es|ed|i
 const UNC = /\b(uncertain\w*|unclear|unpredictab\w*|volatil\w*|may|might|could|possibl[ey]|depend(s|ing|ent)?|approximately|roughly)\b/g;
 
 // Verhoog bij een betere analyse: opgeslagen calls worden dan opnieuw geanalyseerd.
-const VERSION = 5;
+const VERSION = 6;
 
 const count = (text, re) => {
   re.lastIndex = 0;
@@ -59,6 +59,8 @@ const isOperator = (s) => /^(operator|moderator|conference operator)$/i.test(s.t
 const NAME = "([A-Z][\\w.'’-]+(?:\\s+(?:[A-Z][\\w.'’-]+|de|van|von|del|da|di|la|le)){0,4})";
 const FIRM = "([A-Z][\\w&.'’-]*(?:[\\s,]+(?:[A-Z&][\\w&.'’-]*|and|of|de|du|&))*)";
 const INTRO = new RegExp(`(?:from|is|of|to)\\s+(?:the\\s+line\\s+of\\s+)?${NAME}\\s+(?:with|from|of|at)\\s+${FIRM}`, 'g');
+// Korte introductie zonder meer ("Tal Liani with Bank of America."), zoals bij Cisco.
+const BARE = new RegExp(`^${NAME}\\s+(?:with|from|of|at)\\s+${FIRM}[.\\s]*$`);
 const STOP = /^(the|our|your|this|that|line|question|questions|next|first|last|please|go|ahead)$/i;
 
 // Haal analist + bank uit de zinnen van de operator ("Our next question comes from X with Y.").
@@ -67,6 +69,13 @@ function analystIntros(turns) {
   for (const t of turns) {
     if (!isOperator(t.speaker)) continue;
     t.intros = [];
+    const b = t.text.split(/\s+/).length <= 12 && t.text.trim().match(BARE);
+    if (b && !STOP.test(b[1].split(/\s+/)[0])) {
+      const firm = b[2].replace(/[.,\s]+$/, '').trim();
+      if (!map.has(b[1].trim())) map.set(b[1].trim(), firm || null);
+      t.intros.push(firm || null);
+      continue;
+    }
     if (!/question|line|caller|next/i.test(t.text)) continue;
     INTRO.lastIndex = 0;
     let m;
@@ -129,7 +138,7 @@ function analyze(content, { full = false } = {}) {
   for (let i = 0; i < turns.length; i++) {
     const t = turns[i];
     if (!isOperator(t.speaker)) { seenOther = true; continue; }
-    if (seenOther && /question|q&a|q & a|line of|caller/i.test(t.text)) { qaStart = i; break; }
+    if (seenOther && (/question|q&a|q & a|line of|caller/i.test(t.text) || (t.intros && t.intros.length))) { qaStart = i; break; }
   }
 
   const prepared = new Set(turns.slice(0, qaStart).filter((t) => !isOperator(t.speaker)).map((t) => t.speaker));

@@ -1124,7 +1124,7 @@ pub.get('/aandeel/:symbol/earnings-calls', wrap(async (req, res) => {
   const latestRow = latest ? await safe(require('../transcripts').content(symbol, latest.year, latest.quarter)) : null;
   const latestFull = latestRow ? tr.analyze(latestRow.content, { full: true }) : latest && latest.analysis;
   const latestNl = latestRow && latestRow.nl;
-  if (latestRow && !latestNl) translate.queue(symbol, latest.year, latest.quarter);
+  if (latestRow && latestFull && !tl.nlFits(latestNl, latestFull.exchanges || [])) translate.queue(symbol, latest.year, latest.quarter);
   const summary = latest ? tr.story({ a: latest.analysis, cmp, prevLabel: prev ? prev.label : '', ev: latest.ev }) : [];
   if (latestNl && latestFull && latestFull.exchanges) latestFull.exchanges = tl.applyNl(latestFull.exchanges, latestNl);
   const stale = latest && latest.date ? Date.now() - new Date(latest.date).getTime() > 200 * 864e5 : false;
@@ -1151,7 +1151,7 @@ pub.get('/aandeel/:symbol/earnings-calls/:call', wrap(async (req, res) => {
   const [row, events] = await Promise.all([require('../transcripts').content(symbol, call.year, call.quarter), safe(eq.reactions({ symbol, limit: 12 }), [])]);
   const full = row ? tr.analyze(row.content, { full: true }) : call.analysis;
   const nl = (row && row.nl) || null;
-  if (row && !nl) translate.queue(symbol, call.year, call.quarter);
+  if (row && !tl.nlFits(nl, full.exchanges || [])) translate.queue(symbol, call.year, call.quarter);
   const turns = config.transcriptsFullText && row ? tr.parseTurns(row.content) : null;
   const ev = resultsFor(events, call.date);
   const summary = tr.story({ a: full, cmp, prevLabel: prev ? prev.label : '', ev });

@@ -102,3 +102,20 @@ test('disclaimers komen niet in de kernpunten', () => {
   assert.ok(!/differ materially/.test(k));
   assert.ok(syn.outlook.some((x) => /gross margin to be between 45% and 46%/.test(x.text)), 'prognose herkend');
 });
+
+test('korte introductie van de operator zonder "question" (Cisco)', () => {
+  const txt = [
+    'Sami Badri: Welcome to the Cisco call.',
+    'Charles Robbins: We had a strong quarter with robust growth and record margins across the business, and demand was strong.',
+    'Operator: Amit Daryanani with Evercore ISI.',
+    'Amit Daryanani: Congrats. How should we think about AI revenue next year?',
+    'Charles Robbins: Thank you, Amit. It will grow.',
+    'Operator: Ben Reitzes with Melius Research.',
+    'Benjamin Reitzes: Could you talk about the neocloud exposure?',
+    'Charles Robbins: It is immaterial.',
+  ].join('\n');
+  const a = tr.analyze(txt);
+  assert.equal(a.exchanges.length, 2);
+  assert.equal(a.analysts.find((x) => x.name === 'Benjamin Reitzes').firm, 'Melius Research');
+  assert.ok(a.management.some((m) => m.name === 'Charles Robbins'));
+});

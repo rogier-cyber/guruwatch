@@ -78,17 +78,25 @@ function parseResult(text, a) {
   const exchanges = a.exchanges.map((e, i) => {
     const x = byI.get(i);
     const n = (e.answers || []).length;
-    if (!x || typeof x.q !== 'string' || !Array.isArray(x.a) || x.a.length !== n) return null;
-    return { q: x.q.trim(), a: x.a.map((s) => String(s).replace(/^[A-Z][\w.' -]{1,40}:\s*/, '').trim()) };
+    if (!x || typeof x.q !== 'string' || !Array.isArray(x.a) || (n && !x.a.length)) return null;
+    // Antwoorden die ontbreken (of samengevoegd zijn) blijven op de pagina in het Engels.
+    const ans = Array.from({ length: n }, (_, j) => String(x.a[j] || '').replace(/^[A-Z][\w.' -]{1,40}:\s*/, '').trim());
+    if (x.a.length > n && n) ans[n - 1] = [ans[n - 1], ...x.a.slice(n).map(String)].join(' ');
+    return { q: x.q.trim(), a: ans };
   });
   const missing = exchanges.filter((x) => !x).length;
   if (a.exchanges.length && missing > a.exchanges.length / 4) throw new Error(`${missing} van ${a.exchanges.length} vragen niet vertaald`);
-  return { v: NL_VERSION, summary: j.summary.trim(), outlook: clean(j.outlook), keyPoints: clean(j.keyPoints), exchanges };
+  return { v: NL_VERSION, ex: a.exchanges.length, summary: j.summary.trim(), outlook: clean(j.outlook), keyPoints: clean(j.keyPoints), exchanges };
 }
 
 // Voor de pagina's: vragen en antwoorden met de Nederlandse tekst erin (waar die er is).
+// Klopt de vertaling nog met de huidige analyse (zelfde aantal vragen)?
+function nlFits(nl, exchanges) {
+  return !!nl && Array.isArray(nl.exchanges) && nl.exchanges.length === exchanges.length;
+}
+
 function applyNl(exchanges, nl) {
-  if (!nl || !Array.isArray(nl.exchanges) || nl.exchanges.length !== exchanges.length) return exchanges;
+  if (!nlFits(nl, exchanges)) return exchanges;
   return exchanges.map((e, i) => {
     const x = nl.exchanges[i];
     if (!x) return e;
@@ -96,4 +104,4 @@ function applyNl(exchanges, nl) {
   });
 }
 
-module.exports = { NL_VERSION, SCHEMA, SYSTEM, buildRequest, parseResult, applyNl };
+module.exports = { NL_VERSION, SCHEMA, SYSTEM, buildRequest, parseResult, applyNl, nlFits };
