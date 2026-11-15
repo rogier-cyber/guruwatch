@@ -147,7 +147,12 @@ router.get('/bank/:firm', wrap(async (req, res) => {
 
 // Informatiepagina's (footer)
 const INFO = { 'over-ons': 'Over Guruwatch', uitleg: 'Uitleg', adverteren: 'Adverteren', disclaimer: 'Disclaimer', privacy: 'Privacyverklaring', contact: 'Contact' };
-for (const [page, title] of Object.entries(INFO)) pub.get(`/${page}`, (req, res) => res.render(`info/${page}`, { title }));
+for (const [page, title] of Object.entries(INFO)) {
+  pub.get(`/${page}`, wrap(async (req, res) => {
+    const legal = page === 'disclaimer' || page === 'privacy' ? await require('../siteTexts').get(page) : null;
+    res.render(`info/${page}`, { title, legal });
+  }));
+}
 pub.get('/over', (req, res) => res.redirect(301, '/over-ons'));
 
 router.get('/methode', (req, res) => res.render('method', { title: 'Hoe de GuruScore werkt' }));
