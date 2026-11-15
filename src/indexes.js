@@ -5,11 +5,20 @@ const db = require('./db');
 const fmp = require('./lib/fmp');
 const { ALL } = require('./lib/indexes');
 
+// Bedrijven met twee aandelenklassen tellen één keer mee (Rogier): GOOG, FOX en NWS.
+const ONE_CLASS = { GOOGL: 'GOOG', FOXA: 'FOX', NWSA: 'NWS' };
+function oneClassPerCompany(rows) {
+  const seen = new Set();
+  return rows
+    .map((r) => (ONE_CLASS[r.symbol] ? { ...r, symbol: ONE_CLASS[r.symbol] } : r))
+    .filter((r) => !seen.has(r.symbol) && seen.add(r.symbol));
+}
+
 async function refreshIndexes() {
   const out = {};
   for (const idx of ALL.filter((i) => i.endpoint)) {
-    const rows = (await fmp.indexConstituentsNoCache(idx.endpoint))
-      .filter((r) => r && r.symbol && /^[A-Z0-9.\-]{1,12}$/.test(r.symbol));
+    const rows = oneClassPerCompany((await fmp.indexConstituentsNoCache(idx.endpoint))
+      .filter((r) => r && r.symbol && /^[A-Z0-9.\-]{1,12}$/.test(r.symbol)));
     // Een leeg of half antwoord laat de bestaande lijst staan.
     if (rows.length < 20) { out[idx.key] = `overgeslagen (${rows.length})`; continue; }
     const client = await db.pool.connect();
@@ -36,4 +45,4 @@ async function refreshIndexes() {
   return out;
 }
 
-module.exports = { refreshIndexes };
+module.exports = { refreshIndexes, oneClassPerCompany };
