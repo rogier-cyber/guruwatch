@@ -1779,3 +1779,10 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
 
 /* Gekleurde guru's met de staafjes uit het logo, in dezelfde kleur */
 .h-guru .gw-guru, .trio-g, .oo-gg { -webkit-mask-image: url("/static/img/guru-full-mask.webp"); mask-image: url("/static/img/guru-full-mask.webp"); }
+
+/* Aandelen: zoekbalk onder de hero */
+.stk-search { display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; padding: 16px 20px; margin-bottom: 18px; overflow: visible; position: relative; z-index: 5; }
+.stk-search label { font-weight: 800; font-size: 17px; letter-spacing: -.01em; color: var(--text); }
+.stk-search .ins-search { flex: 1 1 320px; max-width: 520px; }
+@media (max-width: 640px) { .stk-search { padding: 14px; } .stk-search .ins-search { max-width: none; } }
+@media (max-width: 640px) { .ins-search .sx-list { position: absolute; top: calc(100% + 8px); left: -2px; right: auto; width: calc(100vw - 40px); margin-top: 0; } }
