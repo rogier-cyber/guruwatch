@@ -1218,6 +1218,8 @@ svg .tip-on:not(g) { stroke: var(--navy); stroke-width: 2; }
 .syn-res b { font-size: 17px; }
 .syn-our { border-left: 3px solid var(--red); padding: 2px 0 2px 14px; margin-bottom: 16px; }
 .syn-our p { margin: 4px 0 0; line-height: 1.65; font-size: 14.5px; }
+.syn-mg { margin-bottom: 16px; }
+.syn-mg p { margin: 4px 0 0; line-height: 1.65; font-size: 14.5px; }
 .syn-k { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--red); }
 .syn-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 12px; }
 .syn-h { font-size: 13px; color: var(--navy); font-weight: 750; }

@@ -1,4 +1,4 @@
-<% var ev = locals.ev; var syn = a.synopsis || { keyPoints: [], qaPoints: [] }; %>
+<% var ev = locals.ev; var nl = locals.nl; var syn = nl ? { outlook: nl.outlook, keyPoints: nl.keyPoints } : (a.synopsis || { keyPoints: [], qaPoints: [] }); %>
 <section class="card syn">
   <div class="card-h"><h2>Samenvatting van de call <%= label %></h2><span class="small muted"><%= dateTxt %></span></div>
   <% if (ev) { %>
@@ -12,6 +12,9 @@
   <% if (summary.length) { %>
   <div class="syn-our"><span class="syn-k">Onze analyse</span><p><%= summary.join(' ') %></p></div>
   <% } %>
+  <% if (nl && nl.summary) { %>
+  <div class="syn-mg"><h3 class="syn-h">Wat het management vertelde</h3><p><%= nl.summary %></p></div>
+  <% } %>
   <div class="syn-cols">
     <div>
       <h3 class="syn-h">Prognose van het management</h3>
@@ -24,5 +27,6 @@
       <ul class="syn-list"><% syn.keyPoints.forEach(function (k) { %><li><%= k.text %><% k.topics.slice(0, 1).forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></li><% }) %></ul><% } %>
     </div>
   </div>
-  <p class="small muted mb0">Onze analyse en de keuze van de citaten zijn automatisch, op basis van woordtellingen (geen AI). De punten van het management zijn letterlijk uit de call (Engels).</p>
+  <% if (nl) { %><p class="small muted mb0">Onze analyse telt Guruwatch zelf met woordenlijsten. De samenvatting, prognose, kernpunten en de vertaling van vragen en antwoorden zijn gemaakt door AI (Claude) op basis van het Engelse transcript.</p>
+  <% } else { %><p class="small muted mb0">Onze analyse en de keuze van de citaten zijn automatisch, op basis van woordtellingen (geen AI). De punten van het management zijn letterlijk uit de call (Engels); de Nederlandse versie volgt.</p><% } %>
 </section>

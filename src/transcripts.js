@@ -101,7 +101,7 @@ async function runTranscripts({ max = 40 } = {}) {
 }
 
 async function content(symbol, year, quarter) {
-  return db.one('SELECT content FROM earnings_transcripts WHERE symbol = $1 AND year = $2 AND quarter = $3', [symbol, year, quarter]);
+  return db.one('SELECT content, nl FROM earnings_transcripts WHERE symbol = $1 AND year = $2 AND quarter = $3', [symbol, year, quarter]);
 }
 
 module.exports = { ensure, stored, runTranscripts, content, KEEP };

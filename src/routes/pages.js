@@ -23,6 +23,8 @@ const guru = require('../lib/guru');
 const guruCharts = require('../lib/guruCharts');
 const viz = require('../lib/vizCharts');
 const tr = require('../lib/transcripts');
+const tl = require('../lib/translate');
+const translate = require('../translate');
 const callCharts = require('../lib/callCharts');
 const vq = require('../lib/vizQueries');
 const cm = require('../lib/community');
@@ -1121,12 +1123,15 @@ pub.get('/aandeel/:symbol/earnings-calls', wrap(async (req, res) => {
     .slice(0, 40);
   const latestRow = latest ? await safe(require('../transcripts').content(symbol, latest.year, latest.quarter)) : null;
   const latestFull = latestRow ? tr.analyze(latestRow.content, { full: true }) : latest && latest.analysis;
+  const latestNl = latestRow && latestRow.nl;
+  if (latestRow && !latestNl) translate.queue(symbol, latest.year, latest.quarter);
   const summary = latest ? tr.story({ a: latest.analysis, cmp, prevLabel: prev ? prev.label : '', ev: latest.ev }) : [];
+  if (latestNl && latestFull && latestFull.exchanges) latestFull.exchanges = tl.applyNl(latestFull.exchanges, latestNl);
   const stale = latest && latest.date ? Date.now() - new Date(latest.date).getTime() > 200 * 864e5 : false;
   res.render('calls', {
     title: `${name} (${symbol}) earnings calls: toon, onderwerpen en vragen van analisten`,
     seo: { canonical: `${config.publicUrl.replace(/\/$/, '')}/aandeel/${encodeURIComponent(symbol)}/earnings-calls`, description: latest ? `Analyse van ${calls.length} earnings calls van ${name}: toon van management en analisten, welke onderwerpen opkomen en welke analisten vragen stellen. Laatste call: ${latest.label}.` : `Earnings calls van ${name}.` },
-    symbol, name, calls, asc, latest, prev, cmp, who, analysts, stale, tr, callCharts, summary, latestFull, fullText: config.transcriptsFullText,
+    symbol, name, calls, asc, latest, prev, cmp, who, analysts, stale, tr, callCharts, summary, latestFull, nl: latestNl || null, fullText: config.transcriptsFullText,
   });
 }));
 
@@ -1145,15 +1150,18 @@ pub.get('/aandeel/:symbol/earnings-calls/:call', wrap(async (req, res) => {
   // Volledige vragenronde (vraag + antwoorden) uit de opgeslagen tekst.
   const [row, events] = await Promise.all([require('../transcripts').content(symbol, call.year, call.quarter), safe(eq.reactions({ symbol, limit: 12 }), [])]);
   const full = row ? tr.analyze(row.content, { full: true }) : call.analysis;
+  const nl = (row && row.nl) || null;
+  if (row && !nl) translate.queue(symbol, call.year, call.quarter);
   const turns = config.transcriptsFullText && row ? tr.parseTurns(row.content) : null;
   const ev = resultsFor(events, call.date);
   const summary = tr.story({ a: full, cmp, prevLabel: prev ? prev.label : '', ev });
   const fullText = config.transcriptsFullText;
+  if (nl && full.exchanges) full.exchanges = tl.applyNl(full.exchanges, nl);
   const links = await analystLinks((call.analysis.analysts || []).map((a) => a.name));
   res.render('call', {
     title: `${name} (${symbol}) earnings call ${call.label}`,
     seo: { description: `Earnings call van ${name} over ${call.label}${call.dateTxt ? ' (' + call.dateTxt + ')' : ''}: toon, onderwerpen en alle vragen van analisten.` },
-    symbol, name, call, prev, cmp, turns, links, calls, tr, full, ev, summary, fullText,
+    symbol, name, call, prev, cmp, turns, links, calls, tr, full, ev, summary, fullText, nl,
   });
 }));
 

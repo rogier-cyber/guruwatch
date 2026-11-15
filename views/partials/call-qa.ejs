@@ -19,4 +19,5 @@
 <% }) %>
 </div>
 <% if (list.length > show) { %><button class="more-btn" data-more>Meer vragen (<%= list.length - show %>)</button><% } %>
+<% if (list.some(function (e) { return e.nl; })) { %><p class="small muted mb0">Vragen en antwoorden vertaald door AI (Claude) uit het Engelse transcript.</p><% } %>
 <% if (!fullText) { %><p class="small muted mb0">Antwoorden zijn ingekort tot het begin. De volledige tekst tonen we zodra de licentie daarvoor rond is.</p><% } %>

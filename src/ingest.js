@@ -169,7 +169,8 @@ async function refreshEarnings() {
 
 async function refreshTranscripts() {
   const transcripts = require('./transcripts');
-  return job('transcripts', () => transcripts.runTranscripts());
+  await job('transcripts', () => transcripts.runTranscripts());
+  return job('translations', () => require('./translate').runTranslations());
 }
 
 async function refreshIndexes() {

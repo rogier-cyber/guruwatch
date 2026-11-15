@@ -37,5 +37,8 @@ module.exports = {
   // Volledige tekst van earnings call transcripts tonen. Rogier (2026-11-15): voluit tonen, de FMP-displaylicentie
   // regelt hij bij de officiële lancering. Uitzetten kan met TRANSCRIPTS_FULL_TEXT=false.
   transcriptsFullText: (env.TRANSCRIPTS_FULL_TEXT || 'true').toLowerCase() !== 'false',
+  // Claude (Anthropic) voor de Nederlandse vertaling en samenvatting van earnings calls. Zonder sleutel staat het uit.
+  anthropicKey: env.ANTHROPIC_API_KEY || '',
+  translateModel: env.TRANSLATE_MODEL || 'claude-haiku-5-5',
   ingestEnabled: (env.INGEST_ENABLED || 'true').toLowerCase() !== 'false',
 };

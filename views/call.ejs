@@ -19,7 +19,7 @@
   <div class="stat"><span>Vragen</span><strong><%= A.exchanges.length %></strong><em class="small muted"><%= Math.round(A.words.qa / Math.max(1, A.words.total) * 100) %>% van de call</em></div>
 </div>
 
-<%- include('partials/call-synopsis', { a: full, ev: ev, label: call.label, dateTxt: call.dateTxt, summary: summary }) %>
+<%- include('partials/call-synopsis', { a: full, ev: ev, label: call.label, dateTxt: call.dateTxt, summary: summary, nl: nl }) %>
 
 <section class="card">
   <div class="card-h"><h2>Alle vragen van analisten</h2><span class="small muted"><%= A.exchanges.length %> vragen</span></div>
