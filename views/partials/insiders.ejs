@@ -15,5 +15,5 @@
   <% }) %>
   </tbody>
 </table></div>
-<% if (locals.max && rows.length > locals.max) { %><button type="button" class="more-btn" data-more>Meer insider trades (<%= rows.length - locals.max %>) <span aria-hidden="true">↓</span></button><% } %>
+<% if (locals.max && rows.length > locals.max) { %><button type="button" class="more-btn" data-more="<%= locals.step || '' %>">Meer insider trades (nog <span data-more-n><%= rows.length - locals.max %></span>) <span aria-hidden="true">↓</span></button><% } %>
 <% } %>

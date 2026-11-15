@@ -54,7 +54,7 @@
     <% if (zoek) { %><p class="ins-found small">
       <% if (zoekSyms && zoekSyms.length) { %>Insider trades van de laatste 2 jaar voor <b><%= zoekSyms.slice(0, 6).join(', ') %><%= zoekSyms.length > 6 ? ' …' : '' %></b> (<%= trades.length %><%= trades.length >= 200 ? '+' : '' %>)<% } else { %>Geen aandeel met insider trades gevonden voor <b>“<%= zoek %>”</b>.<% } %>
       · <a href="/insiders">wis zoekopdracht</a><% if (zoekSyms && zoekSyms.length === 1) { %> · <a href="/aandeel/<%= encodeURIComponent(zoekSyms[0]) %>">naar de aandeelpagina</a><% } %></p><% } %>
-    <%- include('partials/insiders', { rows: trades }) %>
+    <%- include('partials/insiders', { rows: trades, max: 40, step: 40 }) %>
   </section>
   <aside class="card">
     <h2>Meerdere insiders kopen</h2>
