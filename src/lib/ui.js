@@ -5,7 +5,7 @@ const fmt = require('./format');
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const logoSrc = (symbol) => `https://eodhd.com/img/logos/US/${encodeURIComponent(String(symbol).toUpperCase())}.png`;
+const { logoUrl: logoSrc } = require('./logos');
 
 // Logo met de eerste letter als terugval (als het plaatje ontbreekt, blijft de letter staan).
 function logo(symbol, { size = 'sm' } = {}) {
