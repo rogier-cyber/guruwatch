@@ -33,7 +33,7 @@ async function sectors() {
   );
 }
 
-// Smart Money Radar: wie krijgt er de laatste N dagen meer analistenliefde?
+// Smart Money Radar: wie krijgt er de laatste N dagen favoriet bij analisten?
 async function momentum({ days = 30, sector, cap } = {}) {
   const params = [days];
   const filter = companyFilter({ sector, cap }, params);

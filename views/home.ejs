@@ -56,7 +56,7 @@
   <div class="card-h"><h2>Radar: waar draait het sentiment?</h2><a href="/analisten?tab=radar" class="small">Naar de radar</a></div>
   <div class="grid2 rd-home">
     <div>
-      <p class="small muted"><span class="dot-pos"></span>Meeste analistenliefde, laatste 30 dagen</p>
+      <p class="small muted"><span class="dot-pos"></span>Favoriet bij analisten, laatste 30 dagen</p>
       <%- charts.hbars(radarTop.map(function (r) { return { sym: r.symbol, name: r.name, value: r.score, display: '▲' + (r.raises + r.ups) + ' ▼' + (r.cuts + r.downs), href: '/aandeel/' + encodeURIComponent(r.symbol) }; }), { cls: 'hbars-wide hbars-pos' }) %>
     </div>
     <div>
