@@ -164,4 +164,24 @@ function sparkline(points, { width = 640, height = 160, markers = [] } = {}) {
   return `<svg class="spark ${up ? 'up' : 'down'}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Koersverloop">${lines}<path d="${d}" fill="none" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
-module.exports = { company, person, role, num, price, money, pct, date, dateTime, ago, gradeTone, action, actionTone, txType, txTone, tone, sparkline, isNum };
+// Lange tekst in korte alinea's knippen (op zinsgrenzen, ~max tekens per alinea), zodat er niet te veel tekst
+// achter elkaar staat. Een korte laatste zin blijft bij de alinea ervoor.
+function paras(text, max = 280) {
+  const t = String(text == null ? '' : text).trim();
+  if (!t) return [];
+  const out = [];
+  for (const block of t.split(/\n\s*\n/)) {
+    const zinnen = block.replace(/\s+/g, ' ').trim().split(/(?<=[.!?…][”"’)]?)\s+(?=[A-ZÀ-Ý0-9“"‘(])/);
+    let cur = '';
+    for (const z of zinnen) {
+      if (cur && cur.length + z.length + 1 > max) { out.push(cur); cur = z; } else cur = cur ? cur + ' ' + z : z;
+    }
+    if (cur) {
+      if (out.length && cur.length < 70 && out[out.length - 1].length + cur.length < max * 1.4) out[out.length - 1] += ' ' + cur;
+      else out.push(cur);
+    }
+  }
+  return out;
+}
+
+module.exports = { paras, company, person, role, num, price, money, pct, date, dateTime, ago, gradeTone, action, actionTone, txType, txTone, tone, sparkline, isNum };

@@ -395,7 +395,7 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     safe(fmp.incomeQuarterly(symbol), []),
   ]);
   const [peerRows, epsRows, inIndexes] = await Promise.all([
-    safe(sq.peers(symbol, profile && profile.sector, 8), []),
+    safe(sq.peers(symbol, profile && profile.sector, 8, profile && profile.industry), []),
     safe(sq.epsOutlook(symbol), []),
     safe(sq.indexesOf(symbol), []),
   ]);
@@ -561,7 +561,7 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     const pc = av.counts(r);
     const sc = av.ratingScore(pc);
     return { symbol: r.symbol, name: r.name, price: r.price, target: r.target, upside: r.target > 0 && r.price > 0 ? r.target / r.price - 1 : null,
-      score: sc, verdict: av.ratingLabel(sc), counts: pc };
+      score: sc, verdict: av.ratingLabel(sc), counts: pc, curated: !!r.curated };
   });
   facts.peers = peerList;
   const crumbIndex = inIndexes.map((k) => indexes.byKey(k)).filter(Boolean)[0] || null;

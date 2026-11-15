@@ -10,10 +10,10 @@
   </div>
   <% } %>
   <% if (summary.length) { %>
-  <div class="syn-our"><span class="syn-k">Onze analyse</span><p><%= summary.join(' ') %></p></div>
+  <div class="syn-our"><span class="syn-k">Onze analyse</span><% fmt.paras(summary.join(' ')).forEach(function (t) { %><p><%= t %></p><% }) %></div>
   <% } %>
   <% if (nl && nl.summary) { %>
-  <div class="syn-mg"><h3 class="syn-h">Wat het management vertelde</h3><p><%= nl.summary %></p></div>
+  <div class="syn-mg"><h3 class="syn-h">Wat het management vertelde</h3><% fmt.paras(nl.summary).forEach(function (t) { %><p><%= t %></p><% }) %></div>
   <% } %>
   <div class="syn-cols">
     <div>

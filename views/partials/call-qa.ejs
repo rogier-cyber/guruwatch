@@ -12,7 +12,7 @@
     </summary>
     <div class="qa-ans">
       <% if (!e.answers || !e.answers.length) { %><p class="small muted">Geen antwoord gevonden.</p><% } else { e.answers.forEach(function (an) { var x = fullText ? { text: an.text, cut: false } : tr.excerpt(an.text, 90); %>
-        <p><b><%= an.speaker %>:</b> <%= x.text %><% if (x.cut) { %> <span class="muted">[…]</span><% } %></p>
+        <% var ps = fmt.paras(x.text); ps.forEach(function (t, k) { %><p><% if (!k) { %><b><%= an.speaker %>:</b> <% } %><%= t %><% if (x.cut && k === ps.length - 1) { %> <span class="muted">[…]</span><% } %></p><% }) %>
       <% }) } %>
     </div>
   </details>
