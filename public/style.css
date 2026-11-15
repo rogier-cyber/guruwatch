@@ -1674,7 +1674,7 @@ main .kp-list li { max-width: none; }
 /* Geen streep boven de eerste vraag: onder de titel staat al een scheidingslijn */
 .faq-acc:first-of-type, .faq-item:first-of-type, .faq .faq-acc:first-of-type, .qa-acc-list { border-top: 0; }
 .qa-acc-list > :first-child { border-top: 0; }
-.hero h1 .h-mon { color: var(--red); }
+.hero h1 .h-mon { color: #ff6b6b; }
 td.hm-zero { color: var(--muted); font-weight: 500; }
 
 /* Portefeuilletegels (guru-pagina's), à la Finviz */
