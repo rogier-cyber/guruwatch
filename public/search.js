@@ -1,8 +1,8 @@
 // Suggesties onder de zoekbalk: aandelen (logo, ticker, naam), analisten en guru's.
-(function () {
-  var input = document.querySelector('.search input[name=q]');
-  var list = document.getElementById('sx-list');
+function gwSuggest(input, list, mode) {
   if (!input || !list) return;
+  var ins = mode === 'insiders';
+  var stockHref = function (sym) { return ins ? '/insiders?zoek=' + encodeURIComponent(sym) : '/aandeel/' + encodeURIComponent(sym); };
   var form = input.form;
   var items = [];
   var active = -1;
@@ -51,16 +51,16 @@
       });
     }
     group('Aandelen', data.stocks.map(function (s) {
-      return { href: '/aandeel/' + encodeURIComponent(s.symbol), icon: logo(s.symbol), main: mark(s.symbol, term), sub: mark(s.name, term), tag: s.ex && !/^(NASDAQ|NYSE|AMEX)$/i.test(s.ex) ? s.ex : '' };
+      return { href: stockHref(s.symbol), icon: logo(s.symbol), main: mark(s.symbol, term), sub: mark(s.name, term), tag: s.ex && !/^(NASDAQ|NYSE|AMEX)$/i.test(s.ex) ? s.ex : '' };
     }));
-    group("Guru's", data.gurus.map(function (g) {
+    if (!ins) group("Guru's", data.gurus.map(function (g) {
       return { href: '/guru/' + encodeURIComponent(g.slug), icon: '<span class="sx-av sx-gu">' + esc(initials(g.name)) + '</span>', main: mark(g.name, term), sub: mark(g.fund, term), tag: 'Guru' };
     }));
-    group('Analisten', data.analysts.map(function (a) {
+    if (!ins) group('Analisten', data.analysts.map(function (a) {
       return { href: '/analist/' + encodeURIComponent(a.slug), icon: '<span class="sx-av">' + esc(initials(a.name)) + '</span>', main: mark(a.name, term), sub: mark(a.firm, term), tag: 'Analist' };
     }));
     if (!items.length) html = '<div class="sx-empty">Geen resultaten voor “' + esc(term) + '”</div>';
-    html += '<button type="submit" class="sx-all">Alle resultaten voor “' + esc(term) + '” <span>↵</span></button>';
+    html += '<button type="submit" class="sx-all">' + (ins ? 'Zoek insider trades voor “' : 'Alle resultaten voor “') + esc(term) + '” <span>↵</span></button>';
     list.innerHTML = html;
     active = -1;
     open(true);
@@ -104,7 +104,7 @@
       // Precies een ticker getypt? Dan meteen naar het aandeel.
       var data = cache[input.value.trim()];
       var up = input.value.trim().toUpperCase();
-      if (data && data.stocks[0] && data.stocks[0].symbol.toUpperCase() === up) { e.preventDefault(); location.href = '/aandeel/' + encodeURIComponent(data.stocks[0].symbol); }
+      if (data && data.stocks[0] && data.stocks[0].symbol.toUpperCase() === up) { e.preventDefault(); location.href = stockHref(data.stocks[0].symbol); }
     }
   });
   list.addEventListener('mousemove', function (e) {
@@ -115,5 +115,6 @@
   list.addEventListener('mousedown', function (e) { e.preventDefault(); });
   input.addEventListener('blur', function () { setTimeout(function () { open(false); }, 120); });
   document.addEventListener('click', function (e) { if (!form.contains(e.target)) open(false); });
-})();
-
+}
+gwSuggest(document.querySelector('.search input[name=q]'), document.getElementById('sx-list'));
+document.querySelectorAll('input[data-sx="insiders"]').forEach(function (el) { gwSuggest(el, el.parentNode.querySelector('.sx-list'), 'insiders'); });

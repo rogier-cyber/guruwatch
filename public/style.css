@@ -1750,3 +1750,8 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
 .join-checks li::before { content: '✓'; color: var(--pos); font-weight: 800; margin-right: 8px; }
 @media (max-width: 900px) { .join { grid-template-columns: 1fr; } .join-form { position: relative; top: 0; } }
 @media (max-width: 640px) { .join-benefits { grid-template-columns: 1fr; gap: 12px; } }
+
+.ins-search { overflow: visible; }
+.ins-search .ins-sx { flex: 1; max-width: none; min-width: 0; display: flex; }
+.ins-search .ins-sx input[type=search] { width: 100%; }
+.ins-search .sx-list { left: -2px; right: auto; width: min(420px, calc(100vw - 32px)); }

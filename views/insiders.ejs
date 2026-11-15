@@ -47,12 +47,12 @@
       </div>
       <form class="ins-search" method="get" action="/insiders" role="search">
         <input type="hidden" name="type" value="<%= type %>"><% if (minValue) { %><input type="hidden" name="min" value="<%= minValue %>"><% } %>
-        <input type="search" name="zoek" value="<%= zoek %>" placeholder="Bedrijf of ticker, bv. Apple" aria-label="Zoek insider trades van een aandeel" autocomplete="off">
+        <div class="sx ins-sx"><input type="search" name="zoek" value="<%= zoek %>" placeholder="Bedrijf of ticker, bv. Apple" aria-label="Zoek insider trades van een aandeel" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ins-sx-list" data-sx="insiders"><div class="sx-list" id="ins-sx-list" role="listbox" hidden></div></div>
         <button type="submit">Zoek</button>
       </form>
     </div>
     <% if (zoek) { %><p class="ins-found small">
-      <% if (zoekSyms && zoekSyms.length) { %>Insider trades voor <b><%= zoekSyms.slice(0, 6).join(', ') %><%= zoekSyms.length > 6 ? ' …' : '' %></b> (<%= trades.length %><%= trades.length >= 200 ? '+' : '' %>)<% } else { %>Geen aandeel met insider trades gevonden voor <b>“<%= zoek %>”</b>.<% } %>
+      <% if (zoekSyms && zoekSyms.length) { %>Insider trades van de laatste 2 jaar voor <b><%= zoekSyms.slice(0, 6).join(', ') %><%= zoekSyms.length > 6 ? ' …' : '' %></b> (<%= trades.length %><%= trades.length >= 200 ? '+' : '' %>)<% } else { %>Geen aandeel met insider trades gevonden voor <b>“<%= zoek %>”</b>.<% } %>
       · <a href="/insiders">wis zoekopdracht</a><% if (zoekSyms && zoekSyms.length === 1) { %> · <a href="/aandeel/<%= encodeURIComponent(zoekSyms[0]) %>">naar de aandeelpagina</a><% } %></p><% } %>
     <%- include('partials/insiders', { rows: trades }) %>
   </section>
