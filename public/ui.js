@@ -115,3 +115,6 @@ document.addEventListener('click', function (e) {
   var nav = on && on.parentElement;
   if (nav && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2;
 })();
+
+// Brede tabellen die bij de nieuwste kolom moeten beginnen (bv. onderwerpen per call).
+document.querySelectorAll('[data-scroll-end]').forEach(function (el) { el.scrollLeft = el.scrollWidth; });

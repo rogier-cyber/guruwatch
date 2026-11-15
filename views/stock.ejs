@@ -235,6 +235,18 @@
   <p class="small"><a href="/aandelen<%= crumbIndex ? '?index=' + crumbIndex.key : '' %>">Bekijk alle aandelen<%= crumbIndex ? ' uit de ' + crumbIndex.label : '' %> met hun koersdoelen →</a></p>
 </section>
 <% } %>
+<% if (callTeaser) { var ct = callTeaser.cur, ca = ct.analysis, cc = callTeaser.cmp; var cTop = tr.topTopics(Object.fromEntries(Object.keys(ca.topics.mgmt).map(function (k) { return [k, (ca.topics.mgmt[k] || 0) + (ca.topics.analysts[k] || 0)]; })), 4); %>
+<section class="card call-teaser">
+  <div class="card-h"><h2>Earnings call Q<%= ct.quarter %> <%= ct.year %></h2><span class="small muted"><%= fmt.date(ct.date) %></span></div>
+  <div class="ct-row">
+    <div class="ct-k" data-tip="Toon management&#10;<%= ca.tone.mgmt.pos %> positieve en <%= ca.tone.mgmt.neg %> negatieve woorden"><span>Toon management</span><b class="<%= fmt.tone(ca.tone.mgmt.net) %>"><%= tr.toneWord(ca.tone.mgmt.net) %></b><% if (cc && cc.toneMgmt != null && Math.abs(cc.toneMgmt) >= 0.05) { %><em class="small <%= fmt.tone(cc.toneMgmt) %>"><%= cc.toneMgmt > 0 ? 'positiever' : 'minder positief' %> dan vorige call</em><% } %></div>
+    <div class="ct-k"><span>Vragen van analisten</span><b><%= ca.exchanges.length %></b><em class="small muted"><%= ca.analysts.length %> analisten</em></div>
+    <div class="ct-k"><span>Belangrijkste onderwerpen</span><div class="chips"><% cTop.forEach(function (t) { %><span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div></div>
+  </div>
+  <% if (cc && cc.anUp.length) { %><p class="small mb0">Analisten vroegen meer dan vorige keer naar <b><%= cc.anUp.slice(0, 3).map(function (r) { return r.label.toLowerCase(); }).join(', ') %></b>.</p><% } %>
+  <p class="small mb0"><a href="/aandeel/<%= encodeURIComponent(symbol) %>/earnings-calls">Vergelijk alle earnings calls van <%= name %> →</a></p>
+</section>
+<% } %>
 <% if (timeline) { %>
 <% if ((earningsHist && earningsHist.length) || nextEarn) { %>
 <section class="card">
@@ -244,7 +256,7 @@
   <% if (earningsHist.length) { %>
   <%- charts.both.pairBars(earningsHist.map(function (h) { return { label: h.label, a: h.surprise, b: h.reaction, href: '/aandeel/' + encodeURIComponent(symbol) + '/cijfers/' + h.date }; }), { aLabel: 'Winstverrassing', bLabel: 'Koersreactie', height: 200 }) %>
   <% var lastE = earningsHist[earningsHist.length - 1]; %>
-  <p class="small">Laatste cijfers (<%= fmt.date(lastE.date) %>): winst <span class="<%= fmt.tone(lastE.surprise) %>"><%= fmt.pct(lastE.surprise) %></span> t.o.v. verwachting, koers <span class="<%= fmt.tone(lastE.reaction) %>"><%= fmt.pct(lastE.reaction) %></span>, <span class="pos">▲<%= lastE.raises %></span> <span class="neg">▼<%= lastE.cuts %></span> koersdoelen. <a href="/aandeel/<%= encodeURIComponent(symbol) %>/cijfers/<%= lastE.date %>">Open de Earnings Reaction Monitor</a></p>
+  <p class="small">Laatste cijfers (<%= fmt.date(lastE.date) %>): winst <span class="<%= fmt.tone(lastE.surprise) %>"><%= fmt.pct(lastE.surprise) %></span> t.o.v. verwachting, koers <span class="<%= fmt.tone(lastE.reaction) %>"><%= fmt.pct(lastE.reaction) %></span>, <span class="pos">▲<%= lastE.raises %></span> <span class="neg">▼<%= lastE.cuts %></span> koersdoelen. <a href="/aandeel/<%= encodeURIComponent(symbol) %>/cijfers/<%= lastE.date %>">Open de Earnings Reaction Monitor</a><% if (!callTeaser) { %> · <a href="/aandeel/<%= encodeURIComponent(symbol) %>/earnings-calls">Earnings calls</a><% } %></p>
   <% } %>
 </section>
 <% } %>

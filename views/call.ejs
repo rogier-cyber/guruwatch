@@ -1,0 +1,67 @@
+<%- include('partials/head') %>
+<% var sym = encodeURIComponent(symbol); var A = call.analysis; var sc = function (n) { return n == null ? '–' : (n > 0 ? '+' : '') + Math.round(n * 100); };
+   var i = calls.indexOf(call); var newer = i > 0 ? calls[i - 1] : null; var older = calls[i + 1] || null;
+   var topics = tr.TOPICS.map(function (t) { return { label: t.label, m: tr.per10k(A.topics.mgmt[t.key] || 0, A.words.mgmt), a: tr.per10k(A.topics.analysts[t.key] || 0, A.words.analysts), cm: A.topics.mgmt[t.key] || 0, ca: A.topics.analysts[t.key] || 0 }; }).filter(function (t) { return t.cm + t.ca > 0; }).sort(function (x, y) { return (y.m + y.a) - (x.m + x.a); }).slice(0, 10);
+   var tmax = Math.max.apply(null, [1].concat(topics.map(function (t) { return Math.max(t.m, t.a); }))); %>
+<nav class="crumbs small" aria-label="Kruimelpad"><a href="/aandelen">Aandelen</a> <span aria-hidden="true">›</span> <a href="/aandeel/<%= sym %>"><%= name %></a> <span aria-hidden="true">›</span> <a href="/aandeel/<%= sym %>/earnings-calls">Earnings calls</a> <span aria-hidden="true">›</span> <span aria-current="page"><%= call.label %></span></nav>
+<div class="page-head">
+  <div>
+    <h1 class="page-title"><%= name %> earnings call <%= call.label %></h1>
+    <p class="muted mb0"><%= call.dateTxt %> · <%= A.words.total.toLocaleString('nl-NL') %> woorden · <%= A.analysts.length %> analisten</p>
+  </div>
+  <div class="call-nav small"><% if (older) { %><a href="<%= older.href %>">← <%= older.label %></a><% } %><% if (newer) { %><a href="<%= newer.href %>"><%= newer.label %> →</a><% } %></div>
+</div>
+
+<div class="stats">
+  <div class="stat"><span>Toon management</span><strong class="<%= fmt.tone(A.tone.mgmt.net) %>"><%= sc(A.tone.mgmt.net) %></strong><em class="small"><%= tr.toneWord(A.tone.mgmt.net) %></em></div>
+  <div class="stat" data-tip="Toon in het voorbereide verhaal&#10;tegenover de antwoorden in de vragenronde"><span>Verhaal / antwoorden</span><strong><span class="<%= fmt.tone(A.tone.prepared.net) %>"><%= sc(A.tone.prepared.net) %></span> / <span class="<%= fmt.tone(A.tone.qa.net) %>"><%= sc(A.tone.qa.net) %></span></strong><em class="small muted">voorbereid / live</em></div>
+  <div class="stat"><span>Toon analisten</span><strong class="<%= fmt.tone(A.tone.analysts.net) %>"><%= sc(A.tone.analysts.net) %></strong><em class="small"><%= tr.toneWord(A.tone.analysts.net) %></em></div>
+  <div class="stat"><span>Vragen</span><strong><%= A.exchanges.length %></strong><em class="small muted"><%= Math.round(A.words.qa / Math.max(1, A.words.total) * 100) %>% van de call</em></div>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <div class="card-h"><h2>Onderwerpen</h2><span class="small pb-legend"><i class="a"></i>Management <i class="b"></i>Analisten</span></div>
+    <% if (!topics.length) { %><p class="empty">Geen bekende onderwerpen gevonden.</p><% } else { %>
+    <div class="tp-bars">
+    <% topics.forEach(function (t) { %>
+      <div class="tp-row" data-tip="<%= t.label %>&#10;Management: <%= t.cm %>x (<%= Math.round(t.m) %> per 10.000 woorden)&#10;Analisten: <%= t.ca %>x (<%= Math.round(t.a) %> per 10.000 woorden)"><span class="tp-l"><%= t.label %></span><span class="tp-t"><i class="a" style="width:<%= (t.m / tmax * 100).toFixed(1) %>%"></i><i class="b" style="width:<%= (t.a / tmax * 100).toFixed(1) %>%"></i></span></div>
+    <% }) %>
+    </div><% } %>
+    <% if (cmp && (cmp.mgmtUp.length || cmp.anUp.length)) { %><p class="small mb0">Meer aandacht dan bij <%= prev.label %>: <%= cmp.mgmtUp.concat(cmp.anUp).map(function (r) { return r.label; }).filter(function (v, k, s) { return s.indexOf(v) === k; }).slice(0, 5).join(', ') %>.</p><% } %>
+  </section>
+  <section class="card">
+    <h2>Wie sprak er?</h2>
+    <div class="spk">
+    <% A.management.slice(0, 8).forEach(function (m) { %><div class="spk-r" data-tip="<%= m.name %>&#10;<%= m.words %> woorden"><span><%= m.name %></span><span class="spk-t"><i style="width:<%= (m.words / Math.max(1, A.management[0].words) * 100).toFixed(1) %>%"></i></span></div><% }) %>
+    </div>
+    <p class="small muted mb0">Management, gesorteerd op hoeveel woorden ze spraken.</p>
+  </section>
+</div>
+
+<section class="card">
+  <div class="card-h"><h2>Alle vragen van analisten</h2><span class="small muted"><%= A.exchanges.length %> vragen</span></div>
+  <% if (!A.exchanges.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
+  <ol class="qa-list">
+  <% A.exchanges.forEach(function (e) { var l = links.get(e.analyst.toLowerCase()); %>
+    <li><div class="qa-who"><% if (l) { %><a href="/analist/<%= l.slug %>" data-tip="<%= e.analyst %>&#10;<%= l.firm || e.firm || '' %><%= l.score != null ? '&#10;GuruScore ' + Math.round(l.score) : '' %>"><b><%= e.analyst %></b></a><% } else { %><b><%= e.analyst %></b><% } %><% if (e.firm) { %> <span class="muted small"><%= e.firm %></span><% } %><% e.topics.forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div>
+      <p class="qa-q">“<%= e.excerpt %>”</p>
+      <% if (e.answeredBy.length) { %><p class="small muted mb0">Antwoord van <%= e.answeredBy.join(', ') %> · <%= e.answerWords %> woorden</p><% } %></li>
+  <% }) %>
+  </ol><% } %>
+</section>
+
+<% if (turns) { %>
+<section class="card">
+  <div class="card-h"><h2>Volledig transcript</h2></div>
+  <div class="transcript">
+  <% turns.forEach(function (t) { %><p><b><%= t.speaker %>:</b> <%= t.text %></p><% }) %>
+  </div>
+</section>
+<% } else { %>
+<p class="note small">Van elke vraag tonen we het begin. De volledige tekst van het transcript tonen we (nog) niet.</p>
+<% } %>
+
+<p class="small"><a href="/aandeel/<%= sym %>/earnings-calls">← Alle earnings calls van <%= name %> vergelijken</a></p>
+<p class="small muted">Transcript: Financial Modeling Prep. Toon en onderwerpen telt Guruwatch zelf met vaste woordenlijsten (geen AI).</p>
+<%- include('partials/foot') %>

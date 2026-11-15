@@ -167,6 +167,11 @@ async function refreshEarnings() {
   return job('earnings', () => earnings.runEarnings());
 }
 
+async function refreshTranscripts() {
+  const transcripts = require('./transcripts');
+  return job('transcripts', () => transcripts.runTranscripts());
+}
+
 async function refreshIndexes() {
   const indexes = require('./indexes');
   return job('indexes', () => indexes.refreshIndexes());
@@ -199,7 +204,9 @@ function startScheduler() {
     await refreshScores();
     await refreshRadar();
     await refreshEarnings();
+    await refreshTranscripts();
   }, 5000);
+  setInterval(refreshTranscripts, 3 * 60 * min);
   setInterval(refreshEarnings, 3 * 60 * min);
   setInterval(refreshIndexes, 24 * 60 * min);
   setInterval(refreshRadar, 60 * min);
@@ -211,7 +218,7 @@ function startScheduler() {
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
+module.exports = { refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
 
 if (require.main === module) {
   (async () => {
