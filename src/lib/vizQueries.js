@@ -8,7 +8,13 @@ async function insiderBuyMap(days = 30, limit = 40) {
   return db.many(
     `SELECT symbol, (SELECT c.name FROM companies c WHERE c.symbol = t.symbol) AS name,
             sum(securities_transacted * price)::float8 AS value,
-            count(DISTINCT reporting_cik)::int AS insiders
+            count(DISTINCT reporting_cik)::int AS insiders,
+            sum(securities_transacted)::float8 AS shares,
+            min(transaction_date)::text AS first_date, max(transaction_date)::text AS last_date,
+            (SELECT json_agg(x ORDER BY x.value DESC) FROM (
+               SELECT max(t2.reporting_name) AS name, max(t2.type_of_owner) AS role, sum(t2.securities_transacted * t2.price)::float8 AS value
+               FROM insider_trades t2 WHERE t2.symbol = t.symbol AND t2.transaction_type ILIKE 'P-%' AND t2.transaction_date > current_date - $1::int AND t2.price > 0
+               GROUP BY t2.reporting_cik) x) AS buyers
      FROM insider_trades t
      WHERE transaction_type ILIKE 'P-%' AND transaction_date > current_date - $1::int AND price > 0
      GROUP BY symbol ORDER BY value DESC LIMIT $2`,

@@ -337,7 +337,7 @@ function tiles(items, { width = 920, height = 400, cls = '' } = {}) {
     // Label alleen als het past; anders weglaten (de tooltip vertelt de rest).
     const fitsLabel = (px) => label.length * px <= n.w - 12;
     const lbl = size === 'xs' ? '' : fitsLabel(size === 's' ? 7.2 : size === 'm' ? 8.2 : fs ? fs * 0.66 : 9) ? label : '';
-    const w = n.weight != null ? (n.weight < 0.001 ? '<0,1%' : (n.weight * 100).toFixed(1).replace('.', ',') + '%') : '';
+    const w = n.big ? n.big : n.weight != null ? (n.weight < 0.001 ? '<0,1%' : (n.weight * 100).toFixed(1).replace('.', ',') + '%') : '';
     const chg = n.chgLabel && (size === 'xl' || size === 'l') ? `<span class="tl-c">${esc(n.chgLabel)}</span>` : '';
     const logo = n.logo && (size === 'xl' || size === 'l') ? `<span class="tl-logo"><img src="${esc(n.logo)}" alt="" loading="lazy" onload="this.parentNode.classList.add('ok')" onerror="this.parentNode.remove()"></span>` : '';
     const body = `${logo}${lbl ? `<b${fs ? ` style="font-size:${fs.toFixed(1)}px"` : ''}>${esc(lbl)}</b>` : ''}${w && size !== 's' && size !== 'xs' ? `<span class="tl-w">${w}</span>` : ''}${chg}`;

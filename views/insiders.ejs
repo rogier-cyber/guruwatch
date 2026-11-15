@@ -15,9 +15,10 @@
 <% if (buyMap.length) { var maxIns = Math.max.apply(null, buyMap.map(function (b) { return b.insiders; })); %>
 <div class="grid-side ins-top">
   <section class="card">
-    <div class="card-h"><h2>Waar kopen insiders?</h2><span class="small muted">aankopen laatste 30 dagen · donkerder = meer verschillende kopers</span></div>
-    <%- charts.treemap(buyMap.map(function (b) { var t = maxIns > 1 ? (b.insiders - 1) / (maxIns - 1) : 0; return { label: b.symbol, sub: fmt.money(b.value) + ' · ' + b.insiders + (b.insiders === 1 ? ' koper' : ' kopers'), value: Math.sqrt(b.value), fill: 'rgb(' + Math.round(110 - 96 * t) + ',' + Math.round(196 - 82 * t) + ',' + Math.round(160 - 70 * t) + ')', href: '/aandeel/' + encodeURIComponent(b.symbol) }; }), { width: 900, height: 330, label: 'Aankopen door insiders per aandeel' }).replace('class="treemap"', 'class="treemap only-desk"') %>
-    <div class="only-phone"><%- charts.hbars(buyMap.slice(0, 10).map(function (b) { return { sym: b.symbol, name: b.name, value: b.value, display: fmt.money(b.value), href: '/aandeel/' + encodeURIComponent(b.symbol) }; })) %></div>
+    <div class="card-h"><h2>Waar kopen insiders?</h2><span class="small muted">aankopen laatste 30 dagen</span></div>
+    <%- charts.tiles(buyTiles, { width: 900, height: 360, cls: 'only-desk' }) %>
+    <%- charts.tiles(buyTiles.slice(0, 18), { width: 360, height: 440, cls: 'only-phone' }) %>
+    <div class="tm-legend"><span><i class="lg-buy1"></i>1 koper</span><span><i class="lg-buy3"></i>meerdere kopers</span><span class="tm-hint">grootte = bedrag · beweeg of tik voor details</span></div>
   </section>
   <% if (roleRows.length) { var pie = gc.pie(roleRows.map(function (r) { return { label: r.label, value: r.buy }; }), { size: 180, thickness: 26, center: fmt.money(kpi.buy), sub: 'gekocht' }); %>
   <aside class="card">
