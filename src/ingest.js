@@ -225,7 +225,7 @@ async function refreshAlerts() {
 
 async function briefings() {
   const alerts = require('./alerts');
-  return job('briefing', async () => ({ sent: await alerts.sendBriefings(), weekly: await alerts.sendWeekly() }));
+  return job('briefing', async () => ({ weekly: await alerts.sendWeekly() }));
 }
 
 function startScheduler() {
@@ -255,7 +255,7 @@ function startScheduler() {
   setInterval(refreshBlog, 3 * 60 * min);
   setInterval(refreshSiteTexts, 24 * 60 * min);
   setInterval(refreshRadar, 60 * min);
-  // Ochtendbriefing: elke 5 minuten kijken of het 08:00 (Amsterdam) is geweest.
+  // Weekoverzicht: elke 5 minuten kijken of het zaterdagochtend (Amsterdam) is.
   setInterval(briefings, 5 * min);
   setInterval(refreshScores, 30 * min);
   setInterval(runFeeds, 15 * min);

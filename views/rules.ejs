@@ -7,7 +7,6 @@
   <h2>E-mail</h2>
   <form method="post" action="/mijn/instellingen" class="settings">
     <label class="switch"><input type="checkbox" name="weekly" <%= !settings || settings.weekly !== false ? 'checked' : '' %>><span></span> Weekoverzicht op zaterdag (alleen als er updates zijn op je volglijst)</label>
-    <label class="switch"><input type="checkbox" name="briefing" <%= settings && settings.briefing ? 'checked' : '' %>><span></span> Ochtendbriefing op werkdagen om 08:00</label>
     <label class="switch"><input type="checkbox" name="instant_email" <%= settings && settings.instant_email ? 'checked' : '' %>><span></span> Belangrijke meldingen direct mailen</label>
     <button class="btn">Bewaren</button>
   </form>
@@ -20,7 +19,7 @@
     <li class="rule <%= r.active ? '' : 'off' %>">
       <div class="rule-t"><strong><%= r.label %></strong><div class="small muted"><%= r.text %></div></div>
       <div class="rule-a">
-        <form method="post" action="/mijn/regel/<%= r.id %>"><input type="hidden" name="action" value="email"><button class="tag <%= (r.params.email || 'direct') === 'direct' ? 'pos' : '' %>" title="Klik om te wisselen"><%= (r.params.email || 'direct') === 'direct' ? 'Direct mailen' : 'In de briefing' %></button></form>
+        <form method="post" action="/mijn/regel/<%= r.id %>"><input type="hidden" name="action" value="email"><button class="tag <%= (r.params.email || 'direct') === 'direct' ? 'pos' : '' %>" title="Klik om te wisselen"><%= (r.params.email || 'direct') === 'direct' ? 'Direct mailen' : 'In het weekoverzicht' %></button></form>
         <form method="post" action="/mijn/regel/<%= r.id %>"><input type="hidden" name="action" value="toggle"><button class="btn btn-sm"><%= r.active ? 'Pauzeren' : 'Aanzetten' %></button></form>
         <form method="post" action="/mijn/regel/<%= r.id %>"><input type="hidden" name="action" value="delete"><button class="btn btn-sm btn-x" title="Verwijderen" aria-label="Verwijderen">✕</button></form>
       </div>
@@ -44,7 +43,7 @@
       <select name="scope"><option value="watchlist">Aandelen die ik volg</option><option value="all">Alle aandelen</option></select>
     </label>
     <label data-f="email">Hoe
-      <select name="email"><option value="direct">Direct mailen</option><option value="briefing">In de ochtendbriefing</option></select>
+      <select name="email"><option value="direct">Direct mailen</option><option value="briefing">In het weekoverzicht (zaterdag)</option></select>
     </label>
     <button class="btn btn-primary">Toevoegen</button>
   </form>

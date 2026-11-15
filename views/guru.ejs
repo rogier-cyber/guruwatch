@@ -76,8 +76,12 @@
   </section>
 </div>
 
+<%
+  var filedOn = (cur.rows.find(function (r) { return r.filing_date; }) || {}).filing_date;
+  var periodTxt = gc.qLabel(cur.period).replace("'", '20') + (prev ? ' vs ' + gc.qLabel(prev.period).replace("'", '20') : '') + (filedOn ? ' · 13F ingediend ' + fmt.date(filedOn) : '');
+%>
 <section class="card">
-  <div class="card-h"><h2>De portefeuille in één oogopslag</h2><span class="small muted">grootte = gewicht<%= prev ? ', kleur = wat er veranderde' : '' %></span></div>
+  <div class="card-h"><h2>De portefeuille in één oogopslag</h2><span class="small muted"><%= periodTxt %> · grootte = gewicht<%= prev ? ', kleur = wat er veranderde' : '' %></span></div>
   <%- charts.tiles(tileItems, { width: 920, height: 420, cls: 'only-desk' }) %>
   <%- charts.tiles(tileItems.slice(0, 24), { width: 360, height: 460, cls: 'only-phone' }) %>
   <div class="tm-legend"><% if (prev) { %><span><i class="lg-new"></i>Nieuw</span><span><i class="lg-added"></i>Bijgekocht</span><span><i class="lg-reduced"></i>Verlaagd</span><span><i class="lg-same"></i>Ongewijzigd</span><span class="tm-hint">hoe feller, hoe groter de wijziging</span><% } %><span class="tm-hint">beweeg of tik voor details</span></div>
@@ -87,7 +91,7 @@
 <div class="grid2">
   <% [['Grootste aankopen', mv.buys.slice(0, 10), 'pos'], ['Grootste verkopen', mv.sells.slice(0, 10), 'neg']].forEach(function (b) { %>
   <section class="card">
-    <div class="card-h"><h2><%= b[0] %></h2><span class="small muted">impact op de portefeuille</span></div>
+    <div class="card-h"><h2><%= b[0] %></h2><span class="small muted"><%= periodTxt %></span></div>
     <% if (!b[1].length) { %><p class="empty">Geen <%= b[2] === 'pos' ? 'aankopen' : 'verkopen' %> dit kwartaal.</p><% } else { %>
     <div class="imp">
       <% b[1].forEach(function (m) { var w = Math.abs(m.impact) / maxImp * 100; %>
