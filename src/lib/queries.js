@@ -193,6 +193,23 @@ async function insiderClusters(days = 30, limit = 20) {
   );
 }
 
+// Volledige lijst: aandelen waar minstens 2 verschillende insiders kochten in de laatste N dagen.
+async function insiderClusterList(days = 61) {
+  return db.many(
+    `SELECT symbol, (SELECT c.name FROM companies c WHERE c.symbol = t.symbol) AS name,
+            count(DISTINCT reporting_cik)::int AS insiders, count(*)::int AS trades,
+            sum(securities_transacted * price) AS value, min(transaction_date) AS first_date, max(transaction_date) AS last_date,
+            (array_agg(DISTINCT reporting_name))[1:6] AS names
+     FROM insider_trades t
+     WHERE transaction_type ILIKE 'P-%' AND transaction_date > current_date - $1::int AND price > 0
+     GROUP BY symbol
+     HAVING count(DISTINCT reporting_cik) >= 2
+     ORDER BY count(DISTINCT reporting_cik) DESC, sum(securities_transacted * price) DESC
+     LIMIT 500`,
+    [days]
+  );
+}
+
 async function insiderPerson(cik) {
   return db.one(
     `SELECT reporting_cik, reporting_name, array_agg(DISTINCT symbol) AS symbols, count(*)::int AS trades
@@ -464,6 +481,7 @@ module.exports = {
   firmStats,
   latestInsiders,
   insiderClusters,
+  insiderClusterList,
   insiderPerson,
   fundsList,
   fundBySlug,

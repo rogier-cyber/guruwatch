@@ -239,6 +239,17 @@ router.get('/insiders', wrap(async (req, res) => {
   res.render('insiders', { title: "Insider Guru's: aankopen en verkopen van bestuurders", trades, clusters, type, minValue, zoek, zoekSyms, flows, buyMap, buyTiles, roleRows, kpi, gc: guruCharts });
 }));
 
+router.get('/insiders/meerdere-kopers', wrap(async (req, res) => {
+  const days = 61;
+  const rows = await safe(q.insiderClusterList(days), []);
+  const from = new Date(Date.now() - days * 864e5);
+  res.render('insider-clusters', {
+    title: 'Meerdere insiders kopen: alle aankopen van de afgelopen 2 maanden',
+    seo: { description: 'Aandelen waar de afgelopen twee maanden meerdere bestuurders of grootaandeelhouders eigen aandelen kochten.' },
+    rows, from,
+  });
+}));
+
 router.get('/insider/:cik', wrap(async (req, res) => {
   const cik = String(req.params.cik).replace(/\D/g, '');
   const [person, trades] = await Promise.all([q.insiderPerson(cik), q.latestInsiders({ cik, limit: 200 })]);

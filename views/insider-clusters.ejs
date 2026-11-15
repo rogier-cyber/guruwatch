@@ -1,0 +1,38 @@
+<%- include('partials/head') %>
+<% var multi = rows.filter(function (r) { return r.insiders >= 3; }).length; var tot = rows.reduce(function (t, r) { return t + (Number(r.value) || 0); }, 0); %>
+<section class="hero hero-sm">
+  <div class="hero-in">
+    <div>
+      <h1 class="h-with-guru"><span class="h-guru" aria-hidden="true"><span class="gw-guru gw-guru-gold"></span></span>Meerdere insiders <span class="h-mon">kopen</span></h1>
+      <p>Alle aandelen waar sinds <%= fmt.date(from) %> minstens twee bestuurders of grootaandeelhouders eigen aandelen kochten. Kopen meerdere insiders tegelijk, dan is dat historisch een sterker signaal dan één losse aankoop.</p>
+    </div>
+    <div class="gk-hero-kpis">
+      <div><strong><%= rows.length %></strong><span>aandelen met 2+ kopers</span></div>
+      <div><strong><%= multi %></strong><span>met 3+ kopers</span></div>
+      <div><strong class="kp-pos"><%= fmt.money(tot) %></strong><span>samen gekocht</span></div>
+    </div>
+  </div>
+</section>
+<section class="card">
+  <div class="card-h"><h2>Alle aankopen door meerdere insiders</h2><span class="small muted">laatste 2 maanden · gesorteerd op aantal kopers</span></div>
+  <p class="small"><a href="/insiders">← terug naar Insiders</a></p>
+  <% if (!rows.length) { %><p class="empty">Geen aandelen gevonden waar meerdere insiders kochten.</p><% } else { %>
+  <div class="tbl-wrap"><table class="tbl tbl-tight cl-tbl">
+    <thead><tr><th>Aandeel</th><th class="r">Kopers</th><th class="r">Aankopen</th><th class="r">Gekocht</th><th>Wie</th><th>Periode</th></tr></thead>
+    <tbody>
+    <% rows.forEach(function (r, i) { %>
+      <tr<%- i >= 50 ? ' hidden' : '' %>>
+        <td><%- include('partials/sym', { s: r.symbol, n: r.name }) %></td>
+        <td class="r strong"><%= r.insiders %></td>
+        <td class="r"><%= r.trades %></td>
+        <td class="r strong"><%= fmt.money(r.value) %></td>
+        <td class="small muted cl-who"><%= (r.names || []).map(function (n) { return fmt.person(n); }).join(', ') %><%= r.insiders > (r.names || []).length ? ' en ' + (r.insiders - r.names.length) + ' meer' : '' %></td>
+        <td class="muted nowrap"><%= fmt.date(r.first_date) %><%= String(r.first_date) !== String(r.last_date) ? ' – ' + fmt.date(r.last_date) : '' %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% if (rows.length > 50) { %><button type="button" class="more-btn" data-more="50">Meer aandelen (nog <span data-more-n><%= rows.length - 50 %></span>) <span aria-hidden="true">↓</span></button><% } %>
+  <% } %>
+</section>
+<%- include('partials/foot') %>
