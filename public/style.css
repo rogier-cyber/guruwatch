@@ -1646,3 +1646,8 @@ main .kp-list li { max-width: none; }
 /* Watermerk in de hero: guru mét de stijgende staafjes uit het logo */
 .hero::before { width: 230px; height: 230px; right: 14px; bottom: -16px; -webkit-mask-image: url("/static/img/guru-full-mask.webp"); mask-image: url("/static/img/guru-full-mask.webp"); }
 @media (max-width: 640px) { .hero::before { width: 140px; height: 140px; right: 4px; bottom: -8px; } }
+/* Weekbord: label "koersdoel" boven het percentage */
+.wb-up { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; flex: none; }
+.wb-up small { font-size: 9.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+@media (max-width: 640px) { .wb-up small { font-size: 9px; } }
+.gk-tops-l { flex-basis: 100%; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
