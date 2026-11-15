@@ -40,7 +40,7 @@ var exTopic = ex && ex.topics && ex.topics.length ? tr.lc(tr.topicLabel(ex.topic
       <h3 class="syn-h">Prognose van het management</h3>
       <ul class="ct-kp ct-out"><% outl.forEach(function (k) { %><li><%= k.text %></li><% }) %></ul>
       <% } %>
-      <% if (topics.length) { %>
+      <% if (topics.length && !kps.length) { %>
       <div class="ct-box ct-box-topics">
         <div class="ct-box-h"><span>Waar ging het over?</span><em class="small muted"><%= ca.exchanges.length %> vragen van <%= ca.analysts.length %> analisten</em></div>
         <div class="ct-topics">
@@ -57,6 +57,16 @@ var exTopic = ex && ex.topics && ex.topics.length ? tr.lc(tr.topicLabel(ex.topic
         <div class="ct-gauge" data-tip="Toon van het management&#10;<%= ca.tone.mgmt.pos %> positieve en <%= ca.tone.mgmt.neg %> negatieve woorden<%= tonePrev != null ? '&#10;Streepje = vorige call' : '' %>"><%- callCharts.toneGauge(toneNow, tonePrev) %><b class="<%= fmt.tone(ca.tone.mgmt.net) %>"><%= tr.toneWord(ca.tone.mgmt.net) %></b></div>
         <% var spark = callCharts.toneSpark(callTeaser.toneHist); if (spark) { %><div class="ct-spark"><span class="small muted">Toon in de laatste <%= callTeaser.toneHist.length %> calls</span><div class="only-desk"><%- spark %></div><div class="only-phone"><%- callCharts.toneSpark(callTeaser.toneHist, { width: 300, height: 80 }) %></div></div><% } %>
       </div>
+      <% if (topics.length && kps.length) { %>
+      <div class="ct-box">
+        <div class="ct-box-h"><span>Waar ging het over?</span><em class="small muted"><%= ca.exchanges.length %> vragen van <%= ca.analysts.length %> analisten</em></div>
+        <div class="ct-topics">
+        <% topics.forEach(function (t) { var d = t.p == null ? null : t.v - t.p; %>
+          <div class="ct-t" data-tip="<%= t.label %>&#10;<%= Math.round(t.v) %> keer per 10.000 woorden<%= d != null ? '&#10;Vorige call: ' + Math.round(t.p) : '' %>"><span class="ct-t-l"><%= t.label %></span><span class="ct-t-b"><i style="width:<%= Math.max(4, t.v / tMax * 100).toFixed(0) %>%"></i></span><span class="ct-t-d <%= d == null || Math.abs(d) < 3 ? 'muted' : d > 0 ? 'pos' : 'neg' %>"><%= d == null || Math.abs(d) < 3 ? '' : d > 0 ? '▲' : '▼' %></span></div>
+        <% }) %>
+        </div>
+      </div>
+      <% } %>
     </div>
   </div>
 

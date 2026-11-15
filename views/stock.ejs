@@ -95,30 +95,6 @@
   <div class="cm-stock-a"><a class="btn btn-primary" href="<%= cmUrl %>">Geef jouw koersdoel</a><a class="small" href="/community">Bekijk de ranglijst</a></div>
 </section>
 
-<% if (story.faq.length) { %>
-<section class="card faq" id="vragen">
-  <div class="faq-head">
-    <span class="faq-k">Vraag en antwoord</span>
-    <h2>Veelgestelde vragen over het aandeel <%= name %> (<%= symbol %>)</h2>
-    <p class="faq-intro"><%= story.faq.length %> vragen die beleggers stellen over <%= name %>, beantwoord met actuele data over koersdoelen, analistenadviezen, kwartaalcijfers en insiders. Bijgewerkt op <time datetime="<%= new Date().toISOString().slice(0, 10) %>"><%= fmt.date(new Date()) %></time>.</p>
-  </div>
-  <div class="faq-list">
-  <% story.faq.forEach(function (f, i) { %><details class="faq-acc" id="vraag-<%= f.id %>"<%= i === 0 ? ' open' : '' %>><summary><h3><%= f.q %></h3><span class="faq-chev" aria-hidden="true"></span></summary><div class="faq-a"><% fmt.paras(f.a).forEach(function (para) { %><p><%= para %></p><% }) %></div></details><% }) %>
-  </div>
-</section>
-<script>
-  // Klik op een vraag-chip bovenaan: open die vraag en scroll ernaartoe.
-  (function () {
-    function openHash() {
-      var id = decodeURIComponent(location.hash.slice(1));
-      var el = id && document.getElementById(id);
-      if (el && el.tagName === 'DETAILS') { el.open = true; el.scrollIntoView({ block: 'start' }); }
-    }
-    window.addEventListener('hashchange', openHash);
-    openHash();
-  })();
-</script>
-<% } %>
 
 <% var hasCols = months.filter(function (m) { return m.ratings; }).length >= 2; var hasBand = months.filter(function (m) { return m.mean; }).length >= 3; %>
 <% if (hasCols || hasBand) { %>
@@ -310,4 +286,28 @@
     <% if (profile && profile.description) { %><h2 class="mt">Over <%= profile.companyName %></h2><div class="small desc"><% fmt.paras(profile.description).forEach(function (t) { %><p><%= t %></p><% }) %></div><% } %>
   </section>
 </div>
+<% if (story.faq.length) { %>
+<section class="card faq" id="vragen">
+  <div class="faq-head">
+    <span class="faq-k">Vraag en antwoord</span>
+    <h2>Veelgestelde vragen over het aandeel <%= name %> (<%= symbol %>)</h2>
+    <p class="faq-intro"><%= story.faq.length %> vragen die beleggers stellen over <%= name %>, beantwoord met actuele data over koersdoelen, analistenadviezen, kwartaalcijfers en insiders. Bijgewerkt op <time datetime="<%= new Date().toISOString().slice(0, 10) %>"><%= fmt.date(new Date()) %></time>.</p>
+  </div>
+  <div class="faq-list">
+  <% story.faq.forEach(function (f, i) { %><details class="faq-acc" id="vraag-<%= f.id %>"<%= i === 0 ? ' open' : '' %>><summary><h3><%= f.q %></h3><span class="faq-chev" aria-hidden="true"></span></summary><div class="faq-a"><% fmt.paras(f.a).forEach(function (para) { %><p><%= para %></p><% }) %></div></details><% }) %>
+  </div>
+</section>
+<script>
+  // Klik op een vraag-chip bovenaan: open die vraag en scroll ernaartoe.
+  (function () {
+    function openHash() {
+      var id = decodeURIComponent(location.hash.slice(1));
+      var el = id && document.getElementById(id);
+      if (el && el.tagName === 'DETAILS') { el.open = true; el.scrollIntoView({ block: 'start' }); }
+    }
+    window.addEventListener('hashchange', openHash);
+    openHash();
+  })();
+</script>
+<% } %>
 <%- include('partials/foot') %>
