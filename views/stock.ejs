@@ -53,7 +53,7 @@
 
 <% if (fan) { %>
 <section class="card">
-  <div class="card-h"><h2>Verwachtingen voor de koers van <%= name %></h2><span class="small muted">beweeg over een stip voor het advies</span></div>
+  <div class="card-h"><h2>Verwachtingen voor de koers van <%= name %></h2><span class="small muted">koersdoelen van de afgelopen 6 maanden · beweeg over een stip voor het advies</span></div>
   <% if (story.forecast) { %><p class="fc-txt"><%= story.forecast.text %></p><% } %>
   <%- fan %>
   <p class="small muted">Links de koers van het afgelopen jaar, rechts waar analisten het aandeel over twaalf maanden zien: hoogste, gemiddelde en laagste koersdoel. Elke stip is het laatste koersdoel van één analist (groen = positief advies, rood = negatief).</p>
@@ -266,7 +266,7 @@
   <div class="tl-legend">
     <% timeline.legend.forEach(function (l) { %><label><input type="checkbox" checked data-firm="<%= l.key %>"><span class="dot" style="background:<%= l.color %>"></span><%= l.label %> <span class="muted">(<%= l.n %>)</span></label><% }) %>
   </div>
-  <p class="small muted">Elke stip is een koersdoel. Zet banken aan of uit. Loopt de lijn van het gemiddelde koersdoel achter de koers aan, dan volgen analisten de markt eerder dan dat ze die voorspellen.</p>
+  <p class="small muted">Elke stip is een koersdoel uit de afgelopen 6 maanden (oudere doelen zeggen weinig over nu). Zet banken aan of uit. Loopt de lijn van het gemiddelde koersdoel achter de koers aan, dan volgen analisten de markt eerder dan dat ze die voorspellen.</p>
   <script>
     document.querySelectorAll('#tijdlijn input[data-firm]').forEach(function (cb) {
       cb.addEventListener('change', function () {
@@ -284,13 +284,14 @@
 
 <% if (bull && bear) { var pr2 = quote && Number(quote.price); %>
 <section class="card">
-  <h2>Bulls versus bears</h2>
+  <div class="card-h"><h2>Bulls versus bears</h2><span class="small muted">laatste koersdoel per analist, afgelopen 6 maanden</span></div>
   <div class="battle">
     <% [['Grootste optimist', bull, 'pos'], ['Grootste pessimist', bear, 'neg']].forEach(function (b, bi) { var t = b[1]; var up = pr2 ? Number(t.price_target) / pr2 - 1 : null; %>
     <% if (bi === 1) { %><div class="battle-vs">VS</div><% } %>
     <div class="battle-side <%= b[2] %>">
       <span class="muted small"><%= b[0] %></span>
-      <div class="id-row"><%- include('partials/score', { score: t.score }) %><div><% if (t.analyst_slug) { %><a class="strong" href="/analist/<%= t.analyst_slug %>"><%= t.analyst_name %></a><% } else { %><strong><%= t.analyst_name || t.analyst_firm %></strong><% } %><div class="muted small"><%= t.analyst_firm || '' %> · <%= fmt.date(t.published_at) %></div></div></div>
+      <% var noName = !t.analyst_name || (t.analyst_firm && t.analyst_name.toLowerCase() === t.analyst_firm.toLowerCase()); %>
+      <div class="id-row"><%- include('partials/score', { score: t.score }) %><div><% if (t.analyst_slug && !noName) { %><a class="strong" href="/analist/<%= t.analyst_slug %>"><%= t.analyst_name %></a><% } else { %><strong><%= t.analyst_firm || t.analyst_name %></strong><% } %><div class="muted small"><%= noName ? 'naam analist niet bekend' : (t.analyst_firm || '') %> · <%= fmt.date(t.published_at) %></div></div></div>
       <div class="battle-target"><strong><%= fmt.price(t.price_target) %></strong> <em class="<%= fmt.tone(up) %>"><%= fmt.pct(up) %></em></div>
     </div>
     <% }) %>

@@ -16,7 +16,7 @@ async function upcoming({ days = 14, symbols = null } = {}) {
      latest AS (
        SELECT DISTINCT ON (p.symbol, ${WHO}) p.symbol, ${TARGET} AS t
        FROM price_targets p
-       WHERE p.symbol IN (SELECT symbol FROM ev) AND p.published_at > now() - interval '365 days' AND ${TARGET} > 0
+       WHERE p.symbol IN (SELECT symbol FROM ev) AND p.published_at > now() - interval '182 days' AND ${TARGET} > 0
        ORDER BY p.symbol, ${WHO}, p.published_at DESC
      ),
      cons AS (SELECT symbol, avg(t)::float8 AS target, count(*)::int AS n FROM latest GROUP BY symbol)

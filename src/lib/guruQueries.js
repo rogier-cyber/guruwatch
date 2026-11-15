@@ -45,7 +45,7 @@ async function quotesAndTargets(symbols) {
   return db.many(
     `WITH t AS (SELECT DISTINCT ON (pt.symbol, coalesce(pt.analyst_id::text, pt.analyst_firm)) pt.symbol, pt.price_target
                 FROM price_targets pt
-                WHERE pt.symbol = ANY($1) AND pt.published_at > now() - interval '365 days' AND pt.price_target > 0
+                WHERE pt.symbol = ANY($1) AND pt.published_at > now() - interval '182 days' AND pt.price_target > 0
                 ORDER BY pt.symbol, coalesce(pt.analyst_id::text, pt.analyst_firm), pt.published_at DESC),
      ta AS (SELECT symbol, avg(price_target)::float8 AS target, count(*)::int AS targets FROM t GROUP BY symbol)
      SELECT s.symbol, q.price::float8 AS price, q.change_pct::float8 AS change_pct, ta.target, ta.targets

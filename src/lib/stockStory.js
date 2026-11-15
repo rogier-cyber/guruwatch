@@ -151,7 +151,7 @@ function summary(f) {
   if (isNum(t.yearHigh) && isNum(t.yearLow)) s1 += ` In het afgelopen jaar bewoog het aandeel tussen ${P(t.yearLow)} en ${P(t.yearHigh)}.`;
   parts.push(s1);
   if (isNum(c.target)) {
-    let s2 = `${c.analysts} analist${c.analysts === 1 ? '' : 'en'} ${c.analysts === 1 ? 'heeft' : 'hebben'} het afgelopen jaar een koersdoel afgegeven; gemiddeld is dat ${P(c.target)}, ${pct(c.upside)} ${c.upside >= 0 ? 'boven' : 'onder'} de huidige koers.`;
+    let s2 = `${c.analysts} analist${c.analysts === 1 ? '' : 'en'} ${c.analysts === 1 ? 'heeft' : 'hebben'} de afgelopen 6 maanden een koersdoel afgegeven; gemiddeld is dat ${P(c.target)}, ${pct(c.upside)} ${c.upside >= 0 ? 'boven' : 'onder'} de huidige koers.`;
     if (c.low > 0 && c.high > 0 && c.analysts > 1) s2 += ` Het laagste doel is ${P(c.low)}, het hoogste ${P(c.high)}.`;
     parts.push(s2);
   }
@@ -178,7 +178,7 @@ function forecast(f) {
     analysts: c.analysts,
     target: c.target,
     upside: up,
-    text: `Het afgelopen jaar gaven ${c.analysts} analist${c.analysts === 1 ? '' : 'en'} een koersdoel voor ${f.name}. Gemiddeld verwachten zij dat het aandeel binnen twaalf maanden ${P(c.target)} waard is.`
+    text: `De afgelopen 6 maanden gaven ${c.analysts} analist${c.analysts === 1 ? '' : 'en'} een koersdoel voor ${f.name}. Gemiddeld verwachten zij dat het aandeel binnen twaalf maanden ${P(c.target)} waard is.`
       + (isNum(up) ? ` Dat betekent dat het aandeel ${pct(up)} kan ${up >= 0 ? 'stijgen' : 'dalen'} vanaf de huidige koers van ${P(f.price)}.` : ''),
   };
 }
@@ -194,7 +194,7 @@ function faq(f) {
 
   add('koersdoel', `Koersdoel ${S}`, `Wat is het koersdoel van ${n} (${S})?`, isNum(c.target)
     ? `Het gemiddelde koersdoel van ${c.analysts} analist${c.analysts === 1 ? '' : 'en'} voor ${n} (${S}) is ${P(c.target)}. Dat is ${pct(c.upside)} ${c.upside >= 0 ? 'boven' : 'onder'} de huidige koers van ${P(f.price)}.${c.low > 0 && c.analysts > 1 ? ` De koersdoelen lopen uiteen van ${P(c.low)} tot ${P(c.high)}.` : ''} We nemen per analist het laatste koersdoel van de afgelopen twaalf maanden.`
-    : `Voor ${n} (${S}) hebben analisten het afgelopen jaar geen koersdoel afgegeven dat in onze data staat. Zodra er een koersdoel verschijnt, zie je het hier en in de grafiek met verwachtingen.`);
+    : `Voor ${n} (${S}) hebben analisten de afgelopen 6 maanden geen koersdoel afgegeven dat in onze data staat. Zodra er een koersdoel verschijnt, zie je het hier en in de grafiek met verwachtingen.`);
 
   const eo = f.epsOutlook;
   if (isNum(c.target) || eo) {
@@ -244,7 +244,7 @@ function faq(f) {
   if (f.analystFirms && f.analystFirms.length) {
     const fl = f.analystFirms;
     add('analisten', 'Welke analisten?', `Welke analisten en banken volgen het aandeel ${n}?`,
-      `Het afgelopen jaar gaven ${fl.length} bank${fl.length === 1 ? '' : 'en'} een koersdoel voor ${n}, waaronder ${list(fl.slice(0, 6))}.${f.bestAnalyst ? ` De analist met de beste trackrecord op dit aandeel is ${f.bestAnalyst.name}${f.bestAnalyst.firm ? ` van ${f.bestAnalyst.firm}` : ''}.` : ''}`);
+      `De afgelopen 6 maanden gaven ${fl.length} bank${fl.length === 1 ? '' : 'en'} een koersdoel voor ${n}, waaronder ${list(fl.slice(0, 6))}.${f.bestAnalyst ? ` De analist met de beste trackrecord op dit aandeel is ${f.bestAnalyst.name}${f.bestAnalyst.firm ? ` van ${f.bestAnalyst.firm}` : ''}.` : ''}`);
   }
 
   if (f.bestAnalyst) {
@@ -348,7 +348,7 @@ function extra(id, f) {
       out.push(`Een upgrade betekent dat een analist zijn advies verhoogt, bijvoorbeeld van houden naar kopen; een downgrade is het omgekeerde. Ook zonder nieuw advies kan een analist het koersdoel verhogen of verlagen. Een reeks upgrades of hogere koersdoelen is vaak een teken dat het sentiment rond het aandeel verbetert.`);
       break;
     case 'analisten':
-      if (c.analysts) out.push(`In totaal telden we het afgelopen jaar ${c.analysts} analist${c.analysts === 1 ? '' : 'en'} met een koersdoel. Bij elke analist zie je op Guruwatch de GuruScore: een cijfer van 0 tot 100 dat laat zien hoe goed zijn eerdere koersdoelen uitkwamen.`);
+      if (c.analysts) out.push(`In totaal telden we de afgelopen 6 maanden ${c.analysts} analist${c.analysts === 1 ? '' : 'en'} met een koersdoel. Bij elke analist zie je op Guruwatch de GuruScore: een cijfer van 0 tot 100 dat laat zien hoe goed zijn eerdere koersdoelen uitkwamen.`);
       break;
     case 'beste':
       out.push(`Een hoge GuruScore betekent niet dat de analist altijd gelijk heeft, maar wel dat zijn koersdoelen in het verleden vaker uitkwamen dan gemiddeld. Daarom loont het om bij een aandeel extra te letten op wat de best scorende analisten zeggen.`);
