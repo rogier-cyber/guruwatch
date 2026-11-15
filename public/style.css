@@ -1758,8 +1758,9 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
 
 /* Gekleurd guru-figuurtje voor de titel op Analisten, Guru's en Insiders (zoals op de homepage) */
 .hero h1.h-with-guru { display: flex; align-items: center; flex-wrap: wrap; gap: 0 .3em; }
-.h-guru { display: inline-grid; place-items: end center; width: 1.25em; height: 1.25em; border-radius: .3em; background: #fff; box-shadow: 0 6px 18px -8px rgba(0,0,0,.5); margin-right: .12em; overflow: hidden; flex: none; }
-.h-guru .gw-guru { width: 1.05em; height: 1.05em; }
-.h-guru .gw-guru-navy { background: #14213d; }
-@media (max-width: 640px) { .h-guru { width: 1.15em; height: 1.15em; } }
+.h-guru { display: inline-flex; align-items: flex-end; flex: none; margin-right: .08em; }
+.h-guru .gw-guru { width: 1.15em; height: 1.15em; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+.h-guru .gw-guru-navy { background: #c3cde3; }
+.h-guru .gw-guru-red { background: #ff6b6b; }
+.oo-gg { width: 56px; height: 56px; }
 .hero h1.no-bars::after { content: none; }
