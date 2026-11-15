@@ -1,7 +1,9 @@
 <%- include('partials/head') %>
-<section class="card center">
+<section class="card center err-card">
+  <div class="err-art" aria-hidden="true"><span class="gw-guru gw-guru-navy"></span><span class="gw-bars"></span></div>
   <h1><%= title %></h1>
   <p><%= message %></p>
-  <p><a href="/">Terug naar overzicht</a></p>
+  <p class="err-sub small muted">Zelfs onze guru ziet hier niets. Probeer de zoekbalk bovenaan, of ga terug naar de voorpagina.</p>
+  <p><a class="btn" href="/">Naar de voorpagina</a></p>
 </section>
 <%- include('partials/foot') %>
