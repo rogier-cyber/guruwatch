@@ -295,7 +295,83 @@ function faq(f) {
       ? `Ja. ${n} keert per jaar ongeveer ${P(dv.amount)} dividend per aandeel uit${isNum(dv.yield) ? `, een dividendrendement van ${pct(dv.yield)} bij de huidige koers` : ''}.`
       : `${n} keert op dit moment geen dividend uit.`);
   }
-  return out;
+
+  const ab = f.about;
+  if (ab && (ab.text || ab.industry)) {
+    let a = ab.text || '';
+    const facts2 = [];
+    if (ab.industry) facts2.push(`${n} valt in de sector ${f.sector || 'onbekend'}, in de branche ${ab.industry}`);
+    if (ab.exchange) facts2.push(`het aandeel staat genoteerd aan de ${ab.exchange} onder de ticker ${S}`);
+    if (ab.marketCap) facts2.push(`de beurswaarde is ${fmt.money(ab.marketCap)}`);
+    let b = facts2.length ? `${facts2[0].charAt(0).toUpperCase()}${facts2[0].slice(1)}${facts2.length > 1 ? `; ${facts2.slice(1).join(' en ')}` : ''}.` : '';
+    if (ab.ceo) b += ` De topman is ${ab.ceo}.`;
+    if (ab.employees) b += ` Het bedrijf heeft ongeveer ${fmt.num(ab.employees)} medewerkers${ab.country ? ` en het hoofdkantoor staat in ${ab.country === 'US' ? 'de Verenigde Staten' : ab.country}` : ''}.`;
+    if (ab.ipo) b += ` ${n} ging op ${fmt.date(ab.ipo)} naar de beurs.`;
+    const pos = out.findIndex((x) => x.id === 'stijgen');
+    const item = { id: 'bedrijf', chip: `Wat doet ${n}?`, q: `Wat doet ${n} en hoe verdient het bedrijf geld?`, a: [a, b.trim()].filter(Boolean).join('\n\n') };
+    if (item.a) out.splice(pos >= 0 ? pos : out.length, 0, item);
+  }
+  return out.map((x) => ({ ...x, a: [x.a, ...extra(x.id, f)].filter(Boolean).join('\n\n') }));
+}
+
+// Extra uitleg per vraag: meer context en meer getallen, zodat elk antwoord op zichzelf staat.
+function extra(id, f) {
+  const n = f.name;
+  const c = f.consensus || {};
+  const t = f.technicals || {};
+  const fin = f.fundamentals || {};
+  const out = [];
+  switch (id) {
+    case 'koersdoel': {
+      if (isNum(c.target) && f.smart && isNum(f.smart.target)) out.push(`Kijk je alleen naar de analisten met de beste trackrecord (GuruScore 70 of hoger), dan is het gemiddelde koersdoel ${P(f.smart.target)}, ${pct(f.smart.upside)} ${f.smart.upside >= 0 ? 'boven' : 'onder'} de koers. Hun oordeel weegt zwaarder omdat zij in het verleden vaker gelijk kregen.`);
+      const mt = f.monthsTrend;
+      if (mt && isNum(mt.targetThen) && isNum(mt.targetNow) && mt.targetThen > 0) out.push(`${mt.monthsBack} maanden geleden lag het gemiddelde koersdoel nog op ${P(mt.targetThen)}; sindsdien is het ${mt.targetNow >= mt.targetThen ? 'gestegen' : 'gedaald'} met ${pct(mt.targetNow / mt.targetThen - 1)}.`);
+      out.push(`Een koersdoel is de prijs die een analist verwacht dat het aandeel over ongeveer twaalf maanden waard is. Het is geen garantie: koersdoelen worden regelmatig bijgesteld na kwartaalcijfers, nieuws of veranderingen in de markt. Op Guruwatch zie je per analist ook hoe vaak eerdere koersdoelen werden gehaald.`);
+      break;
+    }
+    case 'verwachting': {
+      if (isNum(t.yearLow) && isNum(t.yearHigh)) out.push(`Ter vergelijking: in de afgelopen twaalf maanden bewoog ${n} tussen ${P(t.yearLow)} en ${P(t.yearHigh)}. De huidige koers is ${P(f.price)}${isNum(t.fromHigh) ? `, ${pct(t.fromHigh)} onder de hoogste koers van het jaar` : ''}.`);
+      if (c.low > 0 && c.high > 0) out.push(`De spreiding in verwachtingen is groot: de meest optimistische analist rekent op ${P(c.high)}, de meest voorzichtige op ${P(c.low)}. Hoe verder die uit elkaar liggen, hoe onzekerder de toekomst van het aandeel volgens de markt.`);
+      break;
+    }
+    case 'kopen': {
+      if (f.smart && isNum(f.smart.upside) && isNum(c.upside)) out.push(`De beste analisten (GuruScore 70+) zijn ${f.smart.upside > c.upside + 0.02 ? 'positiever' : f.smart.upside < c.upside - 0.02 ? 'voorzichtiger' : 'even positief'} dan het gemiddelde: hun koersdoel ligt ${pct(f.smart.upside)} ${f.smart.upside >= 0 ? 'boven' : 'onder'} de koers.`);
+      if (f.sectorScore && isNum(c.score)) out.push(`Op een schaal van 1 (sterk verkopen) tot 5 (sterk kopen) scoort ${n} ${fmt.num(c.score, 2)}, tegen gemiddeld ${fmt.num(f.sectorScore, 2)} voor ${f.sector || 'sector'}-aandelen.`);
+      out.push(`Kijk bij een beslissing ook naar de waardering, de laatste kwartaalcijfers en wat insiders doen. Die staan allemaal verderop op deze pagina, in de bull case en de bear case.`);
+      break;
+    }
+    case 'stijgen':
+    case 'dalen':
+      if (c.low > 0 && c.high > 0 && c.analysts > 1) out.push(`Alle ${c.analysts} koersdoelen samen lopen van ${P(c.low)} tot ${P(c.high)}. Het gemiddelde van ${P(c.target)} geeft het beste beeld van wat analisten gemiddeld verwachten; de uitersten laten zien hoe groot de onzekerheid is.`);
+      break;
+    case 'upgrades':
+      out.push(`Een upgrade betekent dat een analist zijn advies verhoogt, bijvoorbeeld van houden naar kopen; een downgrade is het omgekeerde. Ook zonder nieuw advies kan een analist het koersdoel verhogen of verlagen. Een reeks upgrades of hogere koersdoelen is vaak een teken dat het sentiment rond het aandeel verbetert.`);
+      break;
+    case 'analisten':
+      if (c.analysts) out.push(`In totaal telden we het afgelopen jaar ${c.analysts} analist${c.analysts === 1 ? '' : 'en'} met een koersdoel. Bij elke analist zie je op Guruwatch de GuruScore: een cijfer van 0 tot 100 dat laat zien hoe goed zijn eerdere koersdoelen uitkwamen.`);
+      break;
+    case 'beste':
+      out.push(`Een hoge GuruScore betekent niet dat de analist altijd gelijk heeft, maar wel dat zijn koersdoelen in het verleden vaker uitkwamen dan gemiddeld. Daarom loont het om bij een aandeel extra te letten op wat de best scorende analisten zeggen.`);
+      break;
+    case 'cijfers':
+      if (f.earningsBeats && f.earningsBeats.total >= 3) out.push(`${n} versloeg de winstverwachting in ${f.earningsBeats.beats} van de laatste ${f.earningsBeats.total} kwartalen. Rond de publicatie beweegt de koers vaak sterker dan normaal.`);
+      break;
+    case 'insiders':
+      out.push(`Insiders zijn bestuurders, commissarissen en grootaandeelhouders. Zij moeten elke transactie binnen twee werkdagen melden bij de Amerikaanse toezichthouder SEC. Toekenningen van aandelen als beloning tellen we niet mee als aankoop.`);
+      break;
+    case 'waardering':
+      if (isNum(fin.revenueGrowth)) out.push(`De omzet ${fin.revenueGrowth >= 0 ? 'groeide' : 'kromp'} in het laatste kwartaal ${pct(fin.revenueGrowth)} ten opzichte van een jaar eerder. Snelle groei kan een hogere koers-winstverhouding rechtvaardigen.`);
+      if (isNum(c.upside)) out.push(`Analisten zien gemiddeld ${pct(c.upside)} ${c.upside >= 0 ? 'opwaarts potentieel' : 'neerwaarts risico'}, wat ook iets zegt over hoe zij de huidige waardering inschatten.`);
+      break;
+    case 'dividend':
+      out.push(`Het dividendrendement is het jaarlijkse dividend gedeeld door de koers. Een hoog rendement is aantrekkelijk voor inkomen, maar kan ook betekenen dat de koers flink is gedaald.`);
+      break;
+    case 'guru':
+      out.push(`Grote Amerikaanse beleggers moeten elk kwartaal via een 13F-opgave melden welke aandelen ze bezitten. Die opgaven komen tot 45 dagen na het kwartaal naar buiten, dus de posities kunnen inmiddels veranderd zijn.`);
+      break;
+    default:
+  }
+  return out.map(tidy);
 }
 
 // Korte inleidingen per blok op de pagina.

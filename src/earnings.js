@@ -78,10 +78,35 @@ async function backfill(maxMonths = 12) {
   return { months: Math.min(maxMonths, months.length), remaining: Math.max(0, months.length - maxMonths), saved };
 }
 
+// Per aandeel de volledige cijferhistorie (de maandkalender mist aandelen die later zijn toegevoegd).
+async function refreshPerSymbol(max = 300) {
+  const rows = await db.many(
+    `SELECT symbol FROM symbol_sync
+     WHERE earnings_at IS NULL OR earnings_at < now() - interval '30 days'
+     ORDER BY earnings_at NULLS FIRST, symbol LIMIT $1`,
+    [max]
+  );
+  const known = new Set(rows.map((r) => r.symbol));
+  let saved = 0;
+  const errors = [];
+  for (let i = 0; i < rows.length; i += 6) {
+    await Promise.all(rows.slice(i, i + 6).map(async ({ symbol }) => {
+      try {
+        saved += await saveRows(await fmp.earningsHistoryNoCache(symbol), known);
+        await db.query('UPDATE symbol_sync SET earnings_at = now() WHERE symbol = $1', [symbol]);
+      } catch (err) {
+        errors.push(`${symbol}: ${err.message}`);
+      }
+    }));
+  }
+  return { symbols: rows.length, saved, errors: errors.slice(0, 5) };
+}
+
 async function runEarnings() {
   const calendar = await refreshCalendar();
   const history = await backfill();
-  return { calendar, history };
+  const perSymbol = await refreshPerSymbol();
+  return { calendar, history, perSymbol };
 }
 
-module.exports = { runEarnings, refreshCalendar, backfill };
+module.exports = { runEarnings, refreshCalendar, backfill, refreshPerSymbol };

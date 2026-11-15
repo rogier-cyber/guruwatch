@@ -67,12 +67,12 @@
 </section>
 <div class="grid2 cases">
   <section class="card case case-bull">
-    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bull case</h2></div><span class="case-ic"><img src="/img/stier.webp" width="60" height="60" alt="Stier" loading="lazy"></span></div>
+    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bull case</h2></div><span class="case-ic"><img src="/static/img/stier.webp?v=2" width="60" height="60" alt="Stier" loading="lazy"></span></div>
     <p class="small muted">Waarom beleggers positief kunnen zijn over <%= name %>:</p>
     <% if (story.bull.length) { %><ul><% story.bull.forEach(function (b) { %><li><%= b %></li><% }) %></ul><% } else { %><p class="empty">Er springen nu geen duidelijk positieve signalen uit de data.</p><% } %>
   </section>
   <section class="card case case-bear">
-    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bear case</h2></div><span class="case-ic"><img src="/img/beer.webp" width="60" height="60" alt="Beer" loading="lazy"></span></div>
+    <div class="case-h"><div><span class="case-k"><%= name %></span><h2>Bear case</h2></div><span class="case-ic"><img src="/static/img/beer.webp?v=2" width="60" height="60" alt="Beer" loading="lazy"></span></div>
     <p class="small muted">Waarom beleggers voorzichtig kunnen zijn met <%= name %>:</p>
     <% if (story.bear.length) { %><ul><% story.bear.forEach(function (b) { %><li><%= b %></li><% }) %></ul><% } else { %><p class="empty">Er springen nu geen duidelijk negatieve signalen uit de data.</p><% } %>
   </section>
@@ -97,9 +97,13 @@
 
 <% if (story.faq.length) { %>
 <section class="card faq" id="vragen">
-  <div class="card-h"><h2>Veelgestelde vragen over het aandeel <%= name %></h2><span class="small muted">bijgewerkt <%= fmt.date(new Date()) %></span></div>
+  <div class="faq-head">
+    <span class="faq-k">Vraag en antwoord</span>
+    <h2>Veelgestelde vragen over het aandeel <%= name %> (<%= symbol %>)</h2>
+    <p class="faq-intro"><%= story.faq.length %> vragen die beleggers stellen over <%= name %>, beantwoord met actuele data over koersdoelen, analistenadviezen, kwartaalcijfers en insiders. Bijgewerkt op <time datetime="<%= new Date().toISOString().slice(0, 10) %>"><%= fmt.date(new Date()) %></time>.</p>
+  </div>
   <div class="faq-list">
-  <% story.faq.forEach(function (f, i) { %><details class="faq-acc" id="vraag-<%= f.id %>"<%= i === 0 ? ' open' : '' %>><summary><h3><%= f.q %></h3><span class="faq-chev" aria-hidden="true"></span></summary><p><%= f.a %></p></details><% }) %>
+  <% story.faq.forEach(function (f, i) { %><details class="faq-acc" id="vraag-<%= f.id %>"<%= i === 0 ? ' open' : '' %>><summary><h3><%= f.q %></h3><span class="faq-chev" aria-hidden="true"></span></summary><div class="faq-a"><% String(f.a).split('\n\n').forEach(function (para) { %><p><%= para %></p><% }) %></div></details><% }) %>
   </div>
 </section>
 <script>
