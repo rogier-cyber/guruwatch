@@ -112,9 +112,11 @@ app.get('/uit', async (req, res, next) => {
   }
 });
 
-// Aandeelpagina's en Aandelen zijn openbaar (vindbaar in Google); de rest vereist een login.
+// De hele site is openbaar; alleen persoonlijke functies (volglijst, meldingen,
+// eigen voorspellingen, status) vragen om in te loggen.
+const PRIVATE = /^\/(mijn|volglijst|volg|status|community\/(nieuw|voorspelling|profiel|intrekken))(\/|$)/;
 app.use(pages.publicRouter);
-app.use(auth.requireUser, pages);
+app.use((req, res, next) => (PRIVATE.test(req.path) ? auth.requireUser(req, res, next) : next()), pages);
 
 app.use((req, res) => res.status(404).render('error', { title: 'Niet gevonden', message: 'Deze pagina bestaat niet.' }));
 

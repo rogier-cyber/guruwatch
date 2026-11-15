@@ -28,7 +28,6 @@
 <header class="top">
   <div class="wrap top-in">
     <a class="brand" href="/" aria-label="Guruwatch"><img src="/static/img/guru.png" alt=""><span class="wordmark">Guru<b>watch</b></span></a>
-    <% if (user) { %>
     <nav class="nav">
       <a href="/aandelen" class="<%= path === '/aandelen' || path.startsWith('/aandeel/') ? 'on' : '' %>">Aandelen</a>
       <a href="/analisten" class="<%= path.startsWith('/analist') || path.startsWith('/bank') ? 'on' : '' %>">Analisten</a>
@@ -46,13 +45,9 @@
       </div>
     </form>
     <script src="/static/search.js?v=3" defer></script>
+    <% if (user) { %>
     <form action="/logout" method="post" class="logout"><button class="link" title="<%= user.email %>">Uitloggen</button></form>
     <% } else { %>
-    <nav class="nav">
-      <a href="/aandelen" class="<%= path === '/aandelen' || path.startsWith('/aandeel/') ? 'on' : '' %>">Aandelen</a>
-      <a href="/gurus" class="<%= path.startsWith('/guru') ? 'on' : '' %>">Guru's</a>
-      <a href="/community" class="<%= path.startsWith('/community') || path.startsWith('/lid/') ? 'on' : '' %>">Community</a>
-    </nav>
     <div class="top-cta"><a class="btn btn-primary" href="/login?next=<%= encodeURIComponent(path) %>">Inloggen</a></div>
     <% } %>
   </div>
