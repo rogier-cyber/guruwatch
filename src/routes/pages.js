@@ -417,7 +417,10 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     .map((x) => ({ ...x, ...meta.get(x.ref) }));
 
   const series = dbSeries.length >= 60 ? dbSeries : sortedHistory;
-  const timeline = charts.both.targetTimeline(series, timelineTargets);
+  // Tijdlijn: koers van het laatste jaar, koersdoelen van de laatste 6 maanden (oudere doelen zeggen weinig over nu).
+  const tlFrom = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+  const tlTargetsFrom = Date.now() - 182 * 864e5;
+  const timeline = charts.both.targetTimeline(series.filter((p) => p.date >= tlFrom), timelineTargets.filter((t) => new Date(t.published_at).getTime() >= tlTargetsFrom));
 
   // Analistenblok: oordeel door de tijd, per maand, acties en vergelijking.
   const gc = gradesConsensus;

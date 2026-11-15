@@ -300,7 +300,7 @@ async function analystBySymbol(analystId) {
   );
 }
 
-// Laatste koersdoel per analist op een aandeel (12 maanden), met score en vorig doel.
+// Laatste koersdoel per analist op een aandeel (6 maanden: oudere doelen zeggen weinig over nu), met score en vorig doel.
 async function latestTargetPerAnalyst(symbol) {
   return db.many(
     `WITH t AS (
@@ -312,7 +312,7 @@ async function latestTargetPerAnalyst(symbol) {
             a.slug AS analyst_slug, g.score, g.calls AS score_calls
      FROM t LEFT JOIN analysts a ON a.id = t.analyst_id
      LEFT JOIN guru_scores g ON g.kind = 'analyst' AND g.ref = t.analyst_id::text
-     WHERE t.rn = 1 AND t.published_at > now() - interval '365 days'
+     WHERE t.rn = 1 AND t.published_at > now() - interval '182 days'
      ORDER BY t.published_at DESC`,
     [symbol]
   );

@@ -13,7 +13,7 @@ const LATEST_TARGETS = `
   SELECT DISTINCT ON (pt.symbol, coalesce(pt.analyst_id::text, pt.analyst_firm))
          pt.symbol, pt.price_target
   FROM price_targets pt
-  WHERE pt.published_at > now() - interval '365 days' AND pt.price_target > 0 AND %FILTER%
+  WHERE pt.published_at > now() - interval '182 days' AND pt.price_target > 0 AND %FILTER%
   ORDER BY pt.symbol, coalesce(pt.analyst_id::text, pt.analyst_firm), pt.published_at DESC`;
 
 async function indexTable(indexKey) {
