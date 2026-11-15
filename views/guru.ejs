@@ -113,7 +113,7 @@
     <tbody>
     <% heat.rows.forEach(function (r) { %>
       <tr><th scope="row"><% if (r.symbol) { %><%- ui.stock(r.symbol, r.name) %><% } else { %><%= fmt.company(r.issuer) %><% } %></th>
-      <% r.cells.forEach(function (w, i) { var prevW = i ? r.cells[i - 1] : null; %><td style="<%= gc.heatCell(w, hmax) %>" title="<%= gc.qLabel(heat.periods[i]) %>: <%= w ? fmt.pct(w, false) : 'geen positie' %>"><%= w ? (w * 100).toFixed(w >= 0.1 ? 0 : 1).replace('.', ',') : '' %><% if (i && prevW === 0 && w) { %><sup>●</sup><% } %></td><% }) %></tr>
+      <% r.cells.forEach(function (w, i) { var prevW = i ? r.cells[i - 1] : null; %><td style="<%= gc.heatCell(w, hmax) %>" title="<%= gc.qLabel(heat.periods[i]) %>: <%= w ? fmt.pct(w, false) : 'geen positie' %>"><%= w ? (w < 0.0005 ? '<0,1%' : (w * 100).toFixed(w >= 0.1 ? 0 : 1).replace('.', ',') + '%') : '' %><% if (i && prevW === 0 && w) { %><sup>●</sup><% } %></td><% }) %></tr>
     <% }) %>
     </tbody>
   </table></div>
