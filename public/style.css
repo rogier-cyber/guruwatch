@@ -186,8 +186,26 @@ main { padding-top: 24px; padding-bottom: 36px; min-height: 70vh; }
 .alert { background: var(--neg-soft); color: var(--neg); padding: 11px 14px; border-radius: 10px; }
 .alert.info { background: var(--accent-soft); color: var(--text); }
 
-.foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: 12.5px; padding-top: 14px; padding-bottom: 30px; flex-wrap: wrap; border-top: 1px solid var(--line); }
-.foot a { color: var(--muted); }
+/* Footer (zoals Beurs.nl, ook van IEX Media) */
+.sf { margin-top: 36px; border-top: 1px solid var(--line); background: var(--card); }
+.sf-cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; padding-top: 30px; padding-bottom: 26px; }
+.sf-cols nav { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sf-cols h2 { font-size: 16px; font-weight: 800; margin: 0 0 10px; color: var(--text); }
+.sf-cols a { color: var(--muted); text-transform: uppercase; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; padding: 5px 0; text-decoration: none; }
+.sf-cols a:hover { color: var(--red); }
+.sf-data { background: var(--line-2); color: var(--muted); font-size: 12.5px; padding: 14px 0; text-align: center; }
+.sf-data a { color: inherit; text-decoration: underline; }
+.sf-bar { background: var(--navy); color: #fff; font-size: 13.5px; }
+.sf-bar .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 16px; padding-bottom: 16px; flex-wrap: wrap; }
+.sf-iex { color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.iex-mark { font-size: 19px; letter-spacing: -.01em; color: #4ea3ff; font-weight: 400; }
+.iex-mark b { color: #fff; font-weight: 900; }
+@media (max-width: 640px) {
+  .sf-cols { grid-template-columns: 1fr 1fr; gap: 18px 16px; padding-top: 22px; }
+  .sf-cols a { padding: 8px 0; }
+  .sf-data a { display: inline-block; padding: 8px 2px; }
+  .sf-bar .wrap { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
 @media (max-width: 640px) { .search input { max-width: none; } .page-title { font-size: 21px; } }
 
 /* GuruScore-ring */
@@ -1114,7 +1132,6 @@ svg .tip-on:not(g) { stroke: var(--navy); stroke-width: 2; }
   /* Grotere raakvlakken en stippen voor vingers */
   .tl-dot, .sc-dot, .gc-pt circle { r: 5; }
   .logout .link { padding: 10px 6px; }
-  .foot a { display: inline-block; padding: 10px 4px; }
   .crumbs a { display: inline-block; padding: 6px 0; }
   .wb-s em, .wb-t i { font-size: 11.5px; }
   .gw-tip { font-size: 13.5px; }
@@ -1251,3 +1268,27 @@ svg .tip-on:not(g) { stroke: var(--navy); stroke-width: 2; }
 .qa-who .an-av { width: 28px; height: 28px; }
 .qa-acc-list .more-item[hidden] { display: none; }
 .an-cell { display: flex; align-items: center; gap: 2px; }
+
+/* Informatiepagina's (over ons, uitleg, disclaimer, ...) */
+.info-nav { margin-bottom: 14px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.info-nav a { white-space: nowrap; }
+.lead { font-size: 17px; color: var(--text); }
+.info-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 10px 0 6px; }
+.info-trio a { display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; color: var(--text); text-decoration: none; border-top: 3px solid var(--red); }
+.info-trio a:hover { box-shadow: var(--shadow); }
+.info-trio span { color: var(--muted); font-size: 14px; line-height: 1.5; }
+.info-contact { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
+.info-contact p { margin: 4px 0 0; }
+/* Home: drie soorten guru's */
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+.trio a { display: flex; gap: 14px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); color: var(--text); text-decoration: none; transition: transform .12s; }
+.trio a:hover { transform: translateY(-2px); }
+.trio-n { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 800; display: grid; place-items: center; }
+.trio h2 { font-size: 16.5px; margin: 0 0 4px; }
+.trio p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.trio em { display: block; font-style: normal; font-weight: 700; color: var(--red); font-size: 12.5px; margin-top: 8px; }
+@media (max-width: 860px) {
+  .trio, .info-trio, .info-contact { grid-template-columns: 1fr; }
+  .trio { gap: 10px; }
+  .trio a { padding: 14px; }
+}
