@@ -145,6 +145,11 @@ router.get('/bank/:firm', wrap(async (req, res) => {
   res.render('firm', { title: firm, firm, grades, leaders, guru });
 }));
 
+// Informatiepagina's (footer)
+const INFO = { 'over-ons': 'Over Guruwatch', uitleg: 'Uitleg', adverteren: 'Adverteren', disclaimer: 'Disclaimer', privacy: 'Privacyverklaring', contact: 'Contact' };
+for (const [page, title] of Object.entries(INFO)) pub.get(`/${page}`, (req, res) => res.render(`info/${page}`, { title }));
+pub.get('/over', (req, res) => res.redirect(301, '/over-ons'));
+
 router.get('/methode', (req, res) => res.render('method', { title: 'Hoe de GuruScore werkt' }));
 
 // ---------- Insiders ----------

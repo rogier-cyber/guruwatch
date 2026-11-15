@@ -1,0 +1,38 @@
+<%- include('../partials/head') %>
+<%- include('_nav', { page: 'uitleg' }) %>
+<article class="card prose">
+  <h1 class="page-title">Uitleg</h1>
+  <h2>Wat is Guruwatch?</h2>
+  <p>Guruwatch volgt de adviezen en transacties van drie soorten guru's: <a href="/analisten">analisten</a>, <a href="/gurus">beleggersguru's</a> zoals Warren Buffett en <a href="/insiders">insiders</a>. Voor analisten meten we hoe goed hun adviezen uitpakken. Kortom: wie is de beste guru?</p>
+
+  <h2>Analisten</h2>
+  <p>Analisten van banken en brokers geven adviezen en koersdoelen voor aandelen. Om ze goed te kunnen vergelijken, kennen we drie soorten adviezen:</p>
+  <ol>
+    <li><strong>Kopen</strong> (ook: buy, outperform, overweight)</li>
+    <li><strong>Houden</strong> (ook: hold, neutral, equal weight)</li>
+    <li><strong>Verkopen</strong> (ook: sell, underperform, underweight)</li>
+  </ol>
+  <p>Een <strong>upgrade</strong> is een positiever advies dan het vorige (bijvoorbeeld van houden naar kopen), een <strong>downgrade</strong> een negatiever advies. Een koersdoel is de koers die de analist over ongeveer 12 maanden verwacht.</p>
+
+  <h2>Hoe wordt een analist beoordeeld?</h2>
+  <p>Elk koersdoel volgen we 12 maanden vanaf de slotkoers op de dag dat het verscheen. Ligt het doel boven de koers, dan telt het als koopadvies, ligt het eronder als verkoopadvies. We kijken naar twee dingen:</p>
+  <ul>
+    <li><strong>Trefkans:</strong> heeft de koers het koersdoel binnen 12 maanden gehaald?</li>
+    <li><strong>Rendement:</strong> wat leverde het advies op, en hoeveel was dat meer of minder dan de S&amp;P 500 in dezelfde periode? Bij een verkoopadvies is een dalende koers winst.</li>
+  </ul>
+  <p>Samen met het aantal adviezen wordt dat de <strong>GuruScore</strong> van 0 tot 100. Rendementen worden gemiddeld en niet opgeteld, zodat wie veel adviezen geeft daar geen voordeel van heeft. Een advies wordt afgesloten na 12 maanden, of eerder als de analist een nieuw koersdoel voor hetzelfde aandeel afgeeft. De volledige berekening staat op <a href="/methode">Hoe de GuruScore werkt</a>.</p>
+
+  <h2>Beleggersguru's</h2>
+  <p>Grote Amerikaanse beleggers, zoals Berkshire Hathaway van Warren Buffett, moeten elk kwartaal hun aandelenportefeuille melden bij de SEC (het 13F-formulier). Dat moet binnen 45 dagen na het einde van het kwartaal. Wij laten zien wat er in de portefeuille zit en wat er is gekocht, bijgekocht, verkleind of verkocht. Let op: een 13F is dus altijd een momentopname van enige tijd terug.</p>
+
+  <h2>Insiders</h2>
+  <p>Bestuurders, commissarissen en grootaandeelhouders van Amerikaanse bedrijven moeten binnen twee werkdagen melden als ze aandelen van hun eigen bedrijf kopen of verkopen (het Form 4). Een aankoop met eigen geld zegt vaak meer dan een verkoop, want verkopen kan veel redenen hebben. Kopen meerdere insiders tegelijk, dan noemen we dat een <strong>cluster buy</strong>.</p>
+
+  <h2>Earnings calls</h2>
+  <p>Na de kwartaalcijfers praat het management met analisten. Wij tellen per call de toon en de onderwerpen met vaste woordenlijsten. De Nederlandse samenvatting en de vertaling van vragen en antwoorden worden gemaakt door AI (Claude).</p>
+
+  <h2>Waar komt de data vandaan?</h2>
+  <p>Adviezen, koersdoelen, koersen, kwartaalcijfers en transcripts komen van Financial Modeling Prep en EODHD. Portefeuilles van beleggersguru's en insidertransacties komen uit de officiële meldingen bij de SEC. Koersen kunnen vertraagd zijn.</p>
+  <p>Staat uw vraag er niet tussen? <a href="/contact">Neem contact op</a>.</p>
+</article>
+<%- include('../partials/foot') %>

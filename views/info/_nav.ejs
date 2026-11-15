@@ -1,0 +1,2 @@
+<% var P = [['over-ons','Over ons'],['uitleg','Uitleg'],['adverteren','Adverteren'],['disclaimer','Disclaimer'],['privacy','Privacy'],['contact','Contact']]; %>
+<nav class="seg info-nav" aria-label="Over Guruwatch"><% P.forEach(function (p) { %><a href="/<%= p[0] %>" class="<%= page === p[0] ? 'on' : '' %>"<%- page === p[0] ? ' aria-current="page"' : '' %>><%= p[1] %></a><% }) %></nav>

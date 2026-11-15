@@ -1,7 +1,42 @@
 </main>
-<footer class="wrap foot">
-  <span>Data: Financial Modeling Prep, EODHD, SEC-filings. Geen beleggingsadvies.</span>
-  <% if (user) { %><a href="/status">Status</a><% } %>
+<footer class="sf">
+  <div class="wrap sf-cols">
+    <nav aria-label="Guruwatch">
+      <h2>Guruwatch.nl</h2>
+      <a href="/over-ons">Over Guruwatch</a>
+      <a href="/uitleg">Uitleg</a>
+      <a href="/adverteren">Adverteren</a>
+      <a href="/privacy">Privacyverklaring</a>
+      <a href="/disclaimer">Disclaimer</a>
+      <a href="/contact">Contact</a>
+    </nav>
+    <nav aria-label="Guru's">
+      <h2>Guru's</h2>
+      <a href="/analisten">Analisten</a>
+      <a href="/analisten?tab=banken">Banken</a>
+      <a href="/gurus">Beleggersguru's</a>
+      <a href="/insiders">Insiders</a>
+      <a href="/methode">Hoe de GuruScore werkt</a>
+    </nav>
+    <nav aria-label="Aandelen">
+      <h2>Aandelen</h2>
+      <a href="/aandelen">Alle aandelen</a>
+      <a href="/radar">Radar</a>
+      <a href="/cijfers">Kwartaalcijfers</a>
+      <a href="/community">Community</a>
+    </nav>
+    <nav aria-label="Account">
+      <h2>Account</h2>
+      <% if (locals.user) { %><a href="/mijn">Mijn Guruwatch</a><a href="/status">Status</a><% } else { %><a href="/login">Inloggen</a><a href="/login">Aanmelden</a><% } %>
+      <a href="/privacy">Privacy</a>
+      <a href="/uitleg">Helpcentrum</a>
+    </nav>
+  </div>
+  <div class="sf-data"><div class="wrap">Data: Financial Modeling Prep, EODHD en SEC-filings (13F en Form 4). Koersen kunnen vertraagd zijn. Geen beleggingsadvies, <a href="/disclaimer">zie disclaimer</a>.</div></div>
+  <div class="sf-bar"><div class="wrap">
+    <span>© <%= new Date().getFullYear() %> Guruwatch.nl</span>
+    <a class="sf-iex" href="https://www.iexmedia.nl" target="_blank" rel="noopener">Guruwatch.nl is onderdeel van <span class="iex-mark"><b>IEX</b> Media</span></a>
+  </div></div>
 </footer>
 <script src="/static/ui.js?v=6" defer></script>
 </body>
