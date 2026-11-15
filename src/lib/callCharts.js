@@ -70,4 +70,47 @@ function topicHeat(calls, { who = 'all', rows = 12 } = {}) {
   return `<div class="tbl-wrap hm-wrap" data-scroll-end><table class="hm"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
-module.exports = { toneLine, toneBoth, topicHeat, score };
+// Toonmeter: halve cirkel van -100 (negatief) tot +100 (positief), naald op de toon van deze call,
+// streepje op de vorige call.
+function toneGauge(v, prev, { size = 220 } = {}) {
+  if (!Number.isFinite(v)) return '';
+  const w = size, cx = w / 2, r = w / 2 - 16, cy = r + 12, h = cy + 30;
+  const ang = (x) => Math.PI * (1 - (Math.max(-100, Math.min(100, x)) + 100) / 200);
+  const pt = (a, rr) => [cx + rr * Math.cos(a), cy - rr * Math.sin(a)];
+  const segs = [[-100, -35, 'tg-n2'], [-35, -10, 'tg-n1'], [-10, 10, 'tg-0'], [10, 35, 'tg-p1'], [35, 60, 'tg-p2'], [60, 100, 'tg-p3']].map(([a0, a1, cls]) => {
+    const [x0, y0] = pt(ang(a0 + 1.2), r);
+    const [x1, y1] = pt(ang(a1 - 1.2), r);
+    return `<path d="M${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}" class="tg-seg ${cls}"/>`;
+  }).join('');
+  let ghost = '';
+  if (Number.isFinite(prev)) {
+    const a = ang(prev);
+    const [x0, y0] = pt(a, r - 13);
+    const [x1, y1] = pt(a, r + 13);
+    ghost = `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" class="tg-prev"><title>Vorige call: ${prev > 0 ? '+' : ''}${prev}</title></line>`;
+  }
+  const [nx, ny] = pt(ang(v), r - 22);
+  return `<svg viewBox="0 0 ${w} ${h}" class="tg" role="img" aria-label="Toon van het management: ${v > 0 ? '+' : ''}${v} op een schaal van -100 tot +100">${segs}${ghost}
+    <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" class="tg-needle"/><circle cx="${cx}" cy="${cy}" r="6" class="tg-hub"/>
+    <text x="2" y="${cy + 20}" text-anchor="start" class="tg-ax">negatief</text><text x="${w - 2}" y="${cy + 20}" text-anchor="end" class="tg-ax">positief</text></svg>`;
+}
+
+// Klein lijntje met de toon van het management per call. hist: [{label, v}] oud -> nieuw.
+function toneSpark(hist, { width = 480, height = 90 } = {}) {
+  const p = hist.filter((x) => Number.isFinite(x.v));
+  if (p.length < 2) return '';
+  const pad = { l: 6, r: 6, t: 10, b: 18 };
+  const vals = p.map((x) => x.v);
+  const lo = Math.min(0, ...vals) - 5, hi = Math.max(0, ...vals) + 5;
+  const X = (i) => pad.l + (i / (p.length - 1)) * (width - pad.l - pad.r);
+  const Y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (height - pad.t - pad.b);
+  const d = p.map((x, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(x.v).toFixed(1)}`).join(' ');
+  const area = `${d} L${X(p.length - 1).toFixed(1)},${Y(lo).toFixed(1)} L${X(0).toFixed(1)},${Y(lo).toFixed(1)} Z`;
+  const dots = p.map((x, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(x.v).toFixed(1)}" r="${i === p.length - 1 ? 4.5 : 3}" class="ts-dot${i === p.length - 1 ? ' last' : ''}"><title>${esc(x.label)}: toon ${x.v > 0 ? '+' : ''}${x.v}</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${width} ${height}" class="ts" role="img" aria-label="Toon van het management per call">
+    <line x1="${pad.l}" x2="${width - pad.r}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="ts-zero"/>
+    <path d="${area}" class="ts-area"/><path d="${d}" class="ts-line"/>${dots}
+    <text x="${pad.l}" y="${height - 4}" class="ts-ax">${esc(p[0].label)}</text><text x="${width - pad.r}" y="${height - 4}" text-anchor="end" class="ts-ax">${esc(p[p.length - 1].label)}</text></svg>`;
+}
+
+module.exports = { toneLine, toneBoth, topicHeat, score, toneGauge, toneSpark };
