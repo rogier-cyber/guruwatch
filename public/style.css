@@ -1707,10 +1707,12 @@ td.hm-zero { color: var(--muted); font-weight: 500; }
 .tm-legend i.lg-buy1 { background: color-mix(in srgb, #0b6e4f 50%, #9fd6bd); } .tm-legend i.lg-buy3 { background: #0b6e4f; }
 
 /* Filters als duidelijke pill-knoppen (Rogier: meteen zien dat je erop kunt drukken) */
-.filters { gap: 8px; }
-.filters a { padding: 8px 16px; border-radius: 999px; background: var(--card, #fff); color: var(--navy, #14213d); border: 1.5px solid #cfd6e4; box-shadow: 0 1px 2px rgba(20,33,61,.06); transition: border-color .15s, background .15s, color .15s, transform .15s, box-shadow .15s; }
-.filters a:hover { border-color: var(--navy-3, #3d4c6e); color: var(--navy, #14213d); background: var(--accent-soft); transform: translateY(-1px); box-shadow: 0 4px 10px -4px rgba(20,33,61,.25); }
-.filters a.on, .filters a.on:hover { background: var(--navy, #14213d); border-color: var(--navy, #14213d); color: #fff; box-shadow: 0 4px 12px -4px rgba(20,33,61,.45); transform: none; }
-@media (prefers-color-scheme: dark) { .filters a { background: rgba(255,255,255,.04); color: #e5e9f2; border-color: #33405e; } .filters a:hover { color: #fff; } .filters a.on, .filters a.on:hover { background: #e8ecf5; border-color: #e8ecf5; color: #0b1020; } }
-@media (max-width: 640px) { .filters { gap: 6px; } .filters a { padding: 7px 13px; font-size: 14px; } }
+.filters, .tabs { gap: 8px; }
+.tabs { background: none; border: 0; padding: 0; box-shadow: none; width: auto; }
+.ix-tabs { padding: 3px 2px 6px; }
+.tabs a, .filters a { padding: 8px 16px; border-radius: 999px; background: var(--card, #fff); color: var(--navy, #14213d); border: 1.5px solid #cfd6e4; box-shadow: 0 1px 2px rgba(20,33,61,.06); transition: border-color .15s, background .15s, color .15s, transform .15s, box-shadow .15s; }
+.tabs a:hover, .filters a:hover { border-color: var(--navy-3, #3d4c6e); color: var(--navy, #14213d); background: var(--accent-soft); transform: translateY(-1px); box-shadow: 0 4px 10px -4px rgba(20,33,61,.25); }
+.filters a.on, .filters a.on:hover, .tabs a.on, .tabs a.on:hover { background: var(--navy, #14213d); border-color: var(--navy, #14213d); color: #fff; box-shadow: 0 4px 12px -4px rgba(20,33,61,.45); transform: none; }
+@media (prefers-color-scheme: dark) { .tabs a, .filters a { background: rgba(255,255,255,.04); color: #e5e9f2; border-color: #33405e; } .tabs a:hover, .filters a:hover { color: #fff; } .filters a.on, .filters a.on:hover, .tabs a.on, .tabs a.on:hover { background: #e8ecf5; border-color: #e8ecf5; color: #0b1020; } }
+@media (max-width: 640px) { .filters, .tabs { gap: 6px; } .tabs a, .filters a { padding: 7px 13px; font-size: 14px; } }
 svg.treemap a, svg.treemap a:hover { text-decoration: none; }
