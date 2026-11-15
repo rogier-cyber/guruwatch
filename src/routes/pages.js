@@ -186,8 +186,10 @@ router.get('/insiders', wrap(async (req, res) => {
   const type = ['buy', 'sell', 'all'].includes(req.query.type) ? req.query.type : zoek ? 'all' : 'buy';
   const minValue = Number(req.query.min) > 0 ? Number(req.query.min) : undefined;
   const zoekSyms = zoek ? await safe(q.insiderSymbolsFor(zoek), []) : null;
+  // Eén aandeel gezocht: haal de insidertrades tot 2 jaar terug op (eens per 12 uur), zodat de lijst compleet is.
+  if (zoekSyms && zoekSyms.length === 1) await safe(ingest.backfillInsiders(zoekSyms[0]), 0);
   const [trades, clusters, flows, buyMap, roles] = await Promise.all([
-    zoekSyms && !zoekSyms.length ? [] : q.latestInsiders({ limit: 200, type, minValue, symbols: zoekSyms || undefined }),
+    zoekSyms && !zoekSyms.length ? [] : q.latestInsiders({ limit: zoek ? 600 : 200, type, minValue, symbols: zoekSyms || undefined, since: zoek ? 730 : undefined }),
     q.insiderClusters(30, 15),
     q.dailyInsiderFlows(60),
     safe(vq.insiderBuyMap(30, 40), []),

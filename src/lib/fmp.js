@@ -105,6 +105,7 @@ module.exports = {
   // Insiders
   insiderLatest: async (page = 0, limit = 100) => arr(await request('insider-trading/latest', { page, limit }, { ttl: 2 * MIN })),
   insiderBySymbol: async (symbol, limit = 100) => arr(await request('insider-trading/search', { symbol, page: 0, limit }, { ttl: 30 * MIN })),
+  insiderSearch: async (symbol, page = 0, limit = 100) => arr(await request('insider-trading/search', { symbol, page, limit }, { ttl: 6 * 60 * MIN })),
   insiderStatistics: async (symbol) => arr(await request('insider-trading/statistics', { symbol }, { ttl: 6 * 60 * MIN })),
 
   // 13F

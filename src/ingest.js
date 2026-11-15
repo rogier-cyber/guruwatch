@@ -163,6 +163,26 @@ async function backfillSymbol(symbol) {
   if (ins.status === 'fulfilled') await store.saveInsiders(ins.value);
 }
 
+// Insidertrades van één aandeel tot 2 jaar terug ophalen (zoekveld op /insiders). Hooguit eens per 12 uur per aandeel.
+const insiderBackfilled = new Map();
+async function backfillInsiders(symbol, { years = 2, maxPages = 10 } = {}) {
+  const sym = String(symbol || '').toUpperCase();
+  if (!/^[A-Z0-9.\-]{1,12}$/.test(sym)) return 0;
+  const last = insiderBackfilled.get(sym);
+  if (last && Date.now() - last < 12 * 3600e3) return 0;
+  insiderBackfilled.set(sym, Date.now());
+  const cutoff = new Date(Date.now() - years * 365.25 * 864e5).toISOString().slice(0, 10);
+  let saved = 0;
+  for (let page = 0; page < maxPages; page++) {
+    const rows = await fmp.insiderSearch(sym, page, 100);
+    if (!rows.length) break;
+    saved += await store.saveInsiders(rows);
+    const oldest = rows.reduce((m, r) => (r.transactionDate && r.transactionDate < m ? r.transactionDate : m), '9999');
+    if (oldest < cutoff || rows.length < 100) break;
+  }
+  return saved;
+}
+
 async function refreshScores(opts) {
   // Lazy require om een circulaire import te voorkomen.
   const scores = require('./scores');
@@ -243,7 +263,7 @@ function startScheduler() {
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshBlog, refreshSiteTexts, refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
+module.exports = { refreshBlog, refreshSiteTexts, refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, backfillInsiders, startScheduler };
 
 if (require.main === module) {
   (async () => {
