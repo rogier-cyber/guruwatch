@@ -813,7 +813,7 @@ router.post('/community/intrekken', wrap(async (req, res) => {
 // ---------- Zoekmachines ----------
 pub.get('/robots.txt', (req, res) => {
   const base = config.publicUrl.replace(/\/$/, '');
-  res.type('text/plain').send(`User-agent: *\nAllow: /aandeel/\nAllow: /aandelen\nAllow: /gurus\nAllow: /community\nDisallow: /mijn\nDisallow: /login\nSitemap: ${base}/sitemap.xml\n`);
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /mijn\nDisallow: /volg\nDisallow: /status\nDisallow: /community/nieuw\nDisallow: /zoek\nDisallow: /login\nSitemap: ${base}/sitemap.xml\n`);
 });
 
 pub.get('/sitemap.xml', wrap(async (req, res) => {
