@@ -1713,3 +1713,4 @@ td.hm-zero { color: var(--muted); font-weight: 500; }
 .filters a.on, .filters a.on:hover { background: var(--navy, #14213d); border-color: var(--navy, #14213d); color: #fff; box-shadow: 0 4px 12px -4px rgba(20,33,61,.45); transform: none; }
 @media (prefers-color-scheme: dark) { .filters a { background: rgba(255,255,255,.04); color: #e5e9f2; border-color: #33405e; } .filters a:hover { color: #fff; } .filters a.on, .filters a.on:hover { background: #e8ecf5; border-color: #e8ecf5; color: #0b1020; } }
 @media (max-width: 640px) { .filters { gap: 6px; } .filters a { padding: 7px 13px; font-size: 14px; } }
+svg.treemap a, svg.treemap a:hover { text-decoration: none; }
