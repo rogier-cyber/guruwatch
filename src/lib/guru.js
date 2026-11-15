@@ -7,16 +7,32 @@ const DAY = 864e5;
 const iso = (d) => new Date(d).toISOString().slice(0, 10);
 const keyOf = (h) => h.symbol || h.cusip;
 
-// Groepeer per kwartaal (oplopend), alleen longposities in aandelen.
+const { canonical } = require('./shareClasses');
+
+// Groepeer per kwartaal (oplopend), alleen longposities in aandelen; klassen van hetzelfde bedrijf samengevoegd.
 function byPeriod(holdings) {
   const map = new Map();
   for (const h of holdings) {
     if (h.put_call) continue;
     const p = iso(h.period);
-    if (!map.has(p)) map.set(p, []);
-    map.get(p).push({ ...h, value: Number(h.value) || 0, weight: Number(h.weight) || 0, shares: Number(h.shares) || 0 });
+    if (!map.has(p)) map.set(p, new Map());
+    const rows = map.get(p);
+    const c = canonical(h.symbol);
+    const r = { ...h, value: Number(h.value) || 0, weight: Number(h.weight) || 0, shares: Number(h.shares) || 0 };
+    if (c) { r.symbol = c.symbol; r.shares *= c.ratio; }
+    const k = keyOf(r);
+    const prev = rows.get(k);
+    if (!prev) rows.set(k, r);
+    else {
+      // Hoofdklasse houdt naam/cusip; waarde, gewicht en aantal tellen op.
+      const main = c ? { ...prev } : { ...r };
+      main.value = prev.value + r.value;
+      main.weight = prev.weight + r.weight;
+      main.shares = prev.shares + r.shares;
+      rows.set(k, main);
+    }
   }
-  return [...map.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([period, rows]) => ({ period, rows: rows.sort((a, b) => b.value - a.value) }));
+  return [...map.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([period, rows]) => ({ period, rows: [...rows.values()].sort((a, b) => b.value - a.value) }));
 }
 
 // Waarde en aantal posities per kwartaal (uit de tabel funds/fund_holdings).
@@ -149,4 +165,4 @@ function hypothetical(quarters, prices, bench, { today = new Date(), top = 25 } 
   };
 }
 
-module.exports = { byPeriod, valueSeries, heatmap, moves, sectors, hypothetical, closeOn };
+module.exports = { canonical, byPeriod, valueSeries, heatmap, moves, sectors, hypothetical, closeOn };
