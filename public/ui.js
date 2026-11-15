@@ -123,3 +123,37 @@ document.addEventListener('click', function (e) {
 
 // Brede tabellen die bij de nieuwste kolom moeten beginnen (bv. onderwerpen per call).
 document.querySelectorAll('[data-scroll-end]').forEach(function (el) { el.scrollLeft = el.scrollWidth; });
+
+// GuruScore-schuif onder de bollengrafiek op /analisten: Alle, of per 10 punten (0-10 ... 90-100).
+(function () {
+  document.querySelectorAll('[data-am-filter]').forEach(function (f) {
+    var box = f.closest('.an-map') || document;
+    var range = f.querySelector('[data-am-range]');
+    var all = f.querySelector('[data-am-all]');
+    var val = f.querySelector('[data-am-val]');
+    var cnt = f.querySelector('[data-am-n]');
+    function apply(b) { // b = null (alle) of 0..9
+      var lo = b === null ? 0 : b * 10, hi = lo + 10;
+      var shown = 0, total = 0;
+      box.querySelectorAll('svg.am').forEach(function (svg, k) {
+        svg.querySelectorAll('[data-s]').forEach(function (el) {
+          var s = Number(el.getAttribute('data-s'));
+          var on = b === null || (s >= lo && (s < hi || hi === 100));
+          el.style.display = on ? '' : 'none';
+          if (k === 0 && el.tagName.toLowerCase() === 'a') { total++; if (on) shown++; }
+        });
+      });
+      range.classList.toggle('off', b === null);
+      all.classList.toggle('on', b === null);
+      val.textContent = b === null ? 'Alle analisten' : 'Score ' + lo + ' tot ' + hi;
+      cnt.textContent = b === null ? total + ' analisten' : shown + ' van ' + total + ' analisten';
+    }
+    var pick = function () { apply(Number(range.value)); };
+    range.addEventListener('input', pick);
+    range.addEventListener('change', pick);
+    range.addEventListener('pointerup', pick);
+    range.addEventListener('keyup', pick);
+    all.addEventListener('click', function () { range.value = 0; apply(null); });
+    apply(null);
+  });
+})();

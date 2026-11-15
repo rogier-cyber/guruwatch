@@ -58,7 +58,16 @@
       <div class="card-h"><h2>Wie is vaak raak én verslaat de markt?</h2><span class="small muted">bolletje = analist · groter = meer adviezen</span></div>
       <div class="only-desk"><%- viz.analystMap(mapPoints, { width: 740, height: 380 }) %></div>
       <div class="only-phone"><%- viz.analystMap(mapPoints, { width: 380, height: 340 }) %></div>
-      <div class="am-legend"><span>GuruScore</span><i class="am-scale"></i><span class="small muted">0</span><span class="small muted">100</span></div>
+      <div class="am-filter" data-am-filter>
+        <div class="am-f-top"><b>Toon GuruScore</b><span class="am-f-val" data-am-val>Alle analisten</span><span class="small muted" data-am-n></span></div>
+        <div class="am-f-row">
+          <button type="button" class="am-f-all on" data-am-all>Alle</button>
+          <div class="am-f-track">
+            <input type="range" min="0" max="9" step="1" value="0" class="off" aria-label="Kies een GuruScore-bereik van 10 punten" data-am-range>
+            <div class="am-f-ticks" aria-hidden="true"><% for (var t = 0; t < 100; t += 10) { %><span><%= t %>-<%= t + 10 %></span><% } %></div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="an-side">
       <div>
