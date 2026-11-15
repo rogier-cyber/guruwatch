@@ -43,7 +43,7 @@ function valueArea(series, { width = 620, height = 220 } = {}) {
   const every = Math.ceil(pts.length / 6);
   const last = pts[pts.length - 1];
   return `<svg viewBox="0 0 ${width} ${height}" class="gc gc-area" role="img" aria-label="Waarde van de portefeuille per kwartaal">
-    <defs><linearGradient id="gaFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--red)" stop-opacity=".28"/><stop offset="1" stop-color="var(--red)" stop-opacity="0"/></linearGradient></defs>
+    <defs><linearGradient id="gaFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--pos)" stop-opacity=".22"/><stop offset="1" stop-color="var(--pos)" stop-opacity="0"/></linearGradient></defs>
     ${ticks.map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="gc-grid"/><text x="${pad.l + W + 8}" y="${(Y(t) + 4).toFixed(1)}" class="gc-ax">${money(t)}</text>`).join('')}
     <path d="${area}" fill="url(#gaFill)"/>
     <path d="${line}" class="gc-line"/>
@@ -143,7 +143,7 @@ function perfLines(points, { width = 920, height = 280, nameA = 'Guru', nameB = 
   for (let y = new Date(t0).getUTCFullYear() + 1; y <= new Date(t1).getUTCFullYear(); y++) years.push(y);
   const area = `${path('value')} L${X(last.date).toFixed(1)},${pad.t + H} L${pad.l},${pad.t + H} Z`;
   return `<svg viewBox="0 0 ${width} ${height}" class="gc gc-perf" role="img" aria-label="${esc(nameA)} tegenover ${esc(nameB)}">
-    <defs><linearGradient id="gpFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--red)" stop-opacity=".18"/><stop offset="1" stop-color="var(--red)" stop-opacity="0"/></linearGradient></defs>
+    <defs><linearGradient id="gpFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--pos)" stop-opacity=".16"/><stop offset="1" stop-color="var(--pos)" stop-opacity="0"/></linearGradient></defs>
     ${ticks.map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="gc-grid${Math.abs(t - 1) < 1e-9 ? ' zero' : ''}"/>`).join('')}
     ${years.map((y) => { const x = X(`${y}-01-01`); return `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${pad.t}" y2="${pad.t + H}" class="gc-grid faint"/><text x="${x.toFixed(1)}" y="${height - 6}" text-anchor="middle" class="gc-ax">${y}</text>`; }).join('')}
     <path d="${area}" fill="url(#gpFill)"/>
