@@ -316,7 +316,8 @@ function treemap(items, { width = 920, height = 420, label = 'Verdeling van de p
       const tipAttr = n.tip ? ` data-tip="${esc(n.tip)}"${n.logo ? ` data-tip-logo="${esc(n.logo)}"` : ''}` : '';
       return `<a href="${esc(n.href || '#')}"><g class="tm ${n.tone || ''}"${tipAttr}><rect x="${(n.x + 1).toFixed(1)}" y="${(n.y + 1).toFixed(1)}" width="${Math.max(0, n.w - 2).toFixed(1)}" height="${Math.max(0, n.h - 2).toFixed(1)}" rx="4" style="${style}">${n.tip ? '' : `<title>${esc(n.label)}${n.sub ? ' · ' + esc(n.sub) : ''}</title>`}</rect>
         ${mid ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 18).toFixed(1)}" class="tm-l">${esc(fit(String(n.label), 7.4))}</text>` : ''}
-        ${big && n.sub ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 34).toFixed(1)}" class="tm-s">${esc(fit(String(n.sub), 6.2))}</text>` : ''}</g></a>`;
+        ${n.sub2 !== undefined ? [n.sub, n.sub2].map((t, k) => (t && mid && n.h > 34 + k * 15 && String(t).length * 6.2 <= n.w - 12 ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 33 + k * 15).toFixed(1)}" class="tm-s">${esc(String(t))}</text>` : '')).join('')
+          : big && n.sub ? `<text x="${(n.x + 7).toFixed(1)}" y="${(n.y + 34).toFixed(1)}" class="tm-s">${esc(fit(String(n.sub), 6.2))}</text>` : ''}</g></a>`;
     })
     .join('');
   return `<svg viewBox="0 0 ${width} ${height}" class="treemap" role="img" aria-label="${esc(label)}">${cells}</svg>`;
