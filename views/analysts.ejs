@@ -69,7 +69,7 @@
     <tbody>
     <% var maxEx = Math.max.apply(null, leaders.map(function (a) { return Math.abs(Number(a.avg_excess) || 0); }).concat([0.05])); %>
     <% leaders.forEach(function (a, i) { var ex = Number(a.avg_excess) || 0; %>
-      <tr>
+      <tr<%- i >= 25 ? ' hidden' : '' %>>
         <td class="muted an-rank"><%= i + 1 %></td>
         <td><%- ui.who(fmt.person(a.name), a.firm, '/analist/' + a.slug, fmt.person(a.name) + (a.firm ? ' · ' + a.firm : '') + '\nGuruScore ' + Math.round(a.score) + ' · nr. ' + (i + 1) + '\nTrefkans ' + fmt.pct(a.hit_rate, false) + ' (koersdoel gehaald binnen 12 maanden)\nGemiddeld ' + fmt.pct(ex) + ' ten opzichte van de S&P 500\n' + a.calls + ' beoordeelde adviezen') %></td>
         <td><%- charts.scoreRing(a.score, 36) %></td>
@@ -79,17 +79,19 @@
       </tr>
     <% }) %>
     </tbody></table></div>
+  <% if (leaders.length > 25) { %><button class="more-btn" data-more="25">Meer analisten (nog <span data-more-n><%= leaders.length - 25 %></span>)</button><% } %>
   <% } else { %>
   <div class="tbl-wrap"><table class="tbl">
     <thead><tr><th>#</th><th>Analist</th><th>Bank</th><th class="r">Beoordeeld</th><th class="r">Goede richting</th><th class="r">Doel gehaald</th><th class="r">Gem. rendement</th></tr></thead>
     <tbody>
     <% leaders.forEach(function (a, i) { %>
-      <tr><td class="muted"><%= i + 1 %></td><td><a href="/analist/<%= a.slug %>" class="strong"><%= a.name %></a></td>
+      <tr<%- i >= 25 ? ' hidden' : '' %>><td class="muted"><%= i + 1 %></td><td><a href="/analist/<%= a.slug %>" class="strong"><%= a.name %></a></td>
       <td><% if (a.firm) { %><a href="/bank/<%= encodeURIComponent(a.firm) %>"><%= a.firm %></a><% } %></td>
       <td class="r"><%= a.scored %></td><td class="r"><%= fmt.pct(a.success_rate, false) %></td><td class="r"><%= fmt.pct(a.hit_rate, false) %></td>
       <td class="r <%= fmt.tone(a.avg_return) %>"><%= fmt.pct(a.avg_return) %></td></tr>
     <% }) %>
     </tbody></table></div>
+  <% if (leaders.length > 25) { %><button class="more-btn" data-more="25">Meer analisten (nog <span data-more-n><%= leaders.length - 25 %></span>)</button><% } %>
   <% } %>
 <% } else if (tab === 'koersdoelen') { %>
   <%- include('partials/targets', { rows: targets }) %>
