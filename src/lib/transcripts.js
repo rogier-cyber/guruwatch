@@ -30,6 +30,9 @@ const POS = /\b(strong(er|est|ly)?|record|growth|grew|grow(ing)?|improv(e|ed|es|
 const NEG = /\b(declin(e|ed|es|ing)|weak(ness|er|ened|ening)?|challeng(e|es|ed|ing)|difficult(y|ies)?|headwinds?|pressures?|loss(es)?|decreas(e|ed|es|ing)|slow(er|down|ed|ing)|soft(ness|er|ening)?|risks?|concern(s|ed)?|miss(ed)?|disappoint(ed|ing|ment)?|impairments?|cautious|adverse(ly)?|shortfall|delay(s|ed)?|downturn|deteriorat\w+|uncertain\w*)\b/g;
 const UNC = /\b(uncertain\w*|unclear|unpredictab\w*|volatil\w*|may|might|could|possibl[ey]|depend(s|ing|ent)?|approximately|roughly)\b/g;
 
+// Verhoog bij een betere analyse: opgeslagen calls worden dan opnieuw geanalyseerd.
+const VERSION = 2;
+
 const count = (text, re) => {
   re.lastIndex = 0;
   const m = text.match(re);
@@ -55,7 +58,7 @@ function parseTurns(content) {
 const isOperator = (s) => /^(operator|moderator|conference operator)$/i.test(s.trim());
 const NAME = "([A-Z][\\w.'’-]+(?:\\s+(?:[A-Z][\\w.'’-]+|de|van|von|del|da|di|la|le)){0,4})";
 const FIRM = "([A-Z][\\w&.'’-]*(?:[\\s,]+(?:[A-Z&][\\w&.'’-]*|and|of|de|du|&))*)";
-const INTRO = new RegExp(`(?:from|is|of)\\s+(?:the\\s+line\\s+of\\s+)?${NAME}\\s+(?:with|from|of|at)\\s+${FIRM}`, 'g');
+const INTRO = new RegExp(`(?:from|is|of|to)\\s+(?:the\\s+line\\s+of\\s+)?${NAME}\\s+(?:with|from|of|at)\\s+${FIRM}`, 'g');
 const STOP = /^(the|our|your|this|that|line|question|questions|next|first|last|please|go|ahead)$/i;
 
 // Haal analist + bank uit de zinnen van de operator ("Our next question comes from X with Y.").
@@ -63,7 +66,8 @@ function analystIntros(turns) {
   const map = new Map();
   for (const t of turns) {
     if (!isOperator(t.speaker)) continue;
-    if (!/question|line|caller/i.test(t.text)) continue;
+    t.intros = [];
+    if (!/question|line|caller|next/i.test(t.text)) continue;
     INTRO.lastIndex = 0;
     let m;
     while ((m = INTRO.exec(t.text))) {
@@ -71,6 +75,7 @@ function analystIntros(turns) {
       if (STOP.test(name.split(/\s+/)[0])) continue;
       const firm = m[2].replace(/[\s,]+(Please|Your|You|Go|Thank|The|Ladies)\b.*$/, '').replace(/[.,\s]+$/, '').trim();
       if (!map.has(name)) map.set(name, firm || null);
+      t.intros.push(firm || null);
     }
   }
   return map;
@@ -84,7 +89,8 @@ function matchName(speaker, names) {
     if (l === s) return n;
     const sp = s.split(/\s+/);
     const np = l.split(/\s+/);
-    if (sp[0] === np[0] && sp[sp.length - 1] === np[np.length - 1]) return n;
+    // Zelfde achternaam en voorletter: Alex/Alexander, C.J./Christopher, Jeff/Jeffrey.
+    if (sp.length > 1 && sp[0][0] === np[0][0] && sp[sp.length - 1] === np[np.length - 1]) return n;
   }
   return null;
 }
@@ -134,7 +140,8 @@ function analyze(content) {
     if (isOperator(t.speaker) || role.has(t.speaker)) continue;
     const named = matchName(t.speaker, introNames);
     if (named) role.set(t.speaker, { kind: 'analyst', firm: intros.get(named) });
-    else if (!prepared.has(t.speaker) && i > 0 && isOperator(turns[i - 1].speaker)) role.set(t.speaker, { kind: 'analyst', firm: null });
+    // Niet bij naam genoemd (bv. "This is Emily on for Dave"): direct na een introductie, dan de bank van die introductie.
+    else if (!prepared.has(t.speaker) && i > 0 && isOperator(turns[i - 1].speaker)) role.set(t.speaker, { kind: 'analyst', firm: (turns[i - 1].intros || [])[0] || null });
   }
   for (const t of turns) if (!isOperator(t.speaker) && !role.has(t.speaker)) role.set(t.speaker, { kind: 'mgmt' });
 
@@ -181,6 +188,7 @@ function analyze(content) {
   const wordsA = words(aT);
 
   return {
+    v: VERSION,
     words: { total: wordsM + wordsA, mgmt: wordsM, analysts: wordsA, prepared: words(preparedText.join(' ')), qa: words(qaMgmtText.join(' ')) + wordsA },
     tone: { mgmt: tone(mT), analysts: tone(aT), prepared: tone(preparedText.join(' ')), qa: tone(qaMgmtText.join(' ')) },
     topics: { mgmt: topicsM, analysts: topicsA },
@@ -234,4 +242,4 @@ function toneWord(net) {
   return 'negatief';
 }
 
-module.exports = { TOPICS, parseTurns, analystIntros, analyze, compare, topicLabel, topTopics, per10k, toneWord, tone };
+module.exports = { VERSION, TOPICS, parseTurns, analystIntros, analyze, compare, topicLabel, topTopics, per10k, toneWord, tone };

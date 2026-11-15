@@ -59,7 +59,20 @@ function ensure(symbol, { force = false } = {}) {
 
 // Achtergrond: aandelen met recente cijfers (index of volglijst) en nog geen call daarvan, plus een
 // rustige eerste vulling van indexaandelen zonder transcripts.
+// Opgeslagen calls opnieuw analyseren na een verbetering van de analyse (tr.VERSION).
+async function reanalyze(limit = 300) {
+  const rows = await db.many(
+    "SELECT symbol, year, quarter, content FROM earnings_transcripts WHERE coalesce((analysis->>'v')::int, 1) < $1 LIMIT $2",
+    [tr.VERSION, limit]
+  );
+  for (const r of rows) {
+    await db.query('UPDATE earnings_transcripts SET analysis = $4 WHERE symbol = $1 AND year = $2 AND quarter = $3', [r.symbol, r.year, r.quarter, JSON.stringify(tr.analyze(r.content))]);
+  }
+  return rows.length;
+}
+
 async function runTranscripts({ max = 40 } = {}) {
+  const reanalyzed = await reanalyze();
   const fresh = await db.many(
     `SELECT DISTINCT e.symbol FROM earnings e
      WHERE e.date BETWEEN current_date - 10 AND current_date
@@ -84,7 +97,7 @@ async function runTranscripts({ max = 40 } = {}) {
       errors.push(`${symbol}: ${err.message}`);
     }
   }
-  return { fresh: fresh.length, fill: fill.length, added, errors: errors.slice(0, 5) };
+  return { reanalyzed, fresh: fresh.length, fill: fill.length, added, errors: errors.slice(0, 5) };
 }
 
 async function content(symbol, year, quarter) {
