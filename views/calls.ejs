@@ -1,0 +1,96 @@
+<%- include('partials/head') %>
+<% var sym = encodeURIComponent(symbol); var sc = callCharts.score; var sg = function (v) { return v == null ? '–' : (v > 0 ? '+' : '') + v; }; %>
+<nav class="crumbs small" aria-label="Kruimelpad"><a href="/aandelen">Aandelen</a> <span aria-hidden="true">›</span> <a href="/aandeel/<%= sym %>"><%= name %></a> <span aria-hidden="true">›</span> <span aria-current="page">Earnings calls</span></nav>
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Earnings calls van <%= name %> <span class="stock-tk"><%= symbol %></span></h1>
+    <p class="muted mb0">Hoe praat het management, en waar vragen analisten naar? Per call geteld en vergeleken met de vorige.</p>
+  </div>
+</div>
+
+<% if (!latest) { %>
+<section class="card"><p class="empty">Er zijn nog geen transcripts van <%= name %> beschikbaar. Kijk na de volgende kwartaalcijfers nog eens.</p></section>
+<% } else { var A = latest.analysis; %>
+<% if (stale) { %><p class="note small">De laatste call die we hebben is van <%= latest.dateTxt %>. Nieuwere calls zijn (nog) niet beschikbaar.</p><% } %>
+
+<div class="stats">
+  <div class="stat"><span>Laatste call</span><strong><a href="<%= latest.href %>"><%= latest.label %></a></strong><em class="small muted"><%= latest.dateTxt %></em></div>
+  <div class="stat" data-tip="Toon management&#10;<%= A.tone.mgmt.pos %> positieve en <%= A.tone.mgmt.neg %> negatieve woorden&#10;Schaal van -100 (alleen negatief) tot +100 (alleen positief)"><span>Toon management</span><strong class="<%= fmt.tone(A.tone.mgmt.net) %>"><%= sg(sc(A.tone.mgmt.net)) %></strong><em class="small"><%= tr.toneWord(A.tone.mgmt.net) %><% if (cmp && cmp.toneMgmt != null) { %> · <span class="<%= fmt.tone(cmp.toneMgmt) %>"><%= sg(Math.round(cmp.toneMgmt * 100)) %></span><% } %></em></div>
+  <div class="stat" data-tip="Toon analisten&#10;<%= A.tone.analysts.pos %> positieve en <%= A.tone.analysts.neg %> negatieve woorden in hun vragen"><span>Toon analisten</span><strong class="<%= fmt.tone(A.tone.analysts.net) %>"><%= sg(sc(A.tone.analysts.net)) %></strong><em class="small"><%= tr.toneWord(A.tone.analysts.net) %><% if (cmp && cmp.toneAn != null) { %> · <span class="<%= fmt.tone(cmp.toneAn) %>"><%= sg(Math.round(cmp.toneAn * 100)) %></span><% } %></em></div>
+  <div class="stat"><span>Vragen</span><strong><%= A.exchanges.length %></strong><em class="small muted">van <%= A.analysts.length %> analisten</em></div>
+  <div class="stat" data-tip="Woorden als may, might, could, uncertain en volatile&#10;per 10.000 woorden van het management"><span>Onzekere woorden</span><strong><%= Math.round(tr.per10k(A.tone.mgmt.unc, A.tone.mgmt.words)) %></strong><em class="small muted">per 10.000 woorden<% if (cmp) { %> · <span class="<%= fmt.tone(-cmp.uncMgmt) %>"><%= cmp.uncMgmt >= 0 ? '+' : '' %><%= Math.round(cmp.uncMgmt) %></span><% } %></em></div>
+</div>
+
+<% if (cmp) { var chip = function (r, f, cur, prv) { return '<span class="tp-chip" data-tip="' + r.label + '&#10;Deze call: ' + r[cur] + 'x&#10;Vorige call: ' + r[prv] + 'x&#10;' + (r[f] >= 0 ? '+' : '') + Math.round(r[f]) + ' per 10.000 woorden">' + r.label + '</span>'; }; %>
+<section class="card">
+  <div class="card-h"><h2>Wat veranderde sinds <%= prev.label %>?</h2><span class="small muted"><%= latest.label %> vergeleken met de call ervoor</span></div>
+  <div class="cmp-grid">
+    <div><h3 class="cmp-h">Management praat meer over</h3><% if (cmp.mgmtUp.length) { %><div class="chips"><% cmp.mgmtUp.forEach(function (r) { %><%- chip(r, 'mgmt', 'curM', 'prevM') %><% }) %></div><% } else { %><p class="small muted">Geen duidelijke stijgers.</p><% } %></div>
+    <div><h3 class="cmp-h">Management praat minder over</h3><% if (cmp.mgmtDown.length) { %><div class="chips down"><% cmp.mgmtDown.forEach(function (r) { %><%- chip(r, 'mgmt', 'curM', 'prevM') %><% }) %></div><% } else { %><p class="small muted">Geen duidelijke dalers.</p><% } %></div>
+    <div><h3 class="cmp-h">Analisten vragen meer naar</h3><% if (cmp.anUp.length) { %><div class="chips"><% cmp.anUp.forEach(function (r) { %><%- chip(r, 'analysts', 'curA', 'prevA') %><% }) %></div><% } else { %><p class="small muted">Geen duidelijke stijgers.</p><% } %></div>
+    <div><h3 class="cmp-h">Analisten vragen minder naar</h3><% if (cmp.anDown.length) { %><div class="chips down"><% cmp.anDown.forEach(function (r) { %><%- chip(r, 'analysts', 'curA', 'prevA') %><% }) %></div><% } else { %><p class="small muted">Geen duidelijke dalers.</p><% } %></div>
+  </div>
+  <p class="small mb0">
+    <% if (cmp.toneMgmt != null) { %>Het management klonk <b class="<%= fmt.tone(cmp.toneMgmt) %>"><%= Math.abs(cmp.toneMgmt) < 0.05 ? 'ongeveer even positief' : cmp.toneMgmt > 0 ? 'positiever' : 'minder positief' %></b> dan bij <%= prev.label %>.<% } %>
+    <% if (cmp.newAnalysts.length) { %> Nieuw op de call: <%= cmp.newAnalysts.slice(0, 4).join(', ') %><%= cmp.newAnalysts.length > 4 ? ' en ' + (cmp.newAnalysts.length - 4) + ' anderen' : '' %>.<% } %>
+  </p>
+</section>
+<% } %>
+
+<% var tone = callCharts.toneBoth(asc); if (tone) { %>
+<section class="card chart-card">
+  <div class="card-h"><h2>Toon per call</h2><span class="small legend ct-legend"><i class="mg"></i>Management <i class="an"></i>Analisten</span></div>
+  <p class="sec-txt small">Positieve min negatieve woorden, van -100 tot +100. Beweeg over of tik op een punt voor de telling.</p>
+  <%- tone %>
+</section>
+<% } %>
+
+<section class="card">
+  <div class="card-h"><h2>Onderwerpen per call</h2>
+    <div class="seg small" role="group" aria-label="Wie"><a href="?wie=all" class="<%= who === 'all' ? 'on' : '' %>">Samen</a><a href="?wie=mgmt" class="<%= who === 'mgmt' ? 'on' : '' %>">Management</a><a href="?wie=analysts" class="<%= who === 'analysts' ? 'on' : '' %>">Analisten</a></div>
+  </div>
+  <p class="sec-txt small">Hoe vaak een onderwerp valt, per 10.000 woorden. Hoe donkerder, hoe meer aandacht. Tik op een vakje voor de cijfers.</p>
+  <%- callCharts.topicHeat(asc, { who: who }) %>
+</section>
+
+<section class="card">
+  <div class="card-h"><h2>Vragen van analisten in <%= latest.label %></h2><a class="small" href="<%= latest.href %>">Hele call bekijken →</a></div>
+  <% if (!A.exchanges.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
+  <ol class="qa-list">
+  <% A.exchanges.slice(0, 10).forEach(function (e) { %>
+    <li><div class="qa-who"><b><%= e.analyst %></b><% if (e.firm) { %> <span class="muted small"><%= e.firm %></span><% } %><% e.topics.forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div>
+      <p class="qa-q">“<%= e.excerpt %>”</p>
+      <% if (e.answeredBy.length) { %><p class="small muted mb0">Antwoord van <%= e.answeredBy.join(', ') %> · <%= e.answerWords %> woorden</p><% } %></li>
+  <% }) %>
+  </ol>
+  <% if (A.exchanges.length > 10) { %><p class="small"><a href="<%= latest.href %>">Alle <%= A.exchanges.length %> vragen bekijken →</a></p><% } %>
+  <% } %>
+</section>
+
+<% if (analysts.length) { %>
+<section class="card">
+  <div class="card-h"><h2>Welke analisten stellen vragen?</h2><span class="small muted">over de laatste <%= calls.length %> calls</span></div>
+  <div class="tbl-wrap"><table class="tbl call-an"><thead><tr><th>Analist</th><th>Calls</th><th>Vragen</th><th>Vraagt vooral naar</th></tr></thead><tbody>
+  <% analysts.forEach(function (a, i) { %>
+    <tr<%- i >= 12 ? ' class="ins-more" hidden' : '' %>><td><% if (a.link) { %><a href="/analist/<%= a.link.slug %>" data-tip="<%= a.name %>&#10;<%= a.firm || a.link.firm || '' %><%= a.link.score != null ? '&#10;GuruScore ' + Math.round(a.link.score) : '' %>"><b><%= a.name %></b></a><% } else { %><b><%= a.name %></b><% } %><% if (a.firm) { %> <span class="muted small"><%= a.firm %></span><% } %><% if (a.inLatest) { %> <span class="tp-chip sm only-desk">laatste call</span><% } %></td>
+      <td data-tip="<%= a.calls.join(', ') %>"><%= a.calls.length %>/<%= calls.length %></td><td><%= a.questions %></td><td class="small"><%= a.top.join(', ') || '–' %></td></tr>
+  <% }) %>
+  </tbody></table></div>
+  <% if (analysts.length > 12) { %><button class="more-btn" data-more>Meer analisten (<%= analysts.length %>)</button><% } %>
+</section>
+<% } %>
+
+<section class="card">
+  <div class="card-h"><h2>Alle calls</h2></div>
+  <div class="tbl-wrap"><table class="tbl call-all"><thead><tr><th>Call</th><th class="only-desk-cell">Datum</th><th>Toon mgmt</th><th>Toon analisten</th><th>Vragen</th><th>Grootste onderwerp</th></tr></thead><tbody>
+  <% calls.forEach(function (c) { var a = c.analysis; var top = tr.topTopics(Object.fromEntries(Object.keys(a.topics.mgmt).map(function (k) { return [k, (a.topics.mgmt[k] || 0) + (a.topics.analysts[k] || 0)]; })), 1)[0]; %>
+    <tr><td class="nowrap"><a href="<%= c.href %>" data-tip-touch="0"><b><%= c.label %></b></a></td><td class="muted only-desk-cell"><%= c.dateTxt %></td>
+      <td class="<%= fmt.tone(a.tone.mgmt.net) %>"><%= sg(sc(a.tone.mgmt.net)) %></td><td class="<%= fmt.tone(a.tone.analysts.net) %>"><%= sg(sc(a.tone.analysts.net)) %></td>
+      <td><%= a.exchanges.length %></td><td class="small"><%= top ? tr.topicLabel(top) : '–' %></td></tr>
+  <% }) %>
+  </tbody></table></div>
+</section>
+<% } %>
+
+<p class="small muted">Transcripts: Financial Modeling Prep. Toon en onderwerpen telt Guruwatch zelf met vaste woordenlijsten (geen AI), dus zie het als een richting, niet als een oordeel. Kwartalen zijn boekjaren van het bedrijf.</p>
+<%- include('partials/foot') %>

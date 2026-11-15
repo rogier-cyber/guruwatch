@@ -22,6 +22,8 @@ const gq = require('../lib/guruQueries');
 const guru = require('../lib/guru');
 const guruCharts = require('../lib/guruCharts');
 const viz = require('../lib/vizCharts');
+const tr = require('../lib/transcripts');
+const callCharts = require('../lib/callCharts');
 const vq = require('../lib/vizQueries');
 const cm = require('../lib/community');
 
@@ -589,8 +591,17 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
   }
 
   const members = await safe(cm.stockSentiment(symbol), null);
+  // Laatste earnings call (alleen tonen als die recent is); op de achtergrond nieuwe calls ophalen.
+  const transcripts = require('../transcripts');
+  transcripts.ensure(symbol).catch(() => {});
+  const lastCalls = await safe(transcripts.stored(symbol), []);
+  const callTeaser = lastCalls[0] && lastCalls[0].date && Date.now() - new Date(lastCalls[0].date).getTime() < 130 * 864e5
+    ? { cur: lastCalls[0], prev: lastCalls[1] || null, cmp: lastCalls[1] ? tr.compare(lastCalls[0].analysis, lastCalls[1].analysis) : null }
+    : null;
   res.render('stock', {
     members,
+    callTeaser,
+    tr,
     ratingTrend,
     earningsHist: earningsRows.map(withReaction).reverse().map((h) => ({ ...h, label: er.quarterLabel(h.date) })),
     nextEarn,
@@ -1035,6 +1046,98 @@ router.get('/cijfers', wrap(async (req, res) => {
     });
   }
   res.render('earnings', { title: 'Cijfers', ...data });
+}));
+
+// ---------- Earnings calls (transcripts) ----------
+const callLabel = (r) => `Q${r.quarter} ${r.year}`;
+const callSlug = (r) => `${r.year}-q${r.quarter}`;
+
+async function loadCalls(symbol) {
+  const transcripts = require('../transcripts');
+  // Eerst kijken of er nieuwe calls zijn; niet langer dan 9 seconden wachten (de rest volgt op de achtergrond).
+  const run = transcripts.ensure(symbol).catch((err) => console.warn('[transcripts]', symbol, err.message));
+  await Promise.race([run, new Promise((r) => setTimeout(r, 9000))]);
+  const rows = await transcripts.stored(symbol);
+  return rows.map((r) => ({
+    ...r,
+    label: callLabel(r),
+    short: `Q${r.quarter} '${String(r.year).slice(2)}`,
+    slug: callSlug(r),
+    href: `/aandeel/${encodeURIComponent(symbol)}/earnings-calls/${callSlug(r)}`,
+    dateTxt: r.date ? fmt.date(r.date) : '',
+  }));
+}
+
+// Analisten uit de calls koppelen aan onze eigen analistenpagina's (zelfde naam).
+async function analystLinks(names) {
+  if (!names.length) return new Map();
+  const rows = await safe(db.many(
+    `SELECT a.slug, a.name, a.firm, g.score::float8 AS score FROM analysts a
+     LEFT JOIN guru_scores g ON g.kind = 'analyst' AND g.ref = a.id::text
+     WHERE lower(a.name) = ANY($1)`,
+    [names.map((n) => n.toLowerCase())]
+  ), []);
+  return new Map(rows.map((r) => [r.name.toLowerCase(), r]));
+}
+
+pub.get('/aandeel/:symbol/earnings-calls', wrap(async (req, res) => {
+  const symbol = String(req.params.symbol).toUpperCase();
+  if (!SYMBOL_RE.test(symbol)) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Ongeldig tickersymbool.' });
+  const [calls, company] = await Promise.all([loadCalls(symbol), safe(db.one('SELECT name FROM companies WHERE symbol = $1', [symbol]))]);
+  const name = (company && company.name) || symbol;
+  const asc = calls.slice().reverse();
+  const latest = calls[0] || null;
+  const prev = calls[1] || null;
+  const cmp = latest && prev ? tr.compare(latest.analysis, prev.analysis) : null;
+  const who = ['mgmt', 'analysts'].includes(req.query.wie) ? req.query.wie : 'all';
+  // Alle analisten over alle calls: hoe vaak aanwezig, hoeveel vragen, waarover.
+  const agg = new Map();
+  for (const c of calls) {
+    for (const a of c.analysis.analysts || []) {
+      if (!agg.has(a.name)) agg.set(a.name, { name: a.name, firm: a.firm, calls: [], questions: 0, topics: {} });
+      const g = agg.get(a.name);
+      if (!g.firm && a.firm) g.firm = a.firm;
+      g.calls.push(c.label);
+      g.questions += a.questions;
+      for (const t of a.topics) g.topics[t] = (g.topics[t] || 0) + 1;
+    }
+  }
+  const links = await analystLinks([...agg.keys()]);
+  const analysts = [...agg.values()]
+    .map((a) => ({ ...a, link: links.get(a.name.toLowerCase()) || null, top: tr.topTopics(a.topics, 3).map(tr.topicLabel), inLatest: latest ? (latest.analysis.analysts || []).some((x) => x.name === a.name) : false }))
+    .sort((a, b) => b.calls.length - a.calls.length || b.questions - a.questions)
+    .slice(0, 40);
+  const stale = latest && latest.date ? Date.now() - new Date(latest.date).getTime() > 200 * 864e5 : false;
+  res.render('calls', {
+    title: `${name} (${symbol}) earnings calls: toon, onderwerpen en vragen van analisten`,
+    seo: { canonical: `${config.publicUrl.replace(/\/$/, '')}/aandeel/${encodeURIComponent(symbol)}/earnings-calls`, description: latest ? `Analyse van ${calls.length} earnings calls van ${name}: toon van management en analisten, welke onderwerpen opkomen en welke analisten vragen stellen. Laatste call: ${latest.label}.` : `Earnings calls van ${name}.` },
+    symbol, name, calls, asc, latest, prev, cmp, who, analysts, stale, tr, callCharts,
+  });
+}));
+
+pub.get('/aandeel/:symbol/earnings-calls/:call', wrap(async (req, res) => {
+  const symbol = String(req.params.symbol).toUpperCase();
+  const m = String(req.params.call).match(/^(\d{4})-q([1-4])$/i);
+  if (!SYMBOL_RE.test(symbol) || !m) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Onbekende call.' });
+  const calls = await loadCalls(symbol);
+  const i = calls.findIndex((c) => c.year === Number(m[1]) && c.quarter === Number(m[2]));
+  if (i < 0) return res.status(404).render('error', { title: 'Niet gevonden', message: `Geen transcript van ${symbol} voor Q${m[2]} ${m[1]}.` });
+  const call = calls[i];
+  const prev = calls[i + 1] || null;
+  const company = await safe(db.one('SELECT name FROM companies WHERE symbol = $1', [symbol]));
+  const name = (company && company.name) || symbol;
+  const cmp = prev ? tr.compare(call.analysis, prev.analysis) : null;
+  let turns = null;
+  if (config.transcriptsFullText) {
+    const row = await require('../transcripts').content(symbol, call.year, call.quarter);
+    turns = row ? tr.parseTurns(row.content) : null;
+  }
+  const links = await analystLinks((call.analysis.analysts || []).map((a) => a.name));
+  res.render('call', {
+    title: `${name} (${symbol}) earnings call ${call.label}`,
+    seo: { description: `Earnings call van ${name} over ${call.label}${call.dateTxt ? ' (' + call.dateTxt + ')' : ''}: toon, onderwerpen en alle vragen van analisten.` },
+    symbol, name, call, prev, cmp, turns, links, calls, tr,
+  });
 }));
 
 pub.get('/aandeel/:symbol/cijfers/:date', wrap(async (req, res) => {
