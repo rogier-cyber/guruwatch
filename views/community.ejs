@@ -2,7 +2,7 @@
 <%
   var initials = function (h) { return String(h || '?').replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase(); };
   var hue = function (h) { var n = 0; String(h || '').split('').forEach(function (ch) { n = (n * 31 + ch.charCodeAt(0)) % 360; }); return n; };
-  var cta = user ? '/community/nieuw' : '/login?next=' + encodeURIComponent('/community/nieuw');
+  var cta = user ? '/community/nieuw' : '/mijn?next=' + encodeURIComponent('/community/nieuw');
 %>
 <section class="hero hero-sm cm-hero">
   <div class="hero-in">

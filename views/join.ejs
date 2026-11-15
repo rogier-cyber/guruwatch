@@ -1,0 +1,49 @@
+<%- include('partials/head') %>
+<%
+  var benefits = [
+    ['tint-blue', 'Volg je favorieten', 'Zet aandelen, analisten, guru\'s en insiders op je eigen volglijst. Alles wat je volgt staat overzichtelijk op één pagina.', 'Eén klik op ☆ Volgen bij elk aandeel of elke guru'],
+    ['tint-amber', 'Meldingen die ertoe doen', 'Krijg bericht zodra een analist een nieuw koersdoel afgeeft, een insider koopt of een guru instapt in een aandeel dat jij volgt.', 'Op de site en desgewenst per e-mail'],
+    ['tint-violet', 'Ochtendbriefing om 08:00', 'Elke ochtend een korte mail met wat er gisteren veranderde bij jouw aandelen: koersdoelen, up- en downgrades, insiders en cijfers.', 'Zelf aan of uit te zetten'],
+    ['tint-slate', 'Zelf voorspellen', 'Geef je eigen koersdoel af in de community en zie hoe jouw trackrecord zich meet met dat van de profs.', 'Met je eigen profiel en ranglijst'],
+  ];
+%>
+<section class="hero hero-sm join-hero">
+  <div class="hero-in">
+    <div>
+      <h1>Mijn <span class="h-mon">GuruWatch</span></h1>
+      <p>Je eigen dashboard: volg de aandelen en guru's die jij belangrijk vindt en mis nooit meer een koersdoel, insideraankoop of guru-move. Gratis, zonder wachtwoord.</p>
+    </div>
+  </div>
+</section>
+
+<div class="join">
+  <div class="join-benefits">
+    <% benefits.forEach(function (b, i) { %>
+    <section class="card join-b <%= b[0] %>">
+      <span class="join-n"><%= i + 1 %></span>
+      <h2><%= b[1] %></h2>
+      <p><%= b[2] %></p>
+      <p class="join-note small"><%= b[3] %></p>
+    </section>
+    <% }) %>
+  </div>
+
+  <aside class="card join-form" id="aanmelden">
+    <span class="gw-guru join-guru" aria-hidden="true"></span>
+    <h2>Maak gratis je account</h2>
+    <p class="muted">Vul je e-mailadres in. Je krijgt meteen een code om in te loggen, dus je hoeft geen wachtwoord te onthouden.</p>
+    <% if (locals.error) { %><p class="alert"><%= error %></p><% } %>
+    <form method="post" action="/login" class="form">
+      <label>E-mailadres<input type="email" name="email" required autocomplete="email" placeholder="jij@voorbeeld.nl"></label>
+      <input type="hidden" name="next" value="<%= next %>">
+      <button class="btn btn-primary join-btn">Account aanmaken</button>
+    </form>
+    <ul class="join-checks">
+      <li>Gratis, geen betaalgegevens nodig</li>
+      <li>Geen wachtwoord: inloggen met een code per mail</li>
+      <li>Meldingen en mails zet je zelf aan of uit</li>
+    </ul>
+    <p class="small muted">Heb je al een account? Vul hetzelfde e-mailadres in, dan log je direct in.</p>
+  </aside>
+</div>
+<%- include('partials/foot') %>
