@@ -60,7 +60,7 @@ function ensure(symbol, { force = false } = {}) {
 // Achtergrond: aandelen met recente cijfers (index of volglijst) en nog geen call daarvan, plus een
 // rustige eerste vulling van indexaandelen zonder transcripts.
 // Opgeslagen calls opnieuw analyseren na een verbetering van de analyse (tr.VERSION).
-async function reanalyze(limit = 300) {
+async function reanalyze(limit = 3000) {
   const rows = await db.many(
     "SELECT symbol, year, quarter, content FROM earnings_transcripts WHERE coalesce((analysis->>'v')::int, 1) < $1 LIMIT $2",
     [tr.VERSION, limit]

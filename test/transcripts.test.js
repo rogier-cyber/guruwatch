@@ -94,3 +94,10 @@ test('samenvatting, antwoorden en onze analyse', () => {
   const s = tr.story({ a, ev: { eps_actual: 1.5, surprise: 0.05, revSurprise: -0.01, reaction: 0.03 } });
   assert.match(s[0], /beter dan verwacht.*\+5,0%.*lager.*\+3,0%/);
 });
+
+test('disclaimers komen niet in de kernpunten', () => {
+  const txt = 'Operator: Welcome.\nJane Smith: These statements involve risks and uncertainties that may cause actual results to differ materially from our forecast, including tariffs and 5% margins.\nTim Brook: We expect gross margin to be between 45% and 46% next quarter on strong demand.\nOperator: First question comes from Erik Woodring with Morgan Stanley.\nErik Woodring: What about AI demand and capex next year, can you help us?\nTim Brook: AI demand is strong.';
+  const k = tr.analyze(txt).synopsis.keyPoints.map((x) => x.text).join(' ');
+  assert.ok(!/differ materially/.test(k));
+  assert.ok(/gross margin/.test(k));
+});

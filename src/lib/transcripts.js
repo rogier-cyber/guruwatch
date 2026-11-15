@@ -31,7 +31,7 @@ const NEG = /\b(declin(e|ed|es|ing)|weak(ness|er|ened|ening)?|challeng(e|es|ed|i
 const UNC = /\b(uncertain\w*|unclear|unpredictab\w*|volatil\w*|may|might|could|possibl[ey]|depend(s|ing|ent)?|approximately|roughly)\b/g;
 
 // Verhoog bij een betere analyse: opgeslagen calls worden dan opnieuw geanalyseerd.
-const VERSION = 3;
+const VERSION = 4;
 
 const count = (text, re) => {
   re.lastIndex = 0;
@@ -205,7 +205,7 @@ function analyze(content, { full = false } = {}) {
 }
 
 // ---------- Samenvatting (zonder AI): de zinnen met de meeste inhoud ----------
-const BOILER = /forward[- ]looking|safe harbor|non-gaap|reconciliation|press release|webcast|replay|turn (the call|it) over|hand (the call|it) over|thank you|thanks|good (morning|afternoon|evening)|joining us|operator|risk factors|sec filings?|ladies and gentlemen|question[- ]and[- ]answer|q&a|happy to take|open (it|the line) up/i;
+const BOILER = /forward[- ]looking|differ materially|risks and uncertainties|involve risks|actual results|undertake no obligation|10-k|10-q|safe harbor|non-gaap|reconciliation|press release|webcast|replay|turn (the call|it) over|hand (the call|it) over|thank you|thanks|good (morning|afternoon|evening)|joining us|operator|risk factors|sec filings?|ladies and gentlemen|question[- ]and[- ]answer|q&a|happy to take|open (it|the line) up/i;
 const NUMERIC = /(\d[\d,.]*\s?(%|percent|billion|million|basis points|bps))|\$\s?\d/i;
 const AHEAD = /\b(expect|expects|expected|outlook|guidance|anticipate|next quarter|full[- ]year|fiscal (year )?20\d\d|going forward|we see|we plan|we will)\b/i;
 
