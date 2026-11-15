@@ -1,0 +1,9 @@
+<div class="legal">
+<% legal.paras.forEach(function (p) {
+  if (p.head) { %><h2><%= p.lines[0] %></h2>
+<% } else {
+  var first = p.lines[0];
+  var bold = p.lines.length > 1 && /^\d+\.\s+\S/.test(first) && first.length < 70 && !/[.;:,]$/.test(first);
+  var rest = bold ? p.lines.slice(1) : p.lines; %><p><% if (bold) { %><strong><%= first %></strong><br><% } %><% rest.forEach(function (l, i) { if (i) { %><br><% } %><%= l %><% }) %></p>
+<% } }) %>
+</div>

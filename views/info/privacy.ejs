@@ -2,6 +2,10 @@
 <%- include('_nav', { page: 'privacy' }) %>
 <article class="card prose">
   <h1 class="page-title">Privacyverklaring</h1>
+  <% if (locals.legal && legal.paras && legal.paras.length) { %>
+  <p class="lead">Guruwatch.nl is onderdeel van IEX Media. De privacyverklaring van IEX Media geldt voor alle websites die IEX Media beheert, dus ook voor Guruwatch.</p>
+  <%- include('_legal', { legal: legal }) %>
+  <% } else { %>
   <p>Guruwatch.nl is onderdeel van IEX Media B.V. (IEX). IEX is verantwoordelijk voor de verwerking van uw persoonsgegevens op deze website. Hieronder leest u in het kort welke gegevens Guruwatch gebruikt en waarom.</p>
   <h2>Zonder account</h2>
   <p>De hele site is te bekijken zonder account. Wij vragen dan geen persoonsgegevens. Voor de werking en beveiliging van de site worden technische gegevens zoals uw IP-adres tijdelijk vastgelegd in de logbestanden van onze servers.</p>
@@ -19,5 +23,6 @@
   <p>U kunt uw gegevens inzien, laten aanpassen of laten verwijderen. Stuur daarvoor een mail naar <a href="mailto:klantenservice@guruwatch.nl">klantenservice@guruwatch.nl</a>. Heeft u een klacht over hoe wij met uw gegevens omgaan, dan kunt u ook terecht bij de Autoriteit Persoonsgegevens.</p>
   <h2>Volledige privacyverklaring</h2>
   <p>De volledige privacyverklaring van IEX Media, die ook voor Guruwatch geldt, leest u op <a href="https://www.iexmedia.nl/nl/misc/privacy.aspx" target="_blank" rel="noopener">iexmedia.nl</a>.</p>
+  <% } %>
 </article>
 <%- include('../partials/foot') %>

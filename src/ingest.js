@@ -173,6 +173,10 @@ async function refreshTranscripts() {
   return job('translations', () => require('./translate').runTranslations());
 }
 
+async function refreshSiteTexts() {
+  return job('sitetexts', () => require('./siteTexts').refreshSiteTexts());
+}
+
 async function refreshIndexes() {
   const indexes = require('./indexes');
   return job('indexes', () => indexes.refreshIndexes());
@@ -210,6 +214,8 @@ function startScheduler() {
   setInterval(refreshTranscripts, 3 * 60 * min);
   setInterval(refreshEarnings, 3 * 60 * min);
   setInterval(refreshIndexes, 24 * 60 * min);
+  setTimeout(refreshSiteTexts, 20 * 1000);
+  setInterval(refreshSiteTexts, 24 * 60 * min);
   setInterval(refreshRadar, 60 * min);
   // Ochtendbriefing: elke 5 minuten kijken of het 08:00 (Amsterdam) is geweest.
   setInterval(briefings, 5 * min);
@@ -219,7 +225,7 @@ function startScheduler() {
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
+module.exports = { refreshSiteTexts, refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, startScheduler };
 
 if (require.main === module) {
   (async () => {

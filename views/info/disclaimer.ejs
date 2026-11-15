@@ -2,6 +2,12 @@
 <%- include('_nav', { page: 'disclaimer' }) %>
 <article class="card prose">
   <h1 class="page-title">Disclaimer</h1>
+  <% if (locals.legal && legal.paras && legal.paras.length) { %>
+  <div class="note">
+    <p class="mb0"><strong>Specifiek voor Guruwatch:</strong> Guruwatch laat zien wat analisten, beleggersguru's en insiders adviseren en doen. Dat zijn de meningen en transacties van anderen. Berekeningen zoals de GuruScore en het sentiment zijn automatisch gemaakt, en de Nederlandse samenvattingen en vertalingen van earnings calls zijn gemaakt met AI (Claude). Ze kunnen fouten bevatten; bij twijfel geldt het Engelse transcript. Een hoge GuruScore betekent niet dat een volgend advies ook goed uitpakt.</p>
+  </div>
+  <%- include('_legal', { legal: legal }) %>
+  <% } else { %>
   <p>Guruwatch.nl is een initiatief van en wordt beheerd door IEX Media B.V. (IEX). De website, de techniek en alle auteursrechten behoren toe aan IEX. Door deze website te bekijken en de informatie te gebruiken, gaat u akkoord met deze voorwaarden.</p>
   <h2>Geen beleggingsadvies</h2>
   <p>De informatie op Guruwatch is geen professioneel beleggingsadvies, geen beleggingsaanbeveling en geen vervanging daarvan. Alles op deze site is alleen bedoeld ter informatie en is geen aanbod, aanbeveling of uitnodiging om de genoemde financiële instrumenten te kopen, te houden of te verkopen.</p>
@@ -15,5 +21,6 @@
   <p>Voorspellingen en berichten in de <a href="/community">community</a> zijn de mening van de gebruiker zelf. IEX mag bijdragen die in strijd zijn met de wet of de fatsoensnormen zonder opgaaf van reden verwijderen.</p>
   <h2>Volledige voorwaarden</h2>
   <p>Op Guruwatch zijn de algemene voorwaarden en de disclaimer van IEX Media van toepassing. U leest ze volledig op <a href="https://www.iexmedia.nl/misc/disclaimer.aspx" target="_blank" rel="noopener">iexmedia.nl</a>.</p>
+  <% } %>
 </article>
 <%- include('../partials/foot') %>

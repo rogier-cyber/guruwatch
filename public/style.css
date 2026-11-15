@@ -1292,3 +1292,8 @@ svg .tip-on:not(g) { stroke: var(--navy); stroke-width: 2; }
   .trio { gap: 10px; }
   .trio a { padding: 14px; }
 }
+.legal h2 { font-size: 17px; margin: 22px 0 6px; }
+.legal p { line-height: 1.65; overflow-wrap: anywhere; }
+.adv-stats > div { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--line); border-top: 3px solid var(--red); border-radius: 12px; }
+.adv-stats span { color: var(--muted); font-size: 14px; }
+.adv-stats strong { color: var(--text); }
