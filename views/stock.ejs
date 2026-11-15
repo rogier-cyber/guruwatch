@@ -243,7 +243,7 @@
     <div class="ct-k"><span>Vragen van analisten</span><b><%= ca.exchanges.length %></b><em class="small muted"><%= ca.analysts.length %> analisten</em></div>
     <div class="ct-k"><span>Belangrijkste onderwerpen</span><div class="chips"><% cTop.forEach(function (t) { %><span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div></div>
   </div>
-  <% if (cc && cc.anUp.length) { %><p class="small mb0">Analisten vroegen meer dan vorige keer naar <b><%= cc.anUp.slice(0, 3).map(function (r) { return r.label.toLowerCase(); }).join(', ') %></b>.</p><% } %>
+  <% if (cc && cc.anUp.length) { %><p class="small mb0">Analisten vroegen meer dan vorige keer naar <b><%= cc.anUp.slice(0, 3).map(function (r) { return tr.lc(r.label); }).join(', ') %></b>.</p><% } %>
   <p class="small mb0"><a href="/aandeel/<%= encodeURIComponent(symbol) %>/earnings-calls">Vergelijk alle earnings calls van <%= name %> →</a></p>
 </section>
 <% } %>

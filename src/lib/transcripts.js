@@ -31,7 +31,7 @@ const NEG = /\b(declin(e|ed|es|ing)|weak(ness|er|ened|ening)?|challeng(e|es|ed|i
 const UNC = /\b(uncertain\w*|unclear|unpredictab\w*|volatil\w*|may|might|could|possibl[ey]|depend(s|ing|ent)?|approximately|roughly)\b/g;
 
 // Verhoog bij een betere analyse: opgeslagen calls worden dan opnieuw geanalyseerd.
-const VERSION = 2;
+const VERSION = 3;
 
 const count = (text, re) => {
   re.lastIndex = 0;
@@ -118,7 +118,7 @@ function firstWords(text, n) {
 }
 
 // De volledige analyse van één transcript.
-function analyze(content) {
+function analyze(content, { full = false } = {}) {
   const turns = parseTurns(content);
   const intros = analystIntros(turns);
   const introNames = [...intros.keys()];
@@ -165,7 +165,7 @@ function analyze(content) {
       a.text.push(t.text);
       // Korte bedankjes tellen niet als nieuwe vraag.
       if (words(t.text) >= 12 || /\?/.test(t.text)) {
-        cur = { analyst: t.speaker, firm: r.firm, q: t.text, answeredBy: [], answerWords: 0 };
+        cur = { analyst: t.speaker, firm: r.firm, q: t.text, answeredBy: [], answerWords: 0, answers: [] };
         exchanges.push(cur);
       }
     } else {
@@ -176,6 +176,9 @@ function analyze(content) {
       if (cur && i >= qaStart) {
         if (!cur.answeredBy.includes(t.speaker)) cur.answeredBy.push(t.speaker);
         cur.answerWords += words(t.text);
+        const last = cur.answers[cur.answers.length - 1];
+        if (last && last.speaker === t.speaker) last.text += ' ' + t.text;
+        else cur.answers.push({ speaker: t.speaker, text: t.text });
       }
     }
   });
@@ -194,9 +197,111 @@ function analyze(content) {
     topics: { mgmt: topicsM, analysts: topicsA },
     analysts: [...analysts.values()].map((a) => ({ name: a.name, firm: a.firm, questions: exchanges.filter((e) => e.analyst === a.name).length || 1, words: a.words, topics: topTopics(topicCounts(a.text.join(' ')), 3) })),
     management: [...mgmt.values()].sort((a, b) => b.words - a.words),
-    exchanges: exchanges.map((e) => ({ analyst: e.analyst, firm: e.firm, excerpt: firstWords(e.q, 40), topics: topTopics(topicCounts(e.q), 2), answeredBy: e.answeredBy, answerWords: e.answerWords })),
+    exchanges: exchanges.map((e) => ({ analyst: e.analyst, firm: e.firm, excerpt: firstWords(e.q, 40), topics: topTopics(topicCounts(e.q), 2), answeredBy: e.answeredBy, answerWords: e.answerWords,
+      ...(full ? { question: e.q, answers: e.answers } : {}) })),
+    synopsis: synopsis(preparedText, exchanges),
     hasQa: qaStart < turns.length,
   };
+}
+
+// ---------- Samenvatting (zonder AI): de zinnen met de meeste inhoud ----------
+const BOILER = /forward[- ]looking|safe harbor|non-gaap|reconciliation|press release|webcast|replay|turn (the call|it) over|hand (the call|it) over|thank you|thanks|good (morning|afternoon|evening)|joining us|operator|risk factors|sec filings?|ladies and gentlemen|question[- ]and[- ]answer|q&a|happy to take|open (it|the line) up/i;
+const NUMERIC = /(\d[\d,.]*\s?(%|percent|billion|million|basis points|bps))|\$\s?\d/i;
+const AHEAD = /\b(expect|expects|expected|outlook|guidance|anticipate|next quarter|full[- ]year|fiscal (year )?20\d\d|going forward|we see|we plan|we will)\b/i;
+
+function sentences(text) {
+  return String(text).replace(/\s+/g, ' ').split(/(?<=[.!?])\s+(?=[A-Z"“$0-9])/).map((x) => x.trim()).filter(Boolean);
+}
+
+function scoreSentence(snt) {
+  const w = words(snt);
+  if (w < 10 || w > 48 || BOILER.test(snt)) return -1;
+  const lower = snt.toLowerCase();
+  const tp = TOPICS.reduce((n, t) => n + (count(lower, t.re) ? 1 : 0), 0);
+  return (NUMERIC.test(snt) ? 2.5 : 0) + Math.min(3, tp) + (AHEAD.test(snt) ? 1.2 : 0) + Math.min(1.5, (count(lower, POS) + count(lower, NEG)) * 0.5);
+}
+
+function topicsOf(snt) {
+  return topTopics(topicCounts(snt), 2);
+}
+
+// Kies de beste zinnen, liefst met verschillende onderwerpen, in de volgorde van de call.
+function pickSentences(list, n) {
+  const scored = list.map((snt, i) => ({ snt, i, s: scoreSentence(snt), t: topicsOf(snt) })).filter((x) => x.s >= 2.5);
+  scored.sort((a, b) => b.s - a.s);
+  const out = [];
+  const seen = new Set();
+  for (const x of scored) {
+    if (out.length >= n) break;
+    const k = x.t[0] || 'x' + x.i;
+    if (seen.has(k) && scored.length > n * 2) continue;
+    seen.add(k);
+    out.push(x);
+  }
+  return out.sort((a, b) => a.i - b.i).map((x) => ({ text: x.snt, topics: x.t }));
+}
+
+function synopsis(preparedText, exchanges) {
+  const keyPoints = pickSentences(preparedText.flatMap(sentences), 5);
+  const qa = exchanges
+    .map((e) => {
+      const best = pickSentences(e.answers.flatMap((a) => sentences(a.text)), 1)[0];
+      const q = sentences(e.q).filter((x) => /\?/.test(x)).sort((a, b) => scoreSentence(b) - scoreSentence(a))[0] || firstWords(e.q, 30);
+      return best ? { analyst: e.analyst, firm: e.firm, topics: topTopics(topicCounts(e.q + ' ' + best.text), 2), question: firstWords(q, 35), answer: best.text, score: scoreSentence(best.text) + (e.answerWords > 150 ? 1 : 0) } : null;
+    })
+    .filter(Boolean);
+  const seen = new Set();
+  const qaPoints = qa.sort((a, b) => b.score - a.score).filter((x) => {
+    const k = x.topics[0] || x.analyst;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 4).map(({ score, ...x }) => x);
+  return { keyPoints, qaPoints };
+}
+
+// Begin van een tekst: hele zinnen tot ongeveer n woorden.
+function excerpt(text, n = 70) {
+  const out = [];
+  let w = 0;
+  for (const snt of sentences(text)) {
+    if (w && w + words(snt) > n) break;
+    out.push(snt);
+    w += words(snt);
+  }
+  const all = sentences(text).length;
+  return { text: out.join(' ') || firstWords(text, n), cut: out.length < all };
+}
+
+// Onderwerp midden in een zin: kleine letters, behalve afkortingen (AI).
+const lc = (label) => (/^[A-Z]{2,}\b/.test(label) ? label : label.toLowerCase());
+
+// Onze eigen korte analyse in gewone zinnen, uit de tellingen (geen AI).
+function story({ a, cmp = null, prevLabel = '', ev = null }) {
+  const pct = (v) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1).replace('.', ',')}%`;
+  const out = [];
+  if (ev && ev.eps_actual != null) {
+    let t = ev.surprise == null ? `De winst per aandeel kwam uit op ${ev.eps_actual.toFixed(2).replace('.', ',')}.`
+      : `De winst per aandeel was ${ev.surprise >= 0.005 ? 'beter dan' : ev.surprise <= -0.005 ? 'slechter dan' : 'gelijk aan'} verwacht (${pct(ev.surprise)})`;
+    if (ev.surprise != null) t += ev.revSurprise != null ? `, de omzet ${ev.revSurprise >= 0.002 ? 'ook hoger' : ev.revSurprise <= -0.002 ? 'lager' : 'in lijn'} (${pct(ev.revSurprise)}).` : '.';
+    if (ev.reaction != null) t += ` De koers reageerde met ${pct(ev.reaction)}.`;
+    out.push(t);
+  }
+  const tm = a.tone.mgmt.net;
+  if (tm != null) {
+    let t = `Het management klonk ${toneWord(tm)}`;
+    if (cmp && cmp.toneMgmt != null && Math.abs(cmp.toneMgmt) >= 0.05) t += `, ${cmp.toneMgmt > 0 ? 'positiever' : 'minder positief'} dan bij ${prevLabel}`;
+    if (a.tone.prepared.net != null && a.tone.qa.net != null && a.tone.prepared.net - a.tone.qa.net >= 0.25) t += '. In de vragenronde was de toon duidelijk voorzichtiger dan in het voorbereide verhaal';
+    out.push(t + '.');
+  }
+  const all = Object.fromEntries(Object.keys(a.topics.mgmt).map((k) => [k, (a.topics.mgmt[k] || 0) + (a.topics.analysts[k] || 0)]));
+  const top = topTopics(all, 3).map((k) => lc(topicLabel(k)));
+  if (top.length) out.push(`De meeste aandacht ging naar ${top.length > 1 ? top.slice(0, -1).join(', ') + ' en ' + top[top.length - 1] : top[0]}.`);
+  if (cmp && cmp.mgmtUp.length) out.push(`Het management sprak meer dan vorige keer over ${cmp.mgmtUp.slice(0, 2).map((r) => lc(r.label)).join(' en ')}${cmp.mgmtDown.length ? `, minder over ${cmp.mgmtDown.slice(0, 2).map((r) => lc(r.label)).join(' en ')}` : ''}.`);
+  const aq = topTopics(a.topics.analysts, 2).map((k) => lc(topicLabel(k)));
+  if (a.exchanges.length) out.push(`${a.analysts.length} analisten stelden ${a.exchanges.length} vragen${aq.length ? `, vooral over ${aq.join(' en ')}` : ''}${cmp && cmp.anUp.length ? `; ${lc(cmp.anUp[0].label)} kreeg meer vragen dan vorige keer` : ''}.`);
+  if (cmp && Math.abs(cmp.uncMgmt) >= 15) out.push(cmp.uncMgmt > 0 ? 'Het management gebruikte meer voorzichtige woorden (zoals "may" en "could") dan vorige keer.' : 'Het management klonk zekerder, met minder voorzichtige woorden dan vorige keer.');
+  return out;
 }
 
 function topTopics(counts, n) {
@@ -242,4 +347,4 @@ function toneWord(net) {
   return 'negatief';
 }
 
-module.exports = { VERSION, TOPICS, parseTurns, analystIntros, analyze, compare, topicLabel, topTopics, per10k, toneWord, tone };
+module.exports = { lc, story, VERSION, excerpt, sentences, TOPICS, parseTurns, analystIntros, analyze, compare, topicLabel, topTopics, per10k, toneWord, tone };

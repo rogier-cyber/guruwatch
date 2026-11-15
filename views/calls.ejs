@@ -21,6 +21,8 @@
   <div class="stat" data-tip="Woorden als may, might, could, uncertain en volatile&#10;per 10.000 woorden van het management"><span>Onzekere woorden</span><strong><%= Math.round(tr.per10k(A.tone.mgmt.unc, A.tone.mgmt.words)) %></strong><em class="small muted">per 10.000 woorden<% if (cmp) { %> · <span class="<%= fmt.tone(-cmp.uncMgmt) %>"><%= cmp.uncMgmt >= 0 ? '+' : '' %><%= Math.round(cmp.uncMgmt) %></span><% } %></em></div>
 </div>
 
+<%- include('partials/call-synopsis', { a: latestFull || latest.analysis, ev: latest.ev, label: latest.label, dateTxt: latest.dateTxt, summary: summary }) %>
+
 <% if (cmp) { var chip = function (r, f, cur, prv) { return '<span class="tp-chip" data-tip="' + r.label + '&#10;Deze call: ' + r[cur] + 'x&#10;Vorige call: ' + r[prv] + 'x&#10;' + (r[f] >= 0 ? '+' : '') + Math.round(r[f]) + ' per 10.000 woorden">' + r.label + '</span>'; }; %>
 <section class="card">
   <div class="card-h"><h2>Wat veranderde sinds <%= prev.label %>?</h2><span class="small muted"><%= latest.label %> vergeleken met de call ervoor</span></div>
@@ -55,15 +57,10 @@
 
 <section class="card">
   <div class="card-h"><h2>Vragen van analisten in <%= latest.label %></h2><a class="small" href="<%= latest.href %>">Hele call bekijken →</a></div>
-  <% if (!A.exchanges.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
-  <ol class="qa-list">
-  <% A.exchanges.slice(0, 10).forEach(function (e) { %>
-    <li><div class="qa-who"><b><%= e.analyst %></b><% if (e.firm) { %> <span class="muted small"><%= e.firm %></span><% } %><% e.topics.forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div>
-      <p class="qa-q">“<%= e.excerpt %>”</p>
-      <% if (e.answeredBy.length) { %><p class="small muted mb0">Antwoord van <%= e.answeredBy.join(', ') %> · <%= e.answerWords %> woorden</p><% } %></li>
-  <% }) %>
-  </ol>
-  <% if (A.exchanges.length > 10) { %><p class="small"><a href="<%= latest.href %>">Alle <%= A.exchanges.length %> vragen bekijken →</a></p><% } %>
+  <% var LX = (latestFull && latestFull.exchanges) || A.exchanges; if (!LX.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
+  <p class="sec-txt small">Tik op een vraag om het antwoord van het management te lezen.</p>
+  <%- include('partials/call-qa', { exchanges: LX, max: 10 }) %>
+  <% if (LX.length > 10) { %><p class="small"><a href="<%= latest.href %>">Alle <%= LX.length %> vragen bekijken →</a></p><% } %>
   <% } %>
 </section>
 
@@ -82,9 +79,10 @@
 
 <section class="card">
   <div class="card-h"><h2>Alle calls</h2></div>
-  <div class="tbl-wrap"><table class="tbl call-all"><thead><tr><th>Call</th><th class="only-desk-cell">Datum</th><th>Toon mgmt</th><th>Toon analisten</th><th>Vragen</th><th>Grootste onderwerp</th></tr></thead><tbody>
+  <div class="tbl-wrap"><table class="tbl call-all"><thead><tr><th>Call</th><th class="only-desk-cell">Datum</th><th>Winst vs verwacht</th><th>Koers</th><th>Toon mgmt</th><th>Toon analisten</th><th>Vragen</th><th>Grootste onderwerp</th></tr></thead><tbody>
   <% calls.forEach(function (c) { var a = c.analysis; var top = tr.topTopics(Object.fromEntries(Object.keys(a.topics.mgmt).map(function (k) { return [k, (a.topics.mgmt[k] || 0) + (a.topics.analysts[k] || 0)]; })), 1)[0]; %>
     <tr><td class="nowrap"><a href="<%= c.href %>" data-tip-touch="0"><b><%= c.label %></b></a></td><td class="muted only-desk-cell"><%= c.dateTxt %></td>
+      <td class="<%= fmt.tone(c.ev && c.ev.surprise) %>"><%= c.ev && c.ev.surprise != null ? fmt.pct(c.ev.surprise) : '–' %></td><td class="<%= fmt.tone(c.ev && c.ev.reaction) %>"><%= c.ev && c.ev.reaction != null ? fmt.pct(c.ev.reaction) : '–' %></td>
       <td class="<%= fmt.tone(a.tone.mgmt.net) %>"><%= sg(sc(a.tone.mgmt.net)) %></td><td class="<%= fmt.tone(a.tone.analysts.net) %>"><%= sg(sc(a.tone.analysts.net)) %></td>
       <td><%= a.exchanges.length %></td><td class="small"><%= top ? tr.topicLabel(top) : '–' %></td></tr>
   <% }) %>

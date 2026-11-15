@@ -1,0 +1,21 @@
+<% var list = locals.max ? exchanges.slice(0, max) : exchanges; %>
+<div class="qa-acc-list">
+<% list.forEach(function (e, i) { var l = locals.links && links.get(e.analyst.toLowerCase()); %>
+  <details class="qa-acc">
+    <summary>
+      <div class="qa-sum">
+        <div class="qa-who"><span class="qa-n"><%= i + 1 %></span><% if (l) { %><a href="/analist/<%= l.slug %>" data-tip-touch="0" data-tip="<%= e.analyst %>&#10;<%= l.firm || e.firm || '' %><%= l.score != null ? '&#10;GuruScore ' + Math.round(l.score) : '' %>"><b><%= e.analyst %></b></a><% } else { %><b><%= e.analyst %></b><% } %><% if (e.firm) { %> <span class="muted small"><%= e.firm %></span><% } %><% e.topics.forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div>
+        <p class="qa-q">“<%= fullText && e.question ? e.question : e.excerpt %>”</p>
+        <% if (e.answeredBy.length) { %><p class="small muted mb0">Antwoord van <%= e.answeredBy.join(', ') %> · <%= e.answerWords %> woorden</p><% } %>
+      </div>
+      <span class="faq-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="qa-ans">
+      <% if (!e.answers || !e.answers.length) { %><p class="small muted">Geen antwoord gevonden.</p><% } else { e.answers.forEach(function (an) { var x = fullText ? { text: an.text, cut: false } : tr.excerpt(an.text, 90); %>
+        <p><b><%= an.speaker %>:</b> <%= x.text %><% if (x.cut) { %> <span class="muted">[…]</span><% } %></p>
+      <% }) } %>
+    </div>
+  </details>
+<% }) %>
+</div>
+<% if (!fullText) { %><p class="small muted mb0">Antwoorden zijn ingekort tot het begin. De volledige tekst tonen we zodra de licentie daarvoor rond is.</p><% } %>

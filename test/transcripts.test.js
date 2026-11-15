@@ -80,3 +80,17 @@ test('bijnamen, "move next to" en vervangers krijgen de juiste bank', () => {
   assert.equal(firm('Travis Steed'), 'Bank of America');
   assert.equal(firm('Emily Fusco'), 'Deutsche Bank');
 });
+
+test('samenvatting, antwoorden en onze analyse', () => {
+  const a = tr.analyze(SAMPLE, { full: true });
+  assert.ok(a.synopsis.keyPoints.length >= 2);
+  assert.ok(a.synopsis.keyPoints.every((k) => !/thank/i.test(k.text)));
+  assert.ok(a.synopsis.qaPoints.some((p) => p.analyst === 'Erik Woodring'));
+  assert.equal(a.exchanges[0].answers[0].speaker, 'Tim Brook');
+  assert.equal(tr.analyze(SAMPLE).exchanges[0].answers, undefined, 'opgeslagen versie zonder antwoorden');
+  const x = tr.excerpt('One two three four. Five six seven eight. Nine ten.', 6);
+  assert.equal(x.text, 'One two three four.');
+  assert.ok(x.cut);
+  const s = tr.story({ a, ev: { eps_actual: 1.5, surprise: 0.05, revSurprise: -0.01, reaction: 0.03 } });
+  assert.match(s[0], /beter dan verwacht.*\+5,0%.*lager.*\+3,0%/);
+});

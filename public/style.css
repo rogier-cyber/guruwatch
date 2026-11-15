@@ -1210,3 +1210,35 @@ svg .tip-on:not(g) { stroke: var(--navy); stroke-width: 2; }
   .call-an td:first-child .muted { display: block; }
   .call-an td:last-child { min-width: 140px; }
 }
+
+/* Earnings call: samenvatting en vragen met uitklapbaar antwoord */
+.syn-res { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.syn-res > div { background: var(--line-2); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.syn-res span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.syn-res b { font-size: 17px; }
+.syn-our { border-left: 3px solid var(--red); padding: 2px 0 2px 14px; margin-bottom: 16px; }
+.syn-our p { margin: 4px 0 0; line-height: 1.65; font-size: 14.5px; }
+.syn-k { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--red); }
+.syn-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 12px; }
+.syn-h { font-size: 13px; color: var(--navy); font-weight: 750; }
+@media (prefers-color-scheme: dark) { .syn-h { color: var(--text); } }
+.syn-list { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
+.syn-list li { line-height: 1.55; }
+.syn-q { font-style: italic; }
+.syn-qq { margin: 2px 0; font-style: italic; }
+.qa-acc-list { border-top: 1px solid var(--line-2); margin-bottom: 10px; }
+.qa-acc { border-bottom: 1px solid var(--line-2); }
+.qa-acc summary { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 12px 2px; cursor: pointer; list-style: none; }
+.qa-acc summary::-webkit-details-marker { display: none; }
+.qa-acc summary .faq-chev { margin-top: 4px; }
+.qa-acc[open] .faq-chev { transform: rotate(180deg); background: var(--accent-soft); }
+.qa-acc summary:hover .qa-q { color: var(--accent); }
+.qa-sum { flex: 1; min-width: 0; }
+.qa-n { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 11.5px; font-weight: 700; margin-right: 4px; }
+.qa-ans { padding: 0 44px 12px 30px; }
+.qa-ans p { margin: 0 0 10px; line-height: 1.65; }
+@media (max-width: 640px) {
+  .syn-res { grid-template-columns: 1fr 1fr; }
+  .syn-cols { grid-template-columns: 1fr; gap: 14px; }
+  .qa-ans { padding: 0 4px 12px 4px; }
+}
