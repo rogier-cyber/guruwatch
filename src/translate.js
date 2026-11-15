@@ -31,8 +31,9 @@ async function companyName(symbol) {
 
 async function translateOne(symbol, year, quarter) {
   const row = await db.one('SELECT content, nl, nl_tries FROM earnings_transcripts WHERE symbol = $1 AND year = $2 AND quarter = $3', [symbol, year, quarter]);
-  if (!row || (row.nl && row.nl.v >= tl.NL_VERSION) || row.nl_tries >= MAX_TRIES) return false;
+  if (!row || row.nl_tries >= MAX_TRIES) return false;
   const a = tr.analyze(row.content, { full: true });
+  if (row.nl && row.nl.v >= tl.NL_VERSION && tl.nlFits(row.nl, a.exchanges)) return false;
   const req = tl.buildRequest({ content: row.content, a, name: await companyName(symbol), label: `Q${quarter} ${year}`, model: config.translateModel });
   try {
     const msg = await getClient().messages.stream(req).finalMessage();
@@ -40,7 +41,7 @@ async function translateOne(symbol, year, quarter) {
     if (msg.stop_reason === 'max_tokens') throw new Error('antwoord te lang');
     const text = msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
     const nl = { ...tl.parseResult(text, a), model: msg.model, tokens: { in: msg.usage.input_tokens, out: msg.usage.output_tokens } };
-    await db.query('UPDATE earnings_transcripts SET nl = $4, nl_at = now() WHERE symbol = $1 AND year = $2 AND quarter = $3', [symbol, year, quarter, JSON.stringify(nl)]);
+    await db.query('UPDATE earnings_transcripts SET nl = $4, nl_at = now(), nl_tries = 0, nl_error = NULL WHERE symbol = $1 AND year = $2 AND quarter = $3', [symbol, year, quarter, JSON.stringify(nl)]);
     return true;
   } catch (err) {
     const Anthropic = require('@anthropic-ai/sdk');
@@ -51,7 +52,7 @@ async function translateOne(symbol, year, quarter) {
       console.warn('[vertaling] gepauzeerd voor een uur:', err.message);
       throw err;
     }
-    await db.query('UPDATE earnings_transcripts SET nl_tries = nl_tries + 1 WHERE symbol = $1 AND year = $2 AND quarter = $3', [symbol, year, quarter]);
+    await db.query('UPDATE earnings_transcripts SET nl_tries = nl_tries + 1, nl_error = $4 WHERE symbol = $1 AND year = $2 AND quarter = $3', [symbol, year, quarter, String(err.message).slice(0, 500)]);
     console.warn('[vertaling]', symbol, year, quarter, err.message);
     return false;
   }
@@ -79,9 +80,11 @@ async function runTranslations({ max = 40 } = {}) {
   if (!enabled()) return { skipped: 'gepauzeerd' };
   const rows = await db.many(
     `SELECT symbol, year, quarter FROM (
-       SELECT DISTINCT ON (symbol) symbol, year, quarter, date, nl, nl_tries FROM earnings_transcripts
+       SELECT DISTINCT ON (symbol) symbol, year, quarter, date, nl, nl_tries, analysis FROM earnings_transcripts
        ORDER BY symbol, year DESC, quarter DESC) t
-     WHERE (nl IS NULL OR coalesce((nl->>'v')::int, 0) < $1) AND nl_tries < $2 AND date >= current_date - 200
+     WHERE (nl IS NULL OR coalesce((nl->>'v')::int, 0) < $1
+            OR jsonb_array_length(coalesce(nl->'exchanges', '[]')) <> jsonb_array_length(coalesce(analysis->'exchanges', '[]')))
+       AND nl_tries < $2 AND date >= current_date - 200
      ORDER BY date DESC LIMIT $3`,
     [tl.NL_VERSION, MAX_TRIES, max]
   );
