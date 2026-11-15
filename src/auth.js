@@ -6,7 +6,7 @@ const db = require('./db');
 const config = require('./config');
 
 const COOKIE = 'gw_session';
-const SESSION_DAYS = 30;
+const SESSION_DAYS = 90; // blijft ingelogd; elke week gebruik verlengt dit weer
 const CODE_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
 
@@ -119,10 +119,16 @@ async function loadUser(req, res, next) {
   if (token) {
     try {
       req.user = await db.one(
-        `SELECT u.id, u.email FROM sessions s JOIN users u ON u.id = s.user_id
+        `SELECT u.id, u.email, (s.expires_at < now() + interval '${SESSION_DAYS - 7} days') AS renew FROM sessions s JOIN users u ON u.id = s.user_id
          WHERE s.token_hash = $1 AND s.expires_at > now()`,
         [sha(token)]
       );
+      // Sessie verlengen als hij ouder is dan een week: wie de site gebruikt, blijft ingelogd.
+      if (req.user && req.user.renew) {
+        await db.query(`UPDATE sessions SET expires_at = now() + interval '${SESSION_DAYS} days' WHERE token_hash = $1`, [sha(token)]);
+        setSessionCookie(res, token);
+      }
+      if (req.user) delete req.user.renew;
     } catch (err) {
       console.error('[auth] sessie laden mislukt', err.message);
     }

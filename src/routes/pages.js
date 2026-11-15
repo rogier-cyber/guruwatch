@@ -1101,9 +1101,9 @@ router.post('/mijn/regel/:id', wrap(async (req, res) => {
 
 router.post('/mijn/instellingen', wrap(async (req, res) => {
   await db.query(
-    `INSERT INTO user_settings (user_id, briefing, instant_email) VALUES ($1, $2, $3)
-     ON CONFLICT (user_id) DO UPDATE SET briefing = EXCLUDED.briefing, instant_email = EXCLUDED.instant_email`,
-    [req.user.id, req.body.briefing === 'on', req.body.instant_email === 'on']
+    `INSERT INTO user_settings (user_id, briefing, instant_email, weekly) VALUES ($1, $2, $3, $4)
+     ON CONFLICT (user_id) DO UPDATE SET briefing = EXCLUDED.briefing, instant_email = EXCLUDED.instant_email, weekly = EXCLUDED.weekly`,
+    [req.user.id, req.body.briefing === 'on', req.body.instant_email === 'on', req.body.weekly === 'on']
   );
   res.redirect('/mijn/meldingen?ok=1');
 }));

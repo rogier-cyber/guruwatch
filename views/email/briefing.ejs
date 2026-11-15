@@ -4,8 +4,8 @@
   var row = 'padding:8px 0;border-bottom:1px solid #eef1f6;font-size:14px;';
   var sym = 'font-family:Menlo,Consolas,monospace;font-weight:800;font-size:12.5px;background:#eef1f6;color:#14213d;padding:2px 7px;border-radius:6px;text-decoration:none;';
 %>
-<%- include('_top', { heading: 'Ochtendbriefing · ' + dateTxt }) %>
-<p style="font-size:15px;line-height:1.5;margin:18px 0 4px;">Goedemorgen. Dit gebeurde er sinds <%= fmt.dateTime(since) %> bij analisten<%= watchCount ? ', op je ' + watchCount + ' gevolgde aandelen' : '' %>.</p>
+<%- include('_top', { heading: (locals.weekly ? 'Weekoverzicht · ' : 'Ochtendbriefing · ') + dateTxt }) %>
+<p style="font-size:15px;line-height:1.5;margin:18px 0 4px;"><%= locals.weekly ? 'Fijn weekend. Dit gebeurde er de afgelopen week sinds' : 'Goedemorgen. Dit gebeurde er sinds' %> <%= fmt.dateTime(since) %> bij analisten<%= watchCount ? ', op je ' + watchCount + ' gevolgde aandelen' : '' %>.</p>
 
 <div style="<%= h2 %>">Belangrijk voor jou</div>
 <% if (!important.length) { %>

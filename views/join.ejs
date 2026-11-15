@@ -3,7 +3,7 @@
   var benefits = [
     ['tint-blue', 'Volg je favorieten', 'Zet aandelen, analisten, guru\'s en insiders op je eigen volglijst. Alles wat je volgt staat overzichtelijk op één pagina.', 'Eén klik op ☆ Volgen bij elk aandeel of elke guru'],
     ['tint-amber', 'Meldingen die ertoe doen', 'Krijg bericht zodra een analist een nieuw koersdoel afgeeft, een insider koopt of een guru instapt in een aandeel dat jij volgt.', 'Op de site en desgewenst per e-mail'],
-    ['tint-violet', 'Ochtendbriefing om 08:00', 'Elke ochtend een korte mail met wat er gisteren veranderde bij jouw aandelen: koersdoelen, up- en downgrades, insiders en cijfers.', 'Zelf aan of uit te zetten'],
+    ['tint-violet', 'Weekoverzicht op zaterdag', 'Elke zaterdag een korte mail met wat er die week veranderde bij jouw aandelen: koersdoelen, up- en downgrades, insiders en komende cijfers. Alleen als er echt iets te melden is.', 'Liever dagelijks? Zet de ochtendbriefing om 08:00 aan'],
     ['tint-slate', 'Zelf voorspellen', 'Geef je eigen koersdoel af in de community en zie hoe jouw trackrecord zich meet met dat van de profs.', 'Met je eigen profiel en ranglijst'],
   ];
 %>
@@ -31,7 +31,7 @@
   <aside class="card join-form" id="aanmelden">
     <span class="gw-guru join-guru" aria-hidden="true"></span>
     <h2>Maak gratis je account</h2>
-    <p class="muted">Vul je e-mailadres in. Je krijgt meteen een code om in te loggen, dus je hoeft geen wachtwoord te onthouden.</p>
+    <p class="muted">Vul je e-mailadres in. Je krijgt meteen een code om in te loggen. Daarna blijf je op dit apparaat ingelogd, dus je hoeft geen wachtwoord te onthouden.</p>
     <% if (locals.error) { %><p class="alert"><%= error %></p><% } %>
     <form method="post" action="/login" class="form">
       <label>E-mailadres<input type="email" name="email" required autocomplete="email" placeholder="jij@voorbeeld.nl"></label>
@@ -40,7 +40,7 @@
     </form>
     <ul class="join-checks">
       <li>Gratis, geen betaalgegevens nodig</li>
-      <li>Geen wachtwoord: inloggen met een code per mail</li>
+      <li>Geen wachtwoord: één keer een code per mail, daarna onthoudt je browser je</li>
       <li>Meldingen en mails zet je zelf aan of uit</li>
     </ul>
     <p class="small muted">Heb je al een account? Vul hetzelfde e-mailadres in, dan log je direct in.</p>

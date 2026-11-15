@@ -7,7 +7,7 @@ const ejs = require('ejs');
 const db = require('./db');
 const config = require('./config');
 const { sendMail } = require('./auth');
-const { RULES, DEFAULT_KINDS, normalizeParams, briefingDue } = require('./lib/alertRules');
+const { RULES, DEFAULT_KINDS, normalizeParams, briefingDue, weeklyDue } = require('./lib/alertRules');
 const fmt = require('./lib/format');
 
 const TARGET = 'coalesce(p.adj_price_target, p.price_target)';
@@ -377,10 +377,37 @@ async function briefingData(userId, since) {
   };
 }
 
-async function renderBriefing(userId, since) {
+async function renderBriefing(userId, since, { weekly = false } = {}) {
   const data = await briefingData(userId, since);
-  const html = await render('briefing', { ...data, unsub: unsubUrl(userId) });
+  const html = await render('briefing', { ...data, weekly, unsub: unsubUrl(userId) });
   return { data, html };
+}
+
+// Zaterdagmail: wat er deze week gebeurde bij de aandelen op je volglijst. Alleen als er iets te melden is.
+async function sendWeekly({ force = false } = {}) {
+  const users = await db.many(
+    `SELECT u.id, u.email, s.last_weekly_at FROM users u JOIN user_settings s ON s.user_id = u.id WHERE s.weekly`
+  );
+  let sent = 0;
+  for (const u of users) {
+    if (!force && !weeklyDue(u.last_weekly_at)) continue;
+    await db.query('UPDATE user_settings SET last_weekly_at = now() WHERE user_id = $1', [u.id]);
+    const since = new Date(Date.now() - 7 * 864e5);
+    const { data, html } = await renderBriefing(u.id, since, { weekly: true });
+    const updates = data.important.length + data.activity.length + data.upcomingEarnings.length;
+    if (!data.watchCount || !updates) continue;
+    const dateTxt = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' }).format(new Date());
+    const subject = `Guruwatch weekoverzicht · ${dateTxt} · ${updates} ${updates === 1 ? 'update' : 'updates'} op je volglijst`;
+    const text = [
+      `Guruwatch weekoverzicht, ${dateTxt}`,
+      ...data.important.map((a) => `• ${a.title}`),
+      `${data.activity.length} nieuwe adviezen op aandelen die je volgt.`,
+      `Bekijk alles: ${base()}/mijn`,
+    ].join('\n');
+    await sendMail(u.email, subject, text, html);
+    sent++;
+  }
+  return sent;
 }
 
 async function sendBriefings({ force = false } = {}) {
@@ -422,4 +449,4 @@ async function runAlerts() {
   return { users: users.length, added, instant, errors: errors.slice(0, 5) };
 }
 
-module.exports = { runAlerts, sendBriefings, evaluateUser, ensureDefaults, renderBriefing, briefingData, checkUnsub, evaluators };
+module.exports = { runAlerts, sendBriefings, sendWeekly, evaluateUser, ensureDefaults, renderBriefing, briefingData, checkUnsub, evaluators };
