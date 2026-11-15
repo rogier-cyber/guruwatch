@@ -578,6 +578,7 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     buyShareNow: rLast ? share(rLast.ratings) : null,
   };
   facts.rotThen = rot[3] ? { verdict: rot[3].verdict && rot[3].verdict.label, target: rot[3].target } : null;
+  facts.rotAll = rot.map((r) => ({ ...r, verdict: r.verdict && r.verdict.label }));
   const peerList = peerRows.map((r) => {
     const pc = av.counts(r);
     const sc = av.ratingScore(pc);
