@@ -1080,11 +1080,20 @@ async function analystLinks(names) {
   return new Map(rows.map((r) => [r.name.toLowerCase(), r]));
 }
 
+// Kwartaalcijfers en koersreactie die bij een call horen (cijfers 0-5 dagen voor of op de dag van de call).
+function resultsFor(events, date) {
+  if (!date) return null;
+  const t = new Date(date).getTime();
+  const ev = events.find((e) => { const d = (t - new Date(e.date).getTime()) / 864e5; return d >= -2 && d <= 5; });
+  return ev ? withReaction(ev) : null;
+}
+
 pub.get('/aandeel/:symbol/earnings-calls', wrap(async (req, res) => {
   const symbol = String(req.params.symbol).toUpperCase();
   if (!SYMBOL_RE.test(symbol)) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Ongeldig tickersymbool.' });
-  const [calls, company] = await Promise.all([loadCalls(symbol), safe(db.one('SELECT name FROM companies WHERE symbol = $1', [symbol]))]);
+  const [calls, company, events] = await Promise.all([loadCalls(symbol), safe(db.one('SELECT name FROM companies WHERE symbol = $1', [symbol])), safe(eq.reactions({ symbol, limit: 12 }), [])]);
   const name = (company && company.name) || symbol;
+  for (const c of calls) c.ev = resultsFor(events, c.date);
   const asc = calls.slice().reverse();
   const latest = calls[0] || null;
   const prev = calls[1] || null;
@@ -1107,11 +1116,14 @@ pub.get('/aandeel/:symbol/earnings-calls', wrap(async (req, res) => {
     .map((a) => ({ ...a, link: links.get(a.name.toLowerCase()) || null, top: tr.topTopics(a.topics, 3).map(tr.topicLabel), inLatest: latest ? (latest.analysis.analysts || []).some((x) => x.name === a.name) : false }))
     .sort((a, b) => b.calls.length - a.calls.length || b.questions - a.questions)
     .slice(0, 40);
+  const latestRow = latest ? await safe(require('../transcripts').content(symbol, latest.year, latest.quarter)) : null;
+  const latestFull = latestRow ? tr.analyze(latestRow.content, { full: true }) : latest && latest.analysis;
+  const summary = latest ? tr.story({ a: latest.analysis, cmp, prevLabel: prev ? prev.label : '', ev: latest.ev }) : [];
   const stale = latest && latest.date ? Date.now() - new Date(latest.date).getTime() > 200 * 864e5 : false;
   res.render('calls', {
     title: `${name} (${symbol}) earnings calls: toon, onderwerpen en vragen van analisten`,
     seo: { canonical: `${config.publicUrl.replace(/\/$/, '')}/aandeel/${encodeURIComponent(symbol)}/earnings-calls`, description: latest ? `Analyse van ${calls.length} earnings calls van ${name}: toon van management en analisten, welke onderwerpen opkomen en welke analisten vragen stellen. Laatste call: ${latest.label}.` : `Earnings calls van ${name}.` },
-    symbol, name, calls, asc, latest, prev, cmp, who, analysts, stale, tr, callCharts,
+    symbol, name, calls, asc, latest, prev, cmp, who, analysts, stale, tr, callCharts, summary, latestFull, fullText: config.transcriptsFullText,
   });
 }));
 
@@ -1127,16 +1139,18 @@ pub.get('/aandeel/:symbol/earnings-calls/:call', wrap(async (req, res) => {
   const company = await safe(db.one('SELECT name FROM companies WHERE symbol = $1', [symbol]));
   const name = (company && company.name) || symbol;
   const cmp = prev ? tr.compare(call.analysis, prev.analysis) : null;
-  let turns = null;
-  if (config.transcriptsFullText) {
-    const row = await require('../transcripts').content(symbol, call.year, call.quarter);
-    turns = row ? tr.parseTurns(row.content) : null;
-  }
+  // Volledige vragenronde (vraag + antwoorden) uit de opgeslagen tekst.
+  const [row, events] = await Promise.all([require('../transcripts').content(symbol, call.year, call.quarter), safe(eq.reactions({ symbol, limit: 12 }), [])]);
+  const full = row ? tr.analyze(row.content, { full: true }) : call.analysis;
+  const turns = config.transcriptsFullText && row ? tr.parseTurns(row.content) : null;
+  const ev = resultsFor(events, call.date);
+  const summary = tr.story({ a: full, cmp, prevLabel: prev ? prev.label : '', ev });
+  const fullText = config.transcriptsFullText;
   const links = await analystLinks((call.analysis.analysts || []).map((a) => a.name));
   res.render('call', {
     title: `${name} (${symbol}) earnings call ${call.label}`,
     seo: { description: `Earnings call van ${name} over ${call.label}${call.dateTxt ? ' (' + call.dateTxt + ')' : ''}: toon, onderwerpen en alle vragen van analisten.` },
-    symbol, name, call, prev, cmp, turns, links, calls, tr,
+    symbol, name, call, prev, cmp, turns, links, calls, tr, full, ev, summary, fullText,
   });
 }));
 

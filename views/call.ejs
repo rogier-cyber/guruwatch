@@ -19,6 +19,8 @@
   <div class="stat"><span>Vragen</span><strong><%= A.exchanges.length %></strong><em class="small muted"><%= Math.round(A.words.qa / Math.max(1, A.words.total) * 100) %>% van de call</em></div>
 </div>
 
+<%- include('partials/call-synopsis', { a: full, ev: ev, label: call.label, dateTxt: call.dateTxt, summary: summary }) %>
+
 <div class="grid2">
   <section class="card">
     <div class="card-h"><h2>Onderwerpen</h2><span class="small pb-legend"><i class="a"></i>Management <i class="b"></i>Analisten</span></div>
@@ -41,14 +43,10 @@
 
 <section class="card">
   <div class="card-h"><h2>Alle vragen van analisten</h2><span class="small muted"><%= A.exchanges.length %> vragen</span></div>
-  <% if (!A.exchanges.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
-  <ol class="qa-list">
-  <% A.exchanges.forEach(function (e) { var l = links.get(e.analyst.toLowerCase()); %>
-    <li><div class="qa-who"><% if (l) { %><a href="/analist/<%= l.slug %>" data-tip="<%= e.analyst %>&#10;<%= l.firm || e.firm || '' %><%= l.score != null ? '&#10;GuruScore ' + Math.round(l.score) : '' %>"><b><%= e.analyst %></b></a><% } else { %><b><%= e.analyst %></b><% } %><% if (e.firm) { %> <span class="muted small"><%= e.firm %></span><% } %><% e.topics.forEach(function (t) { %> <span class="tp-chip sm"><%= tr.topicLabel(t) %></span><% }) %></div>
-      <p class="qa-q">“<%= e.excerpt %>”</p>
-      <% if (e.answeredBy.length) { %><p class="small muted mb0">Antwoord van <%= e.answeredBy.join(', ') %> · <%= e.answerWords %> woorden</p><% } %></li>
-  <% }) %>
-  </ol><% } %>
+  <% if (!full.exchanges.length) { %><p class="empty">Geen vragenronde gevonden in deze call.</p><% } else { %>
+  <p class="sec-txt small">Tik op een vraag om het antwoord van het management te lezen.</p>
+  <%- include('partials/call-qa', { exchanges: full.exchanges, links: links }) %>
+  <% } %>
 </section>
 
 <% if (turns) { %>
@@ -58,8 +56,6 @@
   <% turns.forEach(function (t) { %><p><b><%= t.speaker %>:</b> <%= t.text %></p><% }) %>
   </div>
 </section>
-<% } else { %>
-<p class="note small">Van elke vraag tonen we het begin. De volledige tekst van het transcript tonen we (nog) niet.</p>
 <% } %>
 
 <p class="small"><a href="/aandeel/<%= sym %>/earnings-calls">← Alle earnings calls van <%= name %> vergelijken</a></p>
