@@ -34,7 +34,8 @@ module.exports = {
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean),
-  // Volledige tekst van earnings call transcripts tonen (alleen met een FMP-licentie voor openbare weergave).
-  transcriptsFullText: (env.TRANSCRIPTS_FULL_TEXT || '').toLowerCase() === 'true',
+  // Volledige tekst van earnings call transcripts tonen. Rogier (2026-11-15): voluit tonen, de FMP-displaylicentie
+  // regelt hij bij de officiële lancering. Uitzetten kan met TRANSCRIPTS_FULL_TEXT=false.
+  transcriptsFullText: (env.TRANSCRIPTS_FULL_TEXT || 'true').toLowerCase() !== 'false',
   ingestEnabled: (env.INGEST_ENABLED || 'true').toLowerCase() !== 'false',
 };
