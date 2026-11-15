@@ -1,0 +1,37 @@
+<%- include('partials/head') %>
+<nav class="crumbs"><a href="/">Home</a> › <a href="/blog">Blog</a> › <span><%= post.title %></span></nav>
+<article class="card bp">
+  <header class="bp-head">
+    <span class="bl-meta"><% if (post.category) { %><span class="bl-cat"><%= post.category %></span><% } %><%= post.published_at ? fmt.dateTime(post.published_at) : '' %></span>
+    <h1><%= post.title %></h1>
+  </header>
+  <% if (post.image) { %><figure class="bp-img"><img src="<%= post.image %>" alt=""></figure><% } %>
+  <div class="bp-body">
+  <% var firstP = true; post.blocks.forEach(function (b) { %>
+    <% if (b.t === 'p') { %><p<%- firstP ? ' class="bp-lead"' : '' %>><%- b.h %></p><% firstP = false; %>
+    <% } else if (b.t === 'also') { %><p class="bp-also"><%- b.h %></p>
+    <% } else if (b.t === 'h2') { %><h2><%- b.h %></h2>
+    <% } else if (b.t === 'h3') { %><h3><%- b.h %></h3>
+    <% } else if (b.t === 'ul' || b.t === 'ol') { %><<%= b.t %>><% b.items.forEach(function (it) { %><li><%- it %></li><% }) %></<%= b.t %>>
+    <% } else if (b.t === 'quote') { %><blockquote><%- b.h %></blockquote>
+    <% } else if (b.t === 'img') { %><figure class="bp-fig"><img src="<%= b.src %>" alt="" loading="lazy"><% if (b.cap) { %><figcaption><%= b.cap %></figcaption><% } %></figure>
+    <% } else if (b.t === 'table') { %><div class="tbl-wrap"><table class="tbl"><% b.rows.forEach(function (r, i) { %><tr><% r.forEach(function (c) { %><% if (i === 0) { %><th><%- c %></th><% } else { %><td><%- c %></td><% } %><% }) %></tr><% }) %></table></div>
+    <% } %>
+  <% }) %>
+  </div>
+  <p class="small muted bp-note">Dit artikel is geen beleggingsadvies. Lees ook onze <a href="/disclaimer">disclaimer</a>.</p>
+</article>
+<% if (more.length) { %>
+<section class="bp-more">
+  <h2>Meer van de blog</h2>
+  <div class="bl-grid">
+  <% more.forEach(function (p) { %>
+    <a class="bl-card card" href="/blog/<%= p.slug %>">
+      <% if (p.image) { %><span class="bl-img"><img src="<%= p.image %>" alt="" loading="lazy"></span><% } %>
+      <span class="bl-txt"><span class="bl-meta"><%= p.published_at ? fmt.date(p.published_at) : '' %></span><strong class="bl-title"><%= p.title %></strong></span>
+    </a>
+  <% }) %>
+  </div>
+</section>
+<% } %>
+<%- include('partials/foot') %>

@@ -9,7 +9,7 @@
 
 <div style="<%= h2 %>">Belangrijk voor jou</div>
 <% if (!important.length) { %>
-  <p style="color:#64748b;font-size:14px;margin:6px 0;">Geen bijzondere meldingen. <% if (!watchCount) { %><a href="<%= base %>/radar" style="color:#2856d9;">Volg aandelen</a> om gerichte meldingen te krijgen.<% } %></p>
+  <p style="color:#64748b;font-size:14px;margin:6px 0;">Geen bijzondere meldingen. <% if (!watchCount) { %><a href="<%= base %>/analisten?tab=radar" style="color:#2856d9;">Volg aandelen</a> om gerichte meldingen te krijgen.<% } %></p>
 <% } else { %>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><% important.forEach(function (a) { %><%- include('_alert', { a: a }) %><% }) %></table>
 <% } %>
@@ -71,5 +71,5 @@
 <% } %>
 
 <p style="margin:26px 0 0;"><a href="<%= base %>/mijn" style="display:inline-block;background:#d32f2f;color:#fff;text-decoration:none;font-weight:700;padding:11px 18px;border-radius:10px;">Naar Mijn GuruWatch</a>
-&nbsp; <a href="<%= base %>/radar" style="color:#2856d9;font-weight:600;text-decoration:none;">Open de radar</a></p>
+&nbsp; <a href="<%= base %>/analisten?tab=radar" style="color:#2856d9;font-weight:600;text-decoration:none;">Open de radar</a></p>
 <%- include('_bottom') %>

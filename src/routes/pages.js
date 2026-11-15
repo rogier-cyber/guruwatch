@@ -91,7 +91,7 @@ router.get('/', wrap(async (req, res) => {
 
 // ---------- Analisten ----------
 router.get('/analisten', wrap(async (req, res) => {
-  const tab = ['ranglijst', 'koersdoelen', 'ratings', 'banken'].includes(req.query.tab) ? req.query.tab : 'ranglijst';
+  const tab = ['ranglijst', 'koersdoelen', 'ratings', 'banken', 'radar'].includes(req.query.tab) ? req.query.tab : 'ranglijst';
   const action = ['upgrade', 'downgrade'].includes(req.query.actie) ? req.query.actie : undefined;
   const data = { tab, action, scored: await q.hasGuruScores() };
   if (tab === 'ranglijst') {
@@ -118,7 +118,12 @@ router.get('/analisten', wrap(async (req, res) => {
     data.firms = await q.firmStats(60);
     data.firmScores = data.scored ? await q.guruLeaderboard({ kind: 'firm', minCalls: 10, limit: 60 }) : [];
   }
-  res.render('analysts', { title: 'Analisten', ...data });
+  if (tab === 'radar') {
+    const r = await radarData(req.query);
+    data.radar = { ...r, rtab: r.tab };
+    data.viz = viz;
+  }
+  res.render('analysts', { title: tab === 'radar' ? 'Analistenradar' : 'Analisten', ...data });
 }));
 
 router.get('/analist/:slug', wrap(async (req, res) => {
@@ -154,6 +159,22 @@ for (const [page, title] of Object.entries(INFO)) {
   }));
 }
 pub.get('/over', (req, res) => res.redirect(301, '/over-ons'));
+
+// ---------- Blog (artikelen van guruwatch.nl in onze eigen opmaak) ----------
+const blog = require('../blog');
+pub.get('/blog', wrap(async (req, res) => {
+  const posts = await safe(blog.latest(10), []);
+  res.render('blog', { title: 'Blog', posts, seo: { description: 'De blog van Guruwatch: artikelen over aandelen, analisten, beleggersguru\'s en de beurs.' } });
+}));
+pub.get('/blog/:slug', wrap(async (req, res) => {
+  const slug = String(req.params.slug).toLowerCase();
+  const post = /^[a-z0-9-]{1,200}$/.test(slug) ? await safe(blog.bySlug(slug)) : null;
+  if (!post) return res.status(404).render('error', { title: 'Niet gevonden', message: 'Dit blogartikel bestaat niet (meer).' });
+  const more = (await safe(blog.latest(7), [])).filter((p) => p.slug !== slug).slice(0, 6);
+  const base = config.publicUrl.replace(/\/$/, '');
+  const jsonld = [{ '@context': 'https://schema.org', '@type': 'Article', headline: post.title, datePublished: post.published_at, image: post.image || undefined, publisher: { '@type': 'Organization', name: 'Guruwatch' }, mainEntityOfPage: `${base}/blog/${slug}` }];
+  res.render('blog-post', { title: post.title, post, more, seo: { description: post.intro, canonical: `${base}/blog/${slug}`, image: post.image, jsonld } });
+}));
 
 router.get('/methode', (req, res) => res.render('method', { title: 'Hoe de GuruScore werkt' }));
 
@@ -1235,8 +1256,10 @@ function radarFilters(query) {
   return { sector, cap };
 }
 
-router.get('/radar', wrap(async (req, res) => {
-  const tab = RADAR_TABS.includes(req.query.tab) ? req.query.tab : 'momentum';
+// Radar (onderdeel van de analistenpagina, tab=radar&radar=...).
+async function radarData(query) {
+  const req = { query };
+  const tab = RADAR_TABS.includes(req.query.radar) ? req.query.radar : 'momentum';
   const filters = radarFilters(req.query);
   const data = { tab, filters, caps: radar.CAPS, sectors: await safe(rq.sectors(), []) };
 
@@ -1297,8 +1320,16 @@ router.get('/radar', wrap(async (req, res) => {
     });
   }
 
-  res.render('radar', { title: 'Radar', ...data });
-}));
+  return data;
+}
+
+// De oude radarpagina is opgegaan in de analistenpagina.
+router.get('/radar', (req, res) => {
+  const p = new URLSearchParams({ tab: 'radar' });
+  if (RADAR_TABS.includes(req.query.tab)) p.set('radar', req.query.tab);
+  for (const k of ['dagen', 'min', 'sort', 'sector', 'cap']) if (req.query[k]) p.set(k, String(req.query[k]));
+  res.redirect(301, `/analisten?${p}`);
+});
 
 // ---------- Status ----------
 router.get('/status', wrap(async (req, res) => {

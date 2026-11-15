@@ -1,0 +1,35 @@
+<%- include('partials/head') %>
+<section class="hero hero-sm">
+  <div class="hero-in">
+    <div>
+      <h1>Blog<b>.</b></h1>
+      <p>Artikelen over aandelen, analisten, beleggersguru's en de beurs. Wat zeggen de experts, en wat kun je ermee?</p>
+    </div>
+  </div>
+</section>
+<% if (!posts.length) { %>
+<section class="card"><p class="empty">De blogartikelen worden opgehaald. Kom over een paar minuten terug.</p></section>
+<% } else { var lead = posts[0]; %>
+<a class="bl-lead card" href="/blog/<%= lead.slug %>">
+  <% if (lead.image) { %><span class="bl-img"><img src="<%= lead.image %>" alt="" loading="eager"></span><% } %>
+  <span class="bl-txt">
+    <span class="bl-meta"><% if (lead.category) { %><span class="bl-cat"><%= lead.category %></span><% } %><%= lead.published_at ? fmt.date(lead.published_at) : '' %></span>
+    <strong class="bl-title"><%= lead.title %></strong>
+    <span class="bl-intro"><%= lead.intro %></span>
+    <span class="bl-go">Lees het artikel →</span>
+  </span>
+</a>
+<div class="bl-grid">
+  <% posts.slice(1).forEach(function (p) { %>
+  <a class="bl-card card" href="/blog/<%= p.slug %>">
+    <% if (p.image) { %><span class="bl-img"><img src="<%= p.image %>" alt="" loading="lazy"></span><% } %>
+    <span class="bl-txt">
+      <span class="bl-meta"><% if (p.category) { %><span class="bl-cat"><%= p.category %></span><% } %><%= p.published_at ? fmt.date(p.published_at) : '' %></span>
+      <strong class="bl-title"><%= p.title %></strong>
+      <span class="bl-intro"><%= p.intro %></span>
+    </span>
+  </a>
+  <% }) %>
+</div>
+<% } %>
+<%- include('partials/foot') %>
