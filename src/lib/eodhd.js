@@ -6,10 +6,13 @@ const { TtlCache } = require('./cache');
 
 const cache = new TtlCache(500);
 
+const logos = require('./logos');
+
 function logoUrl(symbol, profileImage) {
-  // EODHD serveert logo's publiek per ticker; FMP-profiel als terugval.
+  // Eerst ons eigen logo, dan het FMP-profiel, dan EODHD.
+  if (logos.hasLogo(symbol)) return logos.logoUrl(symbol);
   if (profileImage) return profileImage;
-  return `https://eodhd.com/img/logos/US/${encodeURIComponent(String(symbol).toUpperCase())}.png`;
+  return logos.logoUrl(symbol);
 }
 
 async function eod(symbol, from) {

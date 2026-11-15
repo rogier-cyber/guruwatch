@@ -28,7 +28,7 @@
   function logo(sym) {
     var s = String(sym || '');
     return '<span class="lg" aria-hidden="true">' + esc(s.replace(/[^A-Z0-9]/gi, '').charAt(0) || '?') +
-      '<img src="https://eodhd.com/img/logos/US/' + encodeURIComponent(s.toUpperCase()) + '.png" alt="" onload="this.className=\'ok\'" onerror="this.remove()"></span>';
+      '<img src="/static/logos/US/' + encodeURIComponent(s.toUpperCase()) + '.webp" data-alt="https://eodhd.com/img/logos/US/' + encodeURIComponent(s.toUpperCase()) + '.png" alt="" onload="this.className=\'ok\'" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.removeAttribute(\'data-alt\')}else{this.remove()}"></span>';
   }
 
   function open(on) {
