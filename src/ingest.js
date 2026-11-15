@@ -80,7 +80,7 @@ async function refreshQuotes() {
   });
 }
 
-// Laatste kwartalen van een fonds ophalen: 12 kwartalen historie (quant-fondsen 4),
+// Laatste kwartalen van een fonds ophalen: tot 10 jaar (40 kwartalen) historie (quant-fondsen 4),
 // de nieuwste altijd opnieuw, oudere alleen als ze nog ontbreken.
 async function refreshFund(cik) {
   const meta = await db.one('SELECT quant FROM funds WHERE cik = $1', [cik]);
@@ -88,7 +88,7 @@ async function refreshFund(cik) {
   const sorted = dates
     .filter((d) => d && d.year && d.quarter)
     .sort((a, b) => b.year - a.year || b.quarter - a.quarter)
-    .slice(0, meta && meta.quant ? 4 : 12);
+    .slice(0, meta && meta.quant ? 4 : 40);
   let latest = null;
   for (const d of sorted) {
     const period = d.date || quarterEnd(d.year, d.quarter);
@@ -126,8 +126,20 @@ function quarterEnd(year, quarter) {
   return ['03-31', '06-30', '09-30', '12-31'].map((s) => `${year}-${s}`)[quarter - 1];
 }
 
+// S&P 500 (SPY) ver terug, voor de vergelijking in "Waarde door de tijd" op guru-pagina's (13F gaat tot 10 jaar terug).
+const SPY_LONG_START = '2014-01-01';
+async function ensureLongSpy() {
+  const r = await db.one("SELECT min(date)::text AS d FROM prices WHERE symbol = 'SPY'");
+  if (r && r.d && r.d <= '2014-01-31') return 0;
+  const to = r && r.d ? new Date(new Date(r.d).getTime() - 864e5).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+  const data = await fmp.historyNoCache('SPY', SPY_LONG_START, to);
+  const points = data.map((d) => ({ symbol: 'SPY', date: d.date, close: Number(d.price ?? d.close) })).filter((p) => p.date && p.close > 0);
+  return points.length ? store.savePrices(points) : 0;
+}
+
 async function refreshFunds() {
   return job('funds', async () => {
+    try { await ensureLongSpy(); } catch (e) { /* vergelijking met de S&P 500 is optioneel */ }
     await store.syncFundList(funds);
     let ok = 0;
     const failed = [];

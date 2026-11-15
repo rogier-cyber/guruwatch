@@ -34,7 +34,8 @@ function valueArea(series, { width = 620, height = 220 } = {}) {
   const pad = { l: 8, r: 64, t: 18, b: 26 };
   const W = width - pad.l - pad.r;
   const H = height - pad.t - pad.b;
-  const max = Math.max(...pts.map((p) => p.value)) * 1.08;
+  const hasB = pts.filter((p) => p.bench > 0).length >= 2;
+  const max = Math.max(...pts.map((p) => p.value), ...(hasB ? pts.map((p) => p.bench || 0) : [])) * 1.08;
   const X = (i) => pad.l + (i / (pts.length - 1)) * W;
   const Y = (v) => pad.t + H - (v / max) * H;
   const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(p.value).toFixed(1)}`).join(' ');
@@ -43,12 +44,13 @@ function valueArea(series, { width = 620, height = 220 } = {}) {
   const every = Math.ceil(pts.length / 6);
   const last = pts[pts.length - 1];
   return `<svg viewBox="0 0 ${width} ${height}" class="gc gc-area" role="img" aria-label="Waarde van de portefeuille per kwartaal">
-    <defs><linearGradient id="gaFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--pos)" stop-opacity=".22"/><stop offset="1" stop-color="var(--pos)" stop-opacity="0"/></linearGradient></defs>
+    <defs><linearGradient id="gaFill${width}x${height}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--pos)" stop-opacity=".22"/><stop offset="1" stop-color="var(--pos)" stop-opacity="0"/></linearGradient></defs>
     ${ticks.map((t) => `<line x1="${pad.l}" x2="${pad.l + W}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" class="gc-grid"/><text x="${pad.l + W + 8}" y="${(Y(t) + 4).toFixed(1)}" class="gc-ax">${money(t)}</text>`).join('')}
-    <path d="${area}" fill="url(#gaFill)"/>
+    <path d="${area}" fill="url(#gaFill${width}x${height})"/>
+    ${hasB ? `<path d="${pts.map((p, i) => (p.bench > 0 ? `${i && pts[i - 1].bench > 0 ? 'L' : 'M'}${X(i).toFixed(1)},${Y(p.bench).toFixed(1)}` : '')).join(' ')}" class="gc-bench"/>` : ''}
     <path d="${line}" class="gc-line"/>
-    ${pts.map((p, i) => `<g class="gc-pt"><circle cx="${X(i).toFixed(1)}" cy="${Y(p.value).toFixed(1)}" r="${i === pts.length - 1 ? 5 : 3.2}"/><title>${qLabel(p.period)}: ${money(p.value)} · ${p.positions} posities</title></g>`).join('')}
-    ${pts.map((p, i) => (i % every === 0 || i === pts.length - 1 ? `<text x="${X(i).toFixed(1)}" y="${height - 6}" text-anchor="${i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'}" class="gc-ax">${qLabel(p.period)}</text>` : '')).join('')}
+    ${pts.map((p, i) => `<g class="gc-pt"><circle cx="${X(i).toFixed(1)}" cy="${Y(p.value).toFixed(1)}" r="${i === pts.length - 1 ? 5 : pts.length > 16 ? 2.4 : 3.2}"/><title>${qLabel(p.period)}: ${money(p.value)} · ${p.positions} posities${p.bench > 0 ? `\nS&amp;P 500 met dezelfde start: ${money(p.bench)}` : ''}</title></g>`).join('')}
+    ${pts.map((p, i) => ((i % every === 0 && pts.length - 1 - i >= every * 0.6) || i === pts.length - 1 ? `<text x="${X(i).toFixed(1)}" y="${height - 6}" text-anchor="${i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'}" class="gc-ax">${qLabel(p.period)}</text>` : '')).join('')}
     <text x="${(X(pts.length - 1) - 8).toFixed(1)}" y="${(Y(last.value) - 10).toFixed(1)}" text-anchor="end" class="gc-val">${money(last.value)}</text>
   </svg>`;
 }
