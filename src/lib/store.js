@@ -42,7 +42,7 @@ async function savePriceTargets(raw) {
   for (const r of rows) r.analyst_id = r.analyst_slug ? ids.get(r.analyst_slug) || null : null;
   return bulkInsert(
     'price_targets',
-    ['uid', 'symbol', 'published_at', 'analyst_id', 'analyst_name', 'analyst_firm', 'price_target', 'adj_price_target', 'price_when_posted', 'news_title', 'news_url', 'news_publisher'],
+    ['uid', 'symbol', 'published_at', 'analyst_id', 'analyst_name', 'analyst_firm', 'price_target', 'raw_price_target', 'adj_price_target', 'price_when_posted', 'news_title', 'news_url', 'news_publisher'],
     rows,
     'ON CONFLICT (uid) DO NOTHING'
   );

@@ -71,3 +71,13 @@ test('scoreTarget: verkoopadvies, koers steeg = verkeerde richting', () => {
 test('slugify verwijdert accenten', () => {
   assert.equal(n.slugify('Érik  Müller & Co.'), 'erik-muller-co');
 });
+
+test('koersdoel van voor een split op de schaal van de koers', () => {
+  assert.equal(n.splitTarget(1050, 105, 88.46), 105, 'NVDA 10:1');
+  assert.equal(n.splitTarget(250, 250, 200), 250, 'geen split');
+  assert.equal(n.splitTarget(300, 100, 280), 300, 'origineel past beter bij de koers');
+  assert.equal(n.splitTarget(1000, 100, null), 100, 'zonder koers: gecorrigeerd');
+  const r = n.mapPriceTarget({ symbol: 'NVDA', publishedDate: '2024-03-18T10:00:00Z', analystName: 'A', analystCompany: 'B', priceTarget: 1050, adjPriceTarget: 105, priceWhenPosted: 88.46 });
+  assert.equal(r.price_target, 105);
+  assert.equal(r.raw_price_target, 1050);
+});
