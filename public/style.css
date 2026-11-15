@@ -1759,7 +1759,7 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
 /* Gekleurd guru-figuurtje voor de titel op Analisten, Guru's en Insiders (zoals op de homepage) */
 .hero h1.h-with-guru { display: flex; align-items: center; flex-wrap: wrap; gap: 0 .3em; }
 .h-guru { display: inline-flex; align-items: flex-end; flex: none; margin-right: .08em; }
-.h-guru .gw-guru { width: 1.15em; height: 1.15em; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+.h-guru .gw-guru { width: 1.3em; height: 1.3em; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
 .h-guru .gw-guru-navy { background: #c3cde3; }
 .h-guru .gw-guru-red { background: #ff6b6b; }
 .oo-gg { width: 56px; height: 56px; }
@@ -1768,3 +1768,6 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
 .more-link { text-align: center; text-decoration: none; }
 .more-link:hover { text-decoration: none; filter: brightness(.97); }
 .cl-tbl .cl-who { min-width: 220px; max-width: 360px; line-height: 1.45; }
+
+/* Gekleurde guru's met de staafjes uit het logo, in dezelfde kleur */
+.h-guru .gw-guru, .trio-g, .oo-gg { -webkit-mask-image: url("/static/img/guru-full-mask.webp"); mask-image: url("/static/img/guru-full-mask.webp"); }
