@@ -19,7 +19,7 @@
       <span class="gu-k"><%= fund.style || 'Belegger' %></span>
       <h1>Portefeuille van <%= fund.manager || fund.name %></h1>
       <p class="gu-fund"><%= fund.name %><% if (!empty) { %> · 13F over <%= gc.qLabel(cur.period) %><% } %></p>
-      <% if (fund.bio) { %><p class="gu-bio"><%= fund.bio %></p><% } %>
+      <% if (fund.bio) { %><% fmt.paras(fund.bio).forEach(function (t) { %><p class="gu-bio"><%= t %></p><% }) %><% } %>
     </div>
     <div class="gu-watch"><%- include('partials/watch', { kind: 'fund', ref: fund.slug, watched: watched }) %></div>
   </div>

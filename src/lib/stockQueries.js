@@ -107,27 +107,48 @@ async function sitemapSymbols(limit = 5000) {
   );
 }
 
-// Vergelijkbare aandelen uit dezelfde sector (grootste eerst) met hun analistenoordeel.
-async function peers(symbol, sector, limit = 8) {
-  if (!sector) return [];
+// Vergelijkbare aandelen: eerst de echte concurrenten uit src/data/peers.json (beste eerst), dan aandelen uit
+// dezelfde branche (FMP-industry, qua grootte het dichtst bij), dan dezelfde sector (grootste eerst).
+// Alleen aandelen met analistenadviezen of koersdoelen.
+let PEER_MAP = null;
+function curatedPeers(symbol) {
+  if (!PEER_MAP) {
+    try { PEER_MAP = require('../data/peers.json'); } catch { PEER_MAP = {}; }
+  }
+  const l = PEER_MAP[symbol];
+  return Array.isArray(l) ? l.filter((x) => x !== symbol) : [];
+}
+
+async function peers(symbol, sector, limit = 8, industry = null) {
+  const curated = curatedPeers(symbol);
+  if (!sector && !industry && !curated.length) return [];
   return db.many(
-    `WITH c0 AS (SELECT symbol, name, market_cap FROM (
-                   SELECT DISTINCT ON (symbol) symbol, name, market_cap FROM (
-                     SELECT symbol, name, market_cap FROM companies WHERE sector = $1 AND NOT is_etf
-                     UNION ALL SELECT symbol, name, NULL FROM index_members WHERE sector = $1) x
-                   WHERE symbol <> $2 ORDER BY symbol, market_cap NULLS LAST) y
-                 ORDER BY market_cap DESC NULLS LAST LIMIT 40),
+    `WITH me AS (SELECT market_cap FROM companies WHERE symbol = $2),
+     cur AS (SELECT s AS symbol, o::int AS prio FROM unnest($4::text[]) WITH ORDINALITY u(s, o)),
+     ind AS (SELECT symbol, 1000 + row_number() OVER (ORDER BY abs(ln(greatest(market_cap, 1)) - ln(greatest(coalesce((SELECT market_cap FROM me), market_cap), 1))))::int AS prio
+             FROM companies WHERE $5::text IS NOT NULL AND industry = $5 AND NOT is_etf AND symbol <> $2 AND market_cap > 0),
+     sec AS (SELECT symbol, 2000 + row_number() OVER (ORDER BY market_cap DESC NULLS LAST)::int AS prio FROM (
+               SELECT DISTINCT ON (symbol) symbol, market_cap FROM (
+                 SELECT symbol, market_cap FROM companies WHERE $1::text IS NOT NULL AND sector = $1 AND NOT is_etf
+                 UNION ALL SELECT symbol, NULL FROM index_members WHERE $1::text IS NOT NULL AND sector = $1) x
+               WHERE symbol <> $2 ORDER BY symbol, market_cap NULLS LAST) y),
+     c0 AS (SELECT symbol, min(prio) AS prio FROM (SELECT * FROM cur UNION ALL SELECT * FROM ind UNION ALL SELECT * FROM sec) z
+            GROUP BY symbol ORDER BY min(prio) LIMIT 60),
      t AS (${LATEST_TARGETS.replace('%FILTER%', 'pt.symbol IN (SELECT symbol FROM c0)')}),
      ta AS (SELECT symbol, avg(price_target)::float8 AS target, count(*)::int AS targets FROM t GROUP BY symbol),
      r AS (SELECT DISTINCT ON (rh.symbol) rh.symbol, rh.strong_buy, rh.buy, rh.hold, rh.sell, rh.strong_sell
            FROM rating_history rh WHERE rh.symbol IN (SELECT symbol FROM c0) AND rh.date > now() - interval '150 days'
-           ORDER BY rh.symbol, rh.date DESC)
-     SELECT c0.symbol, c0.name, c0.market_cap::float8 AS market_cap, q.price::float8 AS price, ta.target, ta.targets,
-            r.strong_buy, r.buy, r.hold, r.sell, r.strong_sell
-     FROM c0 LEFT JOIN r USING (symbol) LEFT JOIN ta USING (symbol) LEFT JOIN quotes q USING (symbol)
-     WHERE r.symbol IS NOT NULL OR ta.target IS NOT NULL
-     ORDER BY c0.market_cap DESC NULLS LAST LIMIT $3`,
-    [sector, symbol, limit]
+           ORDER BY rh.symbol, rh.date DESC),
+     nm AS (SELECT DISTINCT ON (symbol) symbol, name, market_cap FROM (
+              SELECT symbol, name, market_cap FROM companies WHERE symbol IN (SELECT symbol FROM c0)
+              UNION ALL SELECT symbol, name, NULL FROM index_members WHERE symbol IN (SELECT symbol FROM c0)) x
+            ORDER BY symbol, market_cap NULLS LAST)
+     SELECT c0.symbol, coalesce(nm.name, c0.symbol) AS name, nm.market_cap::float8 AS market_cap, q.price::float8 AS price, ta.target, ta.targets,
+            r.strong_buy, r.buy, r.hold, r.sell, r.strong_sell, c0.prio < 1000 AS curated
+     FROM c0 LEFT JOIN nm USING (symbol) LEFT JOIN r USING (symbol) LEFT JOIN ta USING (symbol) LEFT JOIN quotes q USING (symbol)
+     WHERE (r.symbol IS NOT NULL OR ta.target IS NOT NULL)
+     ORDER BY c0.prio LIMIT $3`,
+    [sector || null, symbol, limit, curated, industry || null]
   );
 }
 

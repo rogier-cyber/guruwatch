@@ -54,7 +54,7 @@
 <% if (fan) { %>
 <section class="card">
   <div class="card-h"><h2>Verwachtingen voor de koers van <%= name %></h2><span class="small muted">koersdoelen van de afgelopen 6 maanden · beweeg over een stip voor het advies</span></div>
-  <% if (story.forecast) { %><p class="fc-txt"><%= story.forecast.text %></p><% } %>
+  <% if (story.forecast) { %><% fmt.paras(story.forecast.text).forEach(function (t) { %><p class="fc-txt"><%= t %></p><% }) %><% } %>
   <%- fan %>
   <p class="small muted">Links de koers van het afgelopen jaar, rechts waar analisten het aandeel over twaalf maanden zien: hoogste, gemiddelde en laagste koersdoel. Elke stip is het laatste koersdoel van één analist (groen = positief advies, rood = negatief).</p>
 </section>
@@ -103,7 +103,7 @@
     <p class="faq-intro"><%= story.faq.length %> vragen die beleggers stellen over <%= name %>, beantwoord met actuele data over koersdoelen, analistenadviezen, kwartaalcijfers en insiders. Bijgewerkt op <time datetime="<%= new Date().toISOString().slice(0, 10) %>"><%= fmt.date(new Date()) %></time>.</p>
   </div>
   <div class="faq-list">
-  <% story.faq.forEach(function (f, i) { %><details class="faq-acc" id="vraag-<%= f.id %>"<%= i === 0 ? ' open' : '' %>><summary><h3><%= f.q %></h3><span class="faq-chev" aria-hidden="true"></span></summary><div class="faq-a"><% String(f.a).split('\n\n').forEach(function (para) { %><p><%= para %></p><% }) %></div></details><% }) %>
+  <% story.faq.forEach(function (f, i) { %><details class="faq-acc" id="vraag-<%= f.id %>"<%= i === 0 ? ' open' : '' %>><summary><h3><%= f.q %></h3><span class="faq-chev" aria-hidden="true"></span></summary><div class="faq-a"><% fmt.paras(f.a).forEach(function (para) { %><p><%= para %></p><% }) %></div></details><% }) %>
   </div>
 </section>
 <script>
@@ -216,7 +216,7 @@
 <% } %>
 <% if (peers && peers.length) { %>
 <section class="card" id="vergelijkbaar">
-  <div class="card-h"><h2>Vergelijkbare aandelen</h2><span class="small muted"><%= profile && profile.sector ? profile.sector : '' %></span></div>
+  <div class="card-h"><h2>Vergelijkbare aandelen</h2><span class="small muted"><%= profile && (profile.industry || profile.sector) ? (profile.industry || profile.sector) : '' %></span></div>
   <% if (sx.peers) { %><p class="sec-txt"><%= sx.peers %></p><% } %>
   <div class="tbl-wrap"><table class="tbl peers-tbl">
     <thead><tr><th>Aandeel</th><th class="r">Koers</th><th class="r">Koersdoel</th><th class="r">Potentieel</th><th>Oordeel analisten</th></tr></thead>
@@ -318,7 +318,7 @@
     <table class="tbl"><thead><tr><th>Fonds</th><th class="r">Gewicht</th><th class="r">Waarde</th></tr></thead><tbody>
     <% holders.forEach(function (h) { %><tr><td><a href="/guru/<%= h.slug %>" class="strong"><%= h.manager %></a> <span class="muted small"><%= h.name %></span></td><td class="r"><%= fmt.pct(h.weight, false) %></td><td class="r"><%= fmt.money(h.value) %></td></tr><% }) %>
     </tbody></table><% } %>
-    <% if (profile && profile.description) { %><h2 class="mt">Over <%= profile.companyName %></h2><p class="small desc"><%= profile.description %></p><% } %>
+    <% if (profile && profile.description) { %><h2 class="mt">Over <%= profile.companyName %></h2><div class="small desc"><% fmt.paras(profile.description).forEach(function (t) { %><p><%= t %></p><% }) %></div><% } %>
   </section>
 </div>
 <%- include('partials/foot') %>

@@ -414,7 +414,9 @@ function sections(f) {
   }
   const pe = f.peers;
   if (pe && pe.length) {
-    out.peers = `Andere ${f.sector ? `${f.sector}-aandelen` : 'aandelen uit dezelfde sector'} met analistenadviezen, zodat je ${n} kunt vergelijken met concurrenten.`;
+    out.peers = pe.some((p) => p.curated)
+      ? `De belangrijkste concurrenten van ${n} en hun analistenoordeel, zodat je kunt zien hoe ${n} ervoor staat tegenover bedrijven die op dezelfde markt actief zijn.`
+      : `Bedrijven uit dezelfde branche met analistenadviezen, zodat je ${n} kunt vergelijken met concurrenten.`;
   }
   const i = f.insiders || {};
   const fu = f.funds;
