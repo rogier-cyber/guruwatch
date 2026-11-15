@@ -438,7 +438,9 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
   const c = now.counts;
   const day = 864e5;
   const recent = (d) => Date.now() - new Date(d).getTime() < 92 * day;
-  const lastE = earningsRows.length ? withReaction(earningsRows[0]) : null;
+  // Alleen recente cijfers noemen (Rogier): ouder dan ~4 maanden laten we weg.
+  const freshE = (r) => r && r.date && Date.now() - new Date(r.date).getTime() < 130 * 864e5;
+  const lastE = earningsRows.length && freshE(earningsRows[0]) ? withReaction(earningsRows[0]) : null;
   const revs = income.map((x) => Number(x.revenue)).filter((v) => v > 0);
   const facts = {
     name: shortName(profile ? profile.companyName : symbol),
@@ -521,7 +523,7 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     last: recentActs[0] ? { label: recentActs[0].action.label, firm: recentActs[0].firm, date: recentActs[0].date } : null,
   };
   facts.analystFirms = [...new Set(latest.map((t) => t.analyst_firm).filter(Boolean))];
-  const beatRows = earningsRows.map(withReaction).filter((r) => r.surprise !== null && r.surprise !== undefined);
+  const beatRows = lastE ? earningsRows.map(withReaction).filter((r) => r.surprise !== null && r.surprise !== undefined && Date.now() - new Date(r.date).getTime() < 2 * 365 * 864e5) : [];
   facts.earningsBeats = beatRows.length ? { beats: beatRows.filter((r) => r.surprise > 0).length, total: beatRows.length } : null;
   const last13 = months.slice(-13);
   const tIdx = last13.findIndex((m) => m.mean);
