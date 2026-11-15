@@ -2,6 +2,7 @@
 function gwSuggest(input, list, mode) {
   if (!input || !list) return;
   var ins = mode === 'insiders';
+  var onlyStocks = ins || mode === 'stocks';
   var stockHref = function (sym) { return ins ? '/insiders?zoek=' + encodeURIComponent(sym) : '/aandeel/' + encodeURIComponent(sym); };
   var form = input.form;
   var items = [];
@@ -53,14 +54,14 @@ function gwSuggest(input, list, mode) {
     group('Aandelen', data.stocks.map(function (s) {
       return { href: stockHref(s.symbol), icon: logo(s.symbol), main: mark(s.symbol, term), sub: mark(s.name, term), tag: s.ex && !/^(NASDAQ|NYSE|AMEX)$/i.test(s.ex) ? s.ex : '' };
     }));
-    if (!ins) group("Guru's", data.gurus.map(function (g) {
+    if (!onlyStocks) group("Guru's", data.gurus.map(function (g) {
       return { href: '/guru/' + encodeURIComponent(g.slug), icon: '<span class="sx-av sx-gu">' + esc(initials(g.name)) + '</span>', main: mark(g.name, term), sub: mark(g.fund, term), tag: 'Guru' };
     }));
-    if (!ins) group('Analisten', data.analysts.map(function (a) {
+    if (!onlyStocks) group('Analisten', data.analysts.map(function (a) {
       return { href: '/analist/' + encodeURIComponent(a.slug), icon: '<span class="sx-av">' + esc(initials(a.name)) + '</span>', main: mark(a.name, term), sub: mark(a.firm, term), tag: 'Analist' };
     }));
     if (!items.length) html = '<div class="sx-empty">Geen resultaten voor “' + esc(term) + '”</div>';
-    html += '<button type="submit" class="sx-all">' + (ins ? 'Zoek insider trades voor “' : 'Alle resultaten voor “') + esc(term) + '” <span>↵</span></button>';
+    html += '<button type="submit" class="sx-all">' + (ins ? 'Zoek insider trades voor “' : onlyStocks ? 'Zoek aandelen voor “' : 'Alle resultaten voor “') + esc(term) + '” <span>↵</span></button>';
     list.innerHTML = html;
     active = -1;
     open(true);
@@ -118,3 +119,4 @@ function gwSuggest(input, list, mode) {
 }
 gwSuggest(document.querySelector('.search input[name=q]'), document.getElementById('sx-list'));
 document.querySelectorAll('input[data-sx="insiders"]').forEach(function (el) { gwSuggest(el, el.parentNode.querySelector('.sx-list'), 'insiders'); });
+document.querySelectorAll('input[data-sx="stocks"]').forEach(function (el) { gwSuggest(el, el.parentNode.querySelector('.sx-list'), 'stocks'); });

@@ -21,6 +21,14 @@
   </div>
 </section>
 
+<form class="card stk-search" method="get" action="/zoek" role="search">
+  <label for="stk-q">Zoek een specifiek aandeel</label>
+  <div class="ins-search">
+    <div class="sx ins-sx"><input id="stk-q" type="search" name="q" placeholder="Bedrijf of ticker, bv. Apple of NVDA" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="stk-sx-list" data-sx="stocks"><div class="sx-list" id="stk-sx-list" role="listbox" hidden></div></div>
+    <button type="submit">Zoek</button>
+  </div>
+</form>
+
 <div class="ix-layout">
   <aside class="card ix-side">
     <h2>Indices</h2>
