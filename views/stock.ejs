@@ -121,7 +121,7 @@
 <% if (rot.some(function (r) { return r.counts || r.target; })) { var maxC = Math.max.apply(null, [1].concat(rot.map(function (r) { return r.counts ? Math.max(r.counts.strong_buy, r.counts.buy, r.counts.hold, r.counts.sell, r.counts.strong_sell) : 0; }))); %>
 <section class="card">
   <div class="card-h"><h2>Adviezen voor <%= name %> door de tijd</h2></div>
-  <% if (sx.rot) { %><p class="sec-txt"><%= sx.rot %></p><% } %>
+  <% if (sx.rot) { fmt.paras(sx.rot).forEach(function (t) { %><p class="sec-txt"><%= t %></p><% }) } %>
   <div class="tbl-wrap"><table class="tbl rot">
     <thead><tr><th></th><% rot.forEach(function (r) { %><th><%= r.label %><span class="muted small rot-d"><%= fmt.date(r.date) %></span></th><% }) %></tr></thead>
     <tbody>

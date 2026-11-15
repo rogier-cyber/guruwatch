@@ -15,6 +15,70 @@ const signed = (v) => fmt.pct(v);
 const list = (a) => (a.length <= 1 ? a.join('') : `${a.slice(0, -1).join(', ')} en ${a[a.length - 1]}`);
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 
+// Analyse boven de tabel "Adviezen door de tijd": wat verschoof er in de adviezen, het koersdoel en het potentieel?
+// rot = [nu, 1 maand, 3 maanden, 1 jaar] uit analystView.ratingsOverTime. Geeft alinea's gescheiden door een lege regel.
+const ROT_CATS = [['strong_buy', 'sterk-kopenadviezen'], ['buy', 'kopenadviezen'], ['hold', 'houdenadviezen'], ['sell', 'verkoopadviezen'], ['strong_sell', 'sterk-verkopenadviezen']];
+function rotStory(rot, n) {
+  if (!Array.isArray(rot) || rot.length < 4 || !rot[0] || !rot[0].counts) return null;
+  const [now, m1, m3, y1] = rot;
+  const tot = (c) => (c ? ROT_CATS.reduce((s, [k]) => s + (Number(c[k]) || 0), 0) : 0);
+  const buyShare = (c) => (tot(c) ? ((Number(c.strong_buy) || 0) + (Number(c.buy) || 0)) / tot(c) : null);
+  const paras = [];
+
+  // 1. Oordeel nu en een jaar geleden.
+  if (now.verdict && y1 && y1.verdict) {
+    paras.push(now.verdict === y1.verdict
+      ? `Het oordeel van analisten over ${n} is "${now.verdict}", net als een jaar geleden. Het beeld is over het geheel dus stabiel.`
+      : `Een jaar geleden was het oordeel van analisten over ${n} nog "${y1.verdict}", nu is het "${now.verdict}". ${isNum(now.score) && isNum(y1.score) && now.score > y1.score ? 'Analisten zijn in een jaar dus positiever geworden.' : 'Analisten zijn in een jaar dus voorzichtiger geworden.'}`);
+  }
+
+  // 2. Verschuivingen in het aantal adviezen (eerst t.o.v. een maand geleden, anders t.o.v. drie maanden).
+  const shifts = (from, label) => {
+    if (!from || !from.counts || !tot(from.counts)) return null;
+    const ch = ROT_CATS.map(([k, name]) => ({ name, a: Number(from.counts[k]) || 0, b: Number(now.counts[k]) || 0 }))
+      .filter((x) => x.a !== x.b && (Math.abs(x.b - x.a) >= 2 || x.b === 0 || x.a === 0));
+    if (!ch.length) return null;
+    const parts = ch.slice(0, 3).map((x, i) => (i === 0 ? `${x.b > x.a ? 'steeg' : 'daalde'} het aantal ${x.name} van ${x.a} naar ${x.b}` : `het aantal ${x.name} ${x.b > x.a ? 'steeg' : 'daalde'} van ${x.a} naar ${x.b}`));
+    const txt = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} en ${parts[parts.length - 1]}` : parts[0];
+    return { label, txt, ch, from };
+  };
+  const sh = shifts(m1, 'In de afgelopen maand') || shifts(m3, 'In de afgelopen drie maanden');
+  if (sh) {
+    let t = `${sh.label} ${sh.txt}.`;
+    const bsA = buyShare(sh.from.counts), bsB = buyShare(now.counts);
+    const sb = sh.ch.find((x) => x.name === 'sterk-kopenadviezen');
+    const neg = sh.ch.filter((x) => /verko/.test(x.name)).reduce((s, x) => s + x.b - x.a, 0);
+    if (sb && sb.b < sb.a && isNum(bsB) && bsB >= 0.6) t += ' Analisten blijven overwegend positief, maar het enthousiasme is wat minder geworden: minder analisten zien het aandeel als topkans.';
+    else if (sb && sb.b > sb.a) t += ' Meer analisten zien het aandeel dus als topkans.';
+    else if (neg > 0) t += ' Er zijn dus meer analisten die risico\'s zien.';
+    else if (neg < 0) t += ' Het aantal sceptici is dus afgenomen.';
+    if (isNum(bsA) && isNum(bsB)) t += ` Nu adviseert ${pct(bsB)} van de analisten kopen, tegen ${pct(bsA)} toen.`;
+    paras.push(t);
+  }
+
+  // 3. Koersdoel, koers en potentieel.
+  const tParts = [];
+  if (isNum(now.target) && y1 && isNum(y1.target) && y1.target > 0) {
+    const d = now.target / y1.target - 1;
+    tParts.push(`Het gemiddelde koersdoel ging in een jaar van ${P(y1.target)} naar ${P(now.target)} (${d >= 0 ? '+' : '−'}${pct(d)}).`);
+  }
+  if (isNum(now.price) && m3 && isNum(m3.price) && m3.price > 0 && isNum(now.target) && isNum(m3.target) && m3.target > 0) {
+    const dp = now.price / m3.price - 1, dt = now.target / m3.target - 1;
+    if (dp < -0.1 && dt > -0.02) tParts.push(`De koers daalde de afgelopen drie maanden met ${pct(dp)}, terwijl analisten hun koersdoel ${dt > 0.02 ? 'verhoogden' : 'vrijwel gelijk hielden'}. Zij zien de daling dus niet als reden om minder positief te zijn.`);
+    else if (dp > 0.1 && dt < 0.02) tParts.push(`De koers steeg de afgelopen drie maanden met ${pct(dp)}, maar het koersdoel ging niet mee omhoog. De ruimte tot het koersdoel is daardoor kleiner geworden.`);
+    else if (dp > 0.1 && dt > 0.05) tParts.push(`Koers (+${pct(dp)}) en koersdoel (+${pct(dt)}) stegen de afgelopen drie maanden allebei: analisten verhoogden hun doelen achter de koers aan.`);
+  }
+  if (isNum(now.upside)) {
+    let t = `Het potentieel tot het gemiddelde koersdoel is nu ${now.upside >= 0 ? '+' : '−'}${pct(now.upside)}.`;
+    if (y1 && isNum(y1.upside)) t += y1.upside < 0
+      ? ` Een jaar geleden stond de koers juist boven het gemiddelde koersdoel (${'−'}${pct(y1.upside)}): analisten liepen toen achter de koers aan.`
+      : ` Een jaar geleden was dat ${'+'}${pct(y1.upside)}.`;
+    tParts.push(t);
+  }
+  if (tParts.length) paras.push(tParts.join(' '));
+  return paras.length ? paras.join('\n\n') : null;
+}
+
 // Kies de sterkste punten (hoogste gewicht), maximaal `max`.
 const top = (points, max) => points.filter(Boolean).sort((a, b) => b.w - a.w).slice(0, max).map((p) => p.text);
 
@@ -393,12 +457,196 @@ function sections(f) {
     const d = mt.buyShareNow - mt.buyShareThen;
     out.ratings = `${pct(mt.buyShareNow)} van de analisten adviseert nu kopen, tegen ${pct(mt.buyShareThen)} ${mt.ratingsBack} maanden geleden. ${Math.abs(d) < 0.05 ? 'Het sentiment is dus vrijwel gelijk gebleven.' : d > 0 ? 'Analisten zijn dus positiever geworden.' : 'Analisten zijn dus voorzichtiger geworden.'}`;
   }
-  const r = f.rotThen;
-  if (r && r.verdict && c.verdict) {
-    out.rot = r.verdict === c.verdict
-      ? `Een jaar geleden was het oordeel over ${n} ook "${c.verdict}"; het beeld is dus stabiel.`
-      : `Een jaar geleden was het oordeel over ${n} nog "${r.verdict}", nu is het "${c.verdict}".`;
-    if (isNum(r.target) && isNum(c.target)) out.rot += ` Het gemiddelde koersdoel was toen ${P(r.target)}, nu ${P(c.target)}.`;
+  const rotTxt = rotStory(f.rotAll, n);
+  if (rotTxt) out.rot = rotTxt;
+  else {
+    const r = f.rotThen;
+    if (r && r.verdict && c.verdict) {
+      out.rot = r.verdict === c.verdict
+        ? `Een jaar geleden was het oordeel over ${n} ook "${c.verdict}"; het beeld is dus stabiel.`
+        : `Een jaar geleden was het oordeel over ${n} nog "${r.verdict}", nu is het "${c.verdict}".`;
+      if (isNum(r.target) && isNum(c.target)) out.rot += ` Het gemiddelde koersdoel was toen ${P(r.target)}, nu ${P(c.target)}.`;
+    }
+  }
+  const ra = f.recentActions;
+  if (ra) {
+    let a;
+    if (!ra.upgrades && !ra.downgrades && !ra.raises && !ra.cuts) a = `In de afgelopen drie maanden hebben analisten hun advies en koersdoel voor ${n} niet aangepast.`;
+    else {
+      const bits = [];
+      if (ra.upgrades) bits.push(`${ra.upgrades} upgrade${ra.upgrades === 1 ? '' : 's'}`);
+      if (ra.downgrades) bits.push(`${ra.downgrades} downgrade${ra.downgrades === 1 ? '' : 's'}`);
+      if (ra.raises) bits.push(`${ra.raises} verhoogd${ra.raises === 1 ? ' koersdoel' : 'e koersdoelen'}`);
+      if (ra.cuts) bits.push(`${ra.cuts} verlaagd${ra.cuts === 1 ? ' koersdoel' : 'e koersdoelen'}`);
+      a = `In de afgelopen drie maanden telden we voor ${n} ${list(bits)}.`;
+      const ACT = { Upgrade: 'een upgrade', Downgrade: 'een downgrade', Gestart: 'een nieuwe dekking', Herhaald: 'een herhaald advies', 'Doel omhoog': 'een hoger koersdoel', 'Doel omlaag': 'een lager koersdoel' };
+      if (ra.last && ra.last.firm) a += ` De meest recente actie was ${ACT[ra.last.label] || 'een nieuw advies'} van ${ra.last.firm} op ${fmt.date(ra.last.date)}.`;
+    }
+    add('upgrades', 'Upgrades en downgrades', `Is ${n} onlangs opgewaardeerd of afgewaardeerd?`, a);
+  }
+
+  if (f.analystFirms && f.analystFirms.length) {
+    const fl = f.analystFirms;
+    add('analisten', 'Welke analisten?', `Welke analisten en banken volgen het aandeel ${n}?`,
+      `De afgelopen 6 maanden gaven ${fl.length} bank${fl.length === 1 ? '' : 'en'} een koersdoel voor ${n}, waaronder ${list(fl.slice(0, 6))}.${f.bestAnalyst ? ` De analist met de beste trackrecord op dit aandeel is ${f.bestAnalyst.name}${f.bestAnalyst.firm ? ` van ${f.bestAnalyst.firm}` : ''}.` : ''}`);
+  }
+
+  if (f.bestAnalyst) {
+    add('beste', 'Beste analist', `Welke analist voorspelt de koers van ${n} het best?`,
+      `Op basis van eerdere koersdoelen voor ${n} scoort ${f.bestAnalyst.name}${f.bestAnalyst.firm ? ` (${f.bestAnalyst.firm})` : ''} het best, met een GuruScore van ${Math.round(f.bestAnalyst.score)} over ${f.bestAnalyst.calls} adviezen. De GuruScore kijkt hoe vaak een koersdoel werd gehaald en hoe het aandeel het daarna deed ten opzichte van de S&P 500.`);
+  }
+
+  const pe = f.peers;
+  if (pe && pe.length >= 2 && isNum(c.upside)) {
+    const best = pe.filter((p) => isNum(p.upside)).sort((a, b) => b.upside - a.upside)[0];
+    const better = pe.filter((p) => isNum(p.upside) && p.upside > c.upside).length;
+    add('concurrenten', 'Versus concurrenten', `Hoe doet ${n} het ten opzichte van concurrenten?`,
+      `Vergeleken met ${pe.length} andere ${f.sector ? `${f.sector}-aandelen` : 'sectorgenoten'} (${list(pe.slice(0, 4).map((p) => p.symbol))}) zien analisten bij ${better === 0 ? 'geen enkele' : better} ${better === 1 ? 'concurrent' : 'concurrenten'} meer potentieel dan bij ${n}.${best ? ` Het meeste potentieel heeft ${best.name || best.symbol} (${best.symbol}) met ${signed(best.upside)}.` : ''}`);
+  }
+
+  if (f.nextEarnings && f.nextEarnings.inDays >= 0) {
+    add('cijfers', 'Volgende cijfers', `Wanneer publiceert ${n} de volgende kwartaalcijfers?`,
+      `${n} publiceert naar verwachting op ${fmt.date(f.nextEarnings.date)} nieuwe kwartaalcijfers.${isNum(f.nextEarnings.epsEstimated) ? ` Analisten verwachten een winst per aandeel van ${P(f.nextEarnings.epsEstimated)}.` : ''}`);
+  }
+
+  const e = f.lastEarnings;
+  if (e && isNum(e.epsSurprise)) {
+    const b = f.earningsBeats;
+    add('laatstecijfers', 'Laatste cijfers', `Versloeg ${n} de verwachtingen bij de laatste kwartaalcijfers?`,
+      `Bij de cijfers van ${fmt.date(e.date)} was de winst per aandeel ${P(e.epsActual)}, tegen een verwachting van ${P(e.epsEstimated)}: ${e.epsSurprise >= 0 ? `${pct(e.epsSurprise)} beter` : `${pct(e.epsSurprise)} slechter`} dan verwacht.${isNum(e.reaction) ? ` De koers reageerde met ${signed(e.reaction)}.` : ''}${b && b.total >= 3 ? ` In ${b.beats} van de laatste ${b.total} kwartalen was de winst hoger dan verwacht.` : ''}`);
+  }
+
+  const i = f.insiders;
+  if (i && (i.buys || i.sells)) {
+    add('insiders', 'Insiders', `Kopen of verkopen insiders aandelen ${n}?`,
+      `In de afgelopen drie maanden waren er ${i.buys} aankopen${i.buys ? ` (${fmt.money(i.buyValue)})` : ''} en ${i.sells} verkopen${i.sells ? ` (${fmt.money(i.sellValue)})` : ''} door bestuurders en grootaandeelhouders van ${n}.${i.topBuy ? ` De grootste aankoop was van ${i.topBuy.reporting_name}.` : i.topSell ? ` De grootste verkoop was van ${i.topSell.reporting_name}.` : ''} Insiders verkopen vaak om persoonlijke redenen; aankopen zeggen meestal meer.`);
+  }
+
+  if (f.funds && f.funds.count) {
+    add('guru', "Guru's", `Welke bekende beleggers hebben ${n} in portefeuille?`,
+      `Volgens de laatste 13F-opgaven ${f.funds.count === 1 ? 'heeft' : 'hebben'} ${list(f.funds.names.slice(0, 5))} aandelen ${n} in portefeuille.`);
+  }
+
+  const fin = f.fundamentals || {};
+  if (isNum(fin.pe) && fin.pe > 0) {
+    add('waardering', 'Waardering', `Is het aandeel ${n} duur?`,
+      `${n} heeft een koers-winstverhouding van ${fmt.num(fin.pe, 1)} op basis van de winst van de afgelopen twaalf maanden. ${fin.pe < 15 ? 'Dat is laag: beleggers betalen relatief weinig voor elke euro winst.' : fin.pe > 30 ? 'Dat is hoog: beleggers rekenen op flinke groei.' : 'Dat is gemiddeld voor een beursgenoteerd bedrijf.'}${isNum(fin.netMargin) ? ` De nettomarge is ${signed(fin.netMargin)}.` : ''}`);
+  }
+
+  const dv = f.dividend;
+  if (dv) {
+    add('dividend', 'Dividend', `Keert ${n} dividend uit?`, dv.amount > 0
+      ? `Ja. ${n} keert per jaar ongeveer ${P(dv.amount)} dividend per aandeel uit${isNum(dv.yield) ? `, een dividendrendement van ${pct(dv.yield)} bij de huidige koers` : ''}.`
+      : `${n} keert op dit moment geen dividend uit.`);
+  }
+
+  const ab = f.about;
+  if (ab && (ab.text || ab.industry)) {
+    let a = ab.text || '';
+    const facts2 = [];
+    if (ab.industry) facts2.push(`${n} valt in de sector ${f.sector || 'onbekend'}, in de branche ${ab.industry}`);
+    if (ab.exchange) facts2.push(`het aandeel staat genoteerd aan de ${ab.exchange} onder de ticker ${S}`);
+    if (ab.marketCap) facts2.push(`de beurswaarde is ${fmt.money(ab.marketCap)}`);
+    let b = facts2.length ? `${facts2[0].charAt(0).toUpperCase()}${facts2[0].slice(1)}${facts2.length > 1 ? `; ${facts2.slice(1).join(' en ')}` : ''}.` : '';
+    if (ab.ceo) b += ` De topman is ${ab.ceo}.`;
+    if (ab.employees) b += ` Het bedrijf heeft ongeveer ${fmt.num(ab.employees)} medewerkers${ab.country ? ` en het hoofdkantoor staat in ${ab.country === 'US' ? 'de Verenigde Staten' : ab.country}` : ''}.`;
+    if (ab.ipo) b += ` ${n} ging op ${fmt.date(ab.ipo)} naar de beurs.`;
+    const pos = out.findIndex((x) => x.id === 'stijgen');
+    const item = { id: 'bedrijf', chip: `Wat doet ${n}?`, q: `Wat doet ${n} en hoe verdient het bedrijf geld?`, a: [a, b.trim()].filter(Boolean).join('\n\n') };
+    if (item.a) out.splice(pos >= 0 ? pos : out.length, 0, item);
+  }
+  return out.map((x) => ({ ...x, a: [x.a, ...extra(x.id, f)].filter(Boolean).join('\n\n') }));
+}
+
+// Extra uitleg per vraag: meer context en meer getallen, zodat elk antwoord op zichzelf staat.
+function extra(id, f) {
+  const n = f.name;
+  const c = f.consensus || {};
+  const t = f.technicals || {};
+  const fin = f.fundamentals || {};
+  const out = [];
+  switch (id) {
+    case 'koersdoel': {
+      if (isNum(c.target) && f.smart && isNum(f.smart.target)) out.push(`Kijk je alleen naar de analisten met de beste trackrecord (GuruScore 70 of hoger), dan is het gemiddelde koersdoel ${P(f.smart.target)}, ${pct(f.smart.upside)} ${f.smart.upside >= 0 ? 'boven' : 'onder'} de koers. Hun oordeel weegt zwaarder omdat zij in het verleden vaker gelijk kregen.`);
+      const mt = f.monthsTrend;
+      if (mt && isNum(mt.targetThen) && isNum(mt.targetNow) && mt.targetThen > 0) out.push(`${mt.monthsBack} maanden geleden lag het gemiddelde koersdoel nog op ${P(mt.targetThen)}; sindsdien is het ${mt.targetNow >= mt.targetThen ? 'gestegen' : 'gedaald'} met ${pct(mt.targetNow / mt.targetThen - 1)}.`);
+      out.push(`Een koersdoel is de prijs die een analist verwacht dat het aandeel over ongeveer twaalf maanden waard is. Het is geen garantie: koersdoelen worden regelmatig bijgesteld na kwartaalcijfers, nieuws of veranderingen in de markt. Op Guruwatch zie je per analist ook hoe vaak eerdere koersdoelen werden gehaald.`);
+      break;
+    }
+    case 'verwachting': {
+      if (isNum(t.yearLow) && isNum(t.yearHigh)) out.push(`Ter vergelijking: in de afgelopen twaalf maanden bewoog ${n} tussen ${P(t.yearLow)} en ${P(t.yearHigh)}. De huidige koers is ${P(f.price)}${isNum(t.fromHigh) ? `, ${pct(t.fromHigh)} onder de hoogste koers van het jaar` : ''}.`);
+      if (c.low > 0 && c.high > 0) out.push(`De spreiding in verwachtingen is groot: de meest optimistische analist rekent op ${P(c.high)}, de meest voorzichtige op ${P(c.low)}. Hoe verder die uit elkaar liggen, hoe onzekerder de toekomst van het aandeel volgens de markt.`);
+      break;
+    }
+    case 'kopen': {
+      if (f.smart && isNum(f.smart.upside) && isNum(c.upside)) out.push(`De beste analisten (GuruScore 70+) zijn ${f.smart.upside > c.upside + 0.02 ? 'positiever' : f.smart.upside < c.upside - 0.02 ? 'voorzichtiger' : 'even positief'} dan het gemiddelde: hun koersdoel ligt ${pct(f.smart.upside)} ${f.smart.upside >= 0 ? 'boven' : 'onder'} de koers.`);
+      if (f.sectorScore && isNum(c.score)) out.push(`Op een schaal van 1 (sterk verkopen) tot 5 (sterk kopen) scoort ${n} ${fmt.num(c.score, 2)}, tegen gemiddeld ${fmt.num(f.sectorScore, 2)} voor ${f.sector || 'sector'}-aandelen.`);
+      out.push(`Kijk bij een beslissing ook naar de waardering, de laatste kwartaalcijfers en wat insiders doen. Die staan allemaal verderop op deze pagina, in de bull case en de bear case.`);
+      break;
+    }
+    case 'stijgen':
+    case 'dalen':
+      if (c.low > 0 && c.high > 0 && c.analysts > 1) out.push(`Alle ${c.analysts} koersdoelen samen lopen van ${P(c.low)} tot ${P(c.high)}. Het gemiddelde van ${P(c.target)} geeft het beste beeld van wat analisten gemiddeld verwachten; de uitersten laten zien hoe groot de onzekerheid is.`);
+      break;
+    case 'upgrades':
+      out.push(`Een upgrade betekent dat een analist zijn advies verhoogt, bijvoorbeeld van houden naar kopen; een downgrade is het omgekeerde. Ook zonder nieuw advies kan een analist het koersdoel verhogen of verlagen. Een reeks upgrades of hogere koersdoelen is vaak een teken dat het sentiment rond het aandeel verbetert.`);
+      break;
+    case 'analisten':
+      if (c.analysts) out.push(`In totaal telden we de afgelopen 6 maanden ${c.analysts} analist${c.analysts === 1 ? '' : 'en'} met een koersdoel. Bij elke analist zie je op Guruwatch de GuruScore: een cijfer van 0 tot 100 dat laat zien hoe goed zijn eerdere koersdoelen uitkwamen.`);
+      break;
+    case 'beste':
+      out.push(`Een hoge GuruScore betekent niet dat de analist altijd gelijk heeft, maar wel dat zijn koersdoelen in het verleden vaker uitkwamen dan gemiddeld. Daarom loont het om bij een aandeel extra te letten op wat de best scorende analisten zeggen.`);
+      break;
+    case 'cijfers':
+      if (f.earningsBeats && f.earningsBeats.total >= 3) out.push(`${n} versloeg de winstverwachting in ${f.earningsBeats.beats} van de laatste ${f.earningsBeats.total} kwartalen. Rond de publicatie beweegt de koers vaak sterker dan normaal.`);
+      break;
+    case 'insiders':
+      out.push(`Insiders zijn bestuurders, commissarissen en grootaandeelhouders. Zij moeten elke transactie binnen twee werkdagen melden bij de Amerikaanse toezichthouder SEC. Toekenningen van aandelen als beloning tellen we niet mee als aankoop.`);
+      break;
+    case 'waardering':
+      if (isNum(fin.revenueGrowth)) out.push(`De omzet ${fin.revenueGrowth >= 0 ? 'groeide' : 'kromp'} in het laatste kwartaal ${pct(fin.revenueGrowth)} ten opzichte van een jaar eerder. Snelle groei kan een hogere koers-winstverhouding rechtvaardigen.`);
+      if (isNum(c.upside)) out.push(`Analisten zien gemiddeld ${pct(c.upside)} ${c.upside >= 0 ? 'opwaarts potentieel' : 'neerwaarts risico'}, wat ook iets zegt over hoe zij de huidige waardering inschatten.`);
+      break;
+    case 'dividend':
+      out.push(`Het dividendrendement is het jaarlijkse dividend gedeeld door de koers. Een hoog rendement is aantrekkelijk voor inkomen, maar kan ook betekenen dat de koers flink is gedaald.`);
+      break;
+    case 'guru':
+      out.push(`Grote Amerikaanse beleggers moeten elk kwartaal via een 13F-opgave melden welke aandelen ze bezitten. Die opgaven komen tot 45 dagen na het kwartaal naar buiten, dus de posities kunnen inmiddels veranderd zijn.`);
+      break;
+    default:
+  }
+  return out.map(tidy);
+}
+
+// Korte inleidingen per blok op de pagina.
+function sections(f) {
+  const n = f.name;
+  const c = f.consensus || {};
+  const out = {};
+  const mt = f.monthsTrend;
+  if (mt && isNum(mt.targetThen) && isNum(mt.targetNow)) {
+    const ch = mt.targetNow / mt.targetThen - 1;
+    let t = `Het gemiddelde koersdoel voor ${n} ging in ${mt.monthsBack} maanden van ${P(mt.targetThen)} naar ${P(mt.targetNow)} (${signed(ch)}).`;
+    if (isNum(mt.closeThen) && isNum(mt.closeNow)) {
+      const pc = mt.closeNow / mt.closeThen - 1;
+      t += ` De koers ${pc >= 0 ? 'steeg' : 'daalde'} in dezelfde periode ${pct(pc)}${Math.sign(pc) === Math.sign(ch) ? ', dus analisten bewogen mee met de markt.' : ', analisten gingen dus tegen de koers in.'}`;
+    }
+    out.targets = t;
+  }
+  if (mt && isNum(mt.buyShareThen) && isNum(mt.buyShareNow)) {
+    const d = mt.buyShareNow - mt.buyShareThen;
+    out.ratings = `${pct(mt.buyShareNow)} van de analisten adviseert nu kopen, tegen ${pct(mt.buyShareThen)} ${mt.ratingsBack} maanden geleden. ${Math.abs(d) < 0.05 ? 'Het sentiment is dus vrijwel gelijk gebleven.' : d > 0 ? 'Analisten zijn dus positiever geworden.' : 'Analisten zijn dus voorzichtiger geworden.'}`;
+  }
+  const rotTxt = rotStory(f.rotAll, n);
+  if (rotTxt) out.rot = rotTxt;
+  else {
+    const r = f.rotThen;
+    if (r && r.verdict && c.verdict) {
+      out.rot = r.verdict === c.verdict
+        ? `Een jaar geleden was het oordeel over ${n} ook "${c.verdict}"; het beeld is dus stabiel.`
+        : `Een jaar geleden was het oordeel over ${n} nog "${r.verdict}", nu is het "${c.verdict}".`;
+      if (isNum(r.target) && isNum(c.target)) out.rot += ` Het gemiddelde koersdoel was toen ${P(r.target)}, nu ${P(c.target)}.`;
+    }
   }
   const ra = f.recentActions;
   if (ra && ra.total) {
@@ -460,4 +708,4 @@ function buildStory(facts) {
   };
 }
 
-module.exports = { buildStory };
+module.exports = { buildStory, rotStory };
