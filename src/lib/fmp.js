@@ -78,6 +78,7 @@ module.exports = {
   // Voor achtergrondtaken: zonder cache
   historyNoCache: async (symbol, from, to) => arr(await request('historical-price-eod/light', { symbol, from, to }, { ttl: 0 })),
   ratingHistory: async (symbol) => arr(await request('grades-historical', { symbol, limit: 60 }, { ttl: 6 * 60 * MIN })),
+  earningsHistoryNoCache: async (symbol) => arr(await request('earnings', { symbol, limit: 24 }, { ttl: 0 })),
   earningsCalendarNoCache: async (from, to) => arr(await request('earnings-calendar', { from, to }, { ttl: 0 })),
   profileNoCache: async (symbol) => first(await request('profile', { symbol }, { ttl: 0 })),
   estimatesNoCache: async (symbol) => arr(await request('analyst-estimates', { symbol, period: 'annual', page: 0, limit: 10 }, { ttl: 0 })),

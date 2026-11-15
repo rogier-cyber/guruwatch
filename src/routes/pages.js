@@ -496,6 +496,19 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
   }
   const who = (t) => (t.analyst_name && t.analyst_firm ? `${t.analyst_name} van ${t.analyst_firm}` : t.analyst_name || t.analyst_firm || 'een analist');
   const tgtFact = (t) => (t ? { target: Number(t.price_target), who: who(t), date: t.published_at, upside: price > 0 ? Number(t.price_target) / price - 1 : null } : null);
+  if (profile) {
+    const sentences = String(profile.description || '').match(/[^.!?]+[.!?]+(\s|$)/g) || [];
+    facts.about = {
+      text: sentences.slice(0, 3).join('').trim() || null,
+      industry: profile.industry || null,
+      exchange: profile.exchange || profile.exchangeShortName || null,
+      country: profile.country || null,
+      ceo: profile.ceo || null,
+      employees: Number(profile.fullTimeEmployees) || null,
+      ipo: profile.ipoDate || null,
+      marketCap: Number(profile.marketCap || profile.mktCap) || null,
+    };
+  }
   facts.highTarget = tgtFact(bull);
   facts.lowTarget = tgtFact(bear);
   const recentActs = actions.filter((a) => recent(a.date));
@@ -571,7 +584,7 @@ pub.get('/aandeel/:symbol', wrap(async (req, res) => {
     ] },
   ];
   if (story.faq.length) {
-    jsonld.push({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: story.faq.map((x) => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: x.a } })) });
+    jsonld.push({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: story.faq.map((x) => ({ '@type': 'Question', name: x.q, acceptedAnswer: { '@type': 'Answer', text: String(x.a).replace(/\n\n/g, ' ') } })) });
   }
 
   const members = await safe(cm.stockSentiment(symbol), null);
