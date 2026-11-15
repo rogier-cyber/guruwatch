@@ -40,7 +40,8 @@
       <%- gc.spark(vals, { width: 130, height: 42 }) %>
     </div>
     <div class="gk-tops">
-      <% f.tops.slice(0, 5).forEach(function (t) { if (!t.symbol) return; %><span class="gk-tp" title="<%= t.issuer %>"><%- ui.logo(t.symbol) %><b><%= t.symbol %></b><i><%= fmt.pct(t.weight, false) %></i></span><% }) %>
+      <span class="gk-tops-l">Top 5 · % van portefeuille</span>
+      <% f.tops.slice(0, 5).forEach(function (t) { if (!t.symbol) return; %><span class="gk-tp" title="<%= t.issuer %>: <%= fmt.pct(t.weight, false) %> van de portefeuille"><%- ui.logo(t.symbol) %><b><%= t.symbol %></b><i><%= fmt.pct(t.weight, false) %></i></span><% }) %>
     </div>
     <div class="gk-foot">
       <span><% if (f.style) { %><b class="gk-style gk-<%= tone(f.style) %>"><%= f.style %></b><% } %><%= f.latest_positions || '–' %> posities</span>

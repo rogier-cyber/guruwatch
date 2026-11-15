@@ -139,9 +139,9 @@
 <section class="card tint-violet">
   <div class="card-h"><h2>Consensus van <%= smart.count %> analisten</h2><a href="/methode" class="small">Hoe berekend?</a></div>
   <div class="cons-compare">
-    <div><span class="muted small">Gewone consensus</span><strong><%= fmt.price(smart.mean) %></strong><em class="<%= fmt.tone(smart.upside) %>"><%= fmt.pct(smart.upside) %></em></div>
+    <div><span class="muted small">Gewone consensus</span><strong><%= fmt.price(smart.mean) %></strong><em class="<%= fmt.tone(smart.upside) %>"><%= fmt.pct(smart.upside) %> potentieel</em></div>
     <div class="smart"><span class="muted small">Slimme consensus <span class="hint" title="Alleen analisten met een GuruScore van 70 of hoger">ⓘ</span></span>
-      <% if (smart.topMean) { %><strong><%= fmt.price(smart.topMean) %></strong><em class="<%= fmt.tone(smart.topUpside) %>"><%= fmt.pct(smart.topUpside) %> · <%= smart.topCount %> topanalist<%= smart.topCount === 1 ? '' : 'en' %></em><% } else { %><strong>–</strong><em class="muted">Geen topanalisten op dit aandeel</em><% } %></div>
+      <% if (smart.topMean) { %><strong><%= fmt.price(smart.topMean) %></strong><em class="<%= fmt.tone(smart.topUpside) %>"><%= fmt.pct(smart.topUpside) %> potentieel · <%= smart.topCount %> topanalist<%= smart.topCount === 1 ? '' : 'en' %></em><% } else { %><strong>–</strong><em class="muted">Geen topanalisten op dit aandeel</em><% } %></div>
     <div><span class="muted small">Mediaan</span><strong><%= fmt.price(smart.median) %></strong><em class="muted"><%= fmt.price(smart.low) %> – <%= fmt.price(smart.high) %></em></div>
   </div>
   <div class="band" role="img" aria-label="Spreiding van koersdoelen">

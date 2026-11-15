@@ -37,7 +37,7 @@
         <% if (canUndo) { %><form method="post" action="/community/intrekken"><input type="hidden" name="id" value="<%= c.id %>"><button class="link small">Intrekken</button></form><% } %></div>
       <div class="cm-card-m">
         <%- ui.stock(c.symbol, c.name) %>
-        <span class="cm-dir <%= c.direction > 0 ? 'up' : 'down' %>"><%= c.direction > 0 ? '▲' : '▼' %> <%= fmt.price(c.target) %> <em><%= fmt.pct(c.upside) %></em></span>
+        <span class="cm-dir <%= c.direction > 0 ? 'up' : 'down' %>"><%= c.direction > 0 ? '▲' : '▼' %> <%= fmt.price(c.target) %> <em title="Ten opzichte van de koers op het moment van voorspellen"><%= fmt.pct(c.upside) %> t.o.v. koers</em></span>
       </div>
       <%- include('partials/progress', { c: c }) %>
       <div class="cm-card-f"><span>Koers nu <%= fmt.price(c.price_now) %> · rendement</span><b class="<%= fmt.tone(c.live) %>"><%= fmt.pct(c.live) %></b></div>

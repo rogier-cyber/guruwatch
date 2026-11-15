@@ -46,10 +46,10 @@
     <%- include('partials/insiders', { rows: trades }) %>
   </section>
   <aside class="card">
-    <h2>Cluster buys</h2>
-    <p class="small muted">Meeste kopende insiders, laatste 30 dagen.</p>
+    <h2>Meerdere insiders kopen</h2>
+    <p class="small muted">Aandelen waar de afgelopen 30 dagen meerdere bestuurders of grootaandeelhouders eigen aandelen kochten. Als meerdere insiders tegelijk kopen, is dat historisch een sterker signaal dan één losse aankoop: zij kennen het bedrijf het best en zetten er samen eigen geld op in.</p>
     <% if (!clusters.length) { %><p class="empty">Nog geen data.</p><% } else { %>
-    <%- charts.hbars(clusters.map(function (c) { return { sym: c.symbol, name: c.name, value: c.insiders, display: c.insiders + ' · ' + fmt.money(c.value), href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
+    <%- charts.hbars(clusters.map(function (c) { return { sym: c.symbol, name: c.name, value: c.insiders, display: c.insiders + ' insiders · ' + fmt.money(c.value) + ' gekocht', href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
     <% } %>
   </aside>
 </div>

@@ -19,7 +19,7 @@
 <div class="trio">
   <a href="/analisten"><span class="gw-guru gw-guru-navy trio-g" aria-hidden="true"></span><div><h2>Analisten</h2><p>Koersdoelen, up- en downgrades van banken en brokers. Elke analist afgerekend op zijn trackrecord met de GuruScore.</p><em><%= fmt.num(counts.analysts) %> analisten →</em></div></a>
   <a href="/gurus"><span class="gw-guru gw-guru-red trio-g" aria-hidden="true"></span><div><h2>Beleggersguru's</h2><p>Wat Warren Buffett en andere bekende beleggers en hedge funds in portefeuille hebben, kochten en verkochten.</p><em><%= fmt.num(counts.funds) %> guru's →</em></div></a>
-  <a href="/insiders"><span class="gw-guru gw-guru-gold trio-g" aria-hidden="true"></span><div><h2>Insiders</h2><p>Bestuurders en grootaandeelhouders die aandelen van hun eigen bedrijf kopen of verkopen. Plus cluster buys.</p><em>Laatste transacties →</em></div></a>
+  <a href="/insiders"><span class="gw-guru gw-guru-gold trio-g" aria-hidden="true"></span><div><h2>Insiders</h2><p>Bestuurders en grootaandeelhouders die aandelen van hun eigen bedrijf kopen of verkopen. Plus aandelen waar meerdere insiders tegelijk kopen.</p><em>Laatste transacties →</em></div></a>
 </div>
 
 <% if (!counts.targets && !counts.insiders) { %>
@@ -77,10 +77,10 @@
     <%- include('partials/targets', { rows: activity }) %>
   </section>
   <section class="card">
-    <div class="card-h"><h2>Cluster buys (30 dagen)</h2><a href="/insiders" class="small">Insiders</a></div>
-    <p class="small muted">Aandelen waar meerdere insiders tegelijk kochten.</p>
+    <div class="card-h"><h2>Meerdere insiders kopen</h2><a href="/insiders" class="small">Insiders</a></div>
+    <p class="small muted">Aandelen waar de afgelopen 30 dagen meerdere bestuurders of grootaandeelhouders eigen aandelen kochten. Als meerdere insiders tegelijk kopen, is dat historisch een sterker signaal dan één losse aankoop: zij kennen het bedrijf het best en zetten er samen eigen geld op in.</p>
     <% if (!clusters.length) { %><p class="empty">Nog geen data.</p><% } else { %>
-    <%- charts.hbars(clusters.map(function (c) { return { sym: c.symbol, name: c.name, value: c.insiders, display: c.insiders + ' insiders · ' + fmt.money(c.value), href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
+    <%- charts.hbars(clusters.map(function (c) { return { sym: c.symbol, name: c.name, value: c.insiders, display: c.insiders + ' insiders · ' + fmt.money(c.value) + ' gekocht', href: '/aandeel/' + encodeURIComponent(c.symbol) }; })) %>
     <% } %>
   </section>
   <section class="card">
