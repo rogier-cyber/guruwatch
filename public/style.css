@@ -1163,7 +1163,7 @@ svg .tip-on:not(g) { stroke: var(--navy); stroke-width: 2; }
   .gw-tip { font-size: 13.5px; }
 }
 @media (max-width: 640px) {
-  .hk-mood { grid-column: 1 / -1; }
+  .hk-mood { grid-column: auto; }
   .hk-mg svg { width: 84px; }
 }
 
@@ -1795,4 +1795,13 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
   .brand img { width: 42px; height: 42px; }
   .wordmark { font-size: 25px; }
   .nav { padding-top: 2px; padding-bottom: 2px; }
+}
+
+/* Telefoon: Stemming analisten compact naast Insiders kochten */
+@media (max-width: 640px) {
+  .hk-mood .hk-mg { gap: 4px 6px; margin-top: 4px; min-width: 0; flex-wrap: wrap; }
+  .hk-mood .hk-mg svg { width: 46px; }
+  .hk-mood .hk-mg > div { min-width: 0; }
+  .hk-mood .hk-mg strong { font-size: 17px; line-height: 1.15; }
+  .hk-mood .hk-mg em { font-size: 11px; display: block; }
 }
