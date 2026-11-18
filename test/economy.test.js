@@ -28,7 +28,7 @@ test('Nederlandse namen, met terugval op het origineel', () => {
   assert.strictEqual(eco.dutchEvent('Fed Interest Rate Decision'), 'Rentebesluit Fed');
   assert.strictEqual(eco.dutchEvent('GDP Growth Rate QoQ Adv'), 'Bbp-groei k/k (eerste raming)');
   assert.strictEqual(eco.dutchEvent('6-Month Bill Auction'), '6-Month Bill Auction');
-  assert.strictEqual(eco.dutchEvent('Retail Sales Control Group'), 'Retail Sales Control Group');
+  assert.strictEqual(eco.dutchEvent('Treasury Refunding Announcement'), 'Treasury Refunding Announcement');
 });
 
 test('waarden en uitkomst ten opzichte van de verwachting', () => {
@@ -55,4 +55,11 @@ test('periode in het Nederlands', () => {
   assert.strictEqual(eco.dutchPeriod('Oct'), 'okt');
   assert.strictEqual(eco.dutchPeriod('May'), 'mei');
   assert.strictEqual(eco.dutchPeriod('Q3'), 'Q3');
+});
+
+test('FMP-eenheden Points/Index worden niet getoond', () => {
+  assert.strictEqual(eco.unitFor({ event: 'ZEW Economic Sentiment Index', unit: 'Points' }), '');
+  assert.strictEqual(eco.unitFor({ event: 'CPI', unit: 'Index' }), '');
+  assert.strictEqual(eco.dutchEvent('Retail Sales Control Group MoM'), 'Detailhandelsverkopen kerngroep m/m');
+  assert.strictEqual(eco.dutchEvent('Jobless Claims 4-Week Average'), 'WW-aanvragen, 4-weeks gemiddelde');
 });

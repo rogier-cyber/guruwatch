@@ -96,6 +96,7 @@ const PHRASES = [
   [/(ecb president )?lagarde speech|ecb president lagarde speaks/i, 'Toespraak ECB-president Lagarde'],
   [/non[- ]?farm payrolls/i, 'Banen buiten de landbouw (nonfarm payrolls)'],
   [/adp employment change/i, 'ADP-banengroei'],
+  [/jobless claims 4-week average/i, 'WW-aanvragen, 4-weeks gemiddelde'],
   [/initial jobless claims/i, 'Nieuwe WW-aanvragen'],
   [/continuing jobless claims/i, 'Lopende WW-aanvragen'],
   [/jolts job openings/i, 'Vacatures (JOLTS)'],
@@ -115,6 +116,9 @@ const PHRASES = [
   [/gdp growth rate/i, 'Bbp-groei'],
   [/gdp price index/i, 'Bbp-prijsindex'],
   [/gdp/i, 'Bbp'],
+  [/retail sales ex gas\/autos/i, 'Detailhandelsverkopen excl. brandstof en auto’s'],
+  [/retail sales control group/i, 'Detailhandelsverkopen kerngroep'],
+  [/retail sales ex fuel/i, 'Detailhandelsverkopen excl. brandstof'],
   [/retail sales ex autos/i, 'Detailhandelsverkopen excl. auto’s'],
   [/retail sales/i, 'Detailhandelsverkopen'],
   [/ism manufacturing pmi/i, 'ISM-inkoopmanagersindex industrie'],
@@ -190,7 +194,8 @@ const PCT_RE = /rate|yoy|mom|qoq|growth|inflation|cpi|ppi|pce|change %|%/i;
 const INDEX_RE = /pmi|sentiment|confidence|climate|index/i;
 
 function unitFor(e) {
-  if (e.unit) return String(e.unit).trim();
+  if (e.unit && !/^(points?|index|pts)$/i.test(String(e.unit).trim())) return String(e.unit).trim();
+  if (e.unit) return '';
   if (INDEX_RE.test(e.event) && !/price index|cpi|ppi|pce/i.test(e.event)) return '';
   if (PCT_RE.test(e.event)) return '%';
   return '';
