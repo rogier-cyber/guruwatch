@@ -19,7 +19,7 @@
   <meta name="theme-color" content="#14213d">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="/static/style.css?v=67">
+  <link rel="stylesheet" href="/static/style.css?v=68">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/static/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
@@ -33,7 +33,7 @@
       <a href="/analisten" class="<%= path.startsWith('/analist') || path.startsWith('/bank') ? 'on' : '' %>">Analisten</a>
       <a href="/gurus" class="<%= path.startsWith('/guru') ? 'on' : '' %>">Guru's</a>
       <a href="/insiders" class="<%= path.startsWith('/insider') ? 'on' : '' %>">Insiders</a>
-      <a href="/cijfers" class="<%= path === '/cijfers' || path.indexOf('/cijfers/') > 0 ? 'on' : '' %>">Cijfers</a>
+      <a href="/kalender" class="<%= path === '/kalender' || path.indexOf('/cijfers/') > 0 ? 'on' : '' %>">Kalender</a>
       <a href="/community" class="<%= path.startsWith('/community') || path.startsWith('/lid/') ? 'on' : '' %>">Community</a>
       <a href="/blog" class="<%= path.startsWith('/blog') ? 'on' : '' %>">Blog</a>
       <a href="/mijn" class="<%= path.startsWith('/mijn') ? 'on' : '' %>">Mijn GuruWatch<% if (locals.unread) { %> <span class="badge"><%= unread > 99 ? '99+' : unread %></span><% } %></a>

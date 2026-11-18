@@ -199,6 +199,10 @@ async function refreshEarnings() {
   return job('earnings', () => earnings.runEarnings());
 }
 
+async function refreshEconomy() {
+  return job('economie', () => require('./economy').runEconomy());
+}
+
 async function refreshTranscripts() {
   const transcripts = require('./transcripts');
   await job('transcripts', () => transcripts.runTranscripts());
@@ -250,6 +254,9 @@ function startScheduler() {
   setInterval(refreshTranscripts, 3 * 60 * min);
   setInterval(refreshEarnings, 3 * 60 * min);
   setInterval(refreshIndexes, 24 * 60 * min);
+  // Economische kalender: elke 15 minuten, zodat actuele waarden snel na publicatie verschijnen.
+  setTimeout(refreshEconomy, 50 * 1000);
+  setInterval(refreshEconomy, 15 * min);
   setTimeout(refreshSiteTexts, 20 * 1000);
   setTimeout(refreshBlog, 35 * 1000);
   setInterval(refreshBlog, 3 * 60 * min);
@@ -263,7 +270,7 @@ function startScheduler() {
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshBlog, refreshSiteTexts, refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, backfillInsiders, startScheduler };
+module.exports = { refreshEconomy, refreshBlog, refreshSiteTexts, refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, backfillInsiders, startScheduler };
 
 if (require.main === module) {
   (async () => {
