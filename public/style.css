@@ -1805,3 +1805,47 @@ svg.treemap a, svg.treemap a:hover { text-decoration: none; }
   .hk-mood .hk-mg strong { font-size: 17px; line-height: 1.15; }
   .hk-mood .hk-mg em { font-size: 11px; display: block; }
 }
+
+/* ---------- Economische kalender (/kalender?tab=economie) ---------- */
+.ec-filters { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.ec-filters .filters a { display: inline-flex; align-items: center; gap: 6px; }
+.ec-flag { font-size: 17px; line-height: 1; flex: none; }
+.ec-day .card-h { margin-bottom: 6px; }
+.ec-today { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); background: linear-gradient(180deg, var(--accent-soft), var(--card) 160px); }
+.ec-past { opacity: .93; }
+.ec-head, .ec-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) 150px 110px 110px; gap: 14px; align-items: center; }
+.ec-head { padding: 6px 10px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.ec-row { padding: 12px 10px; border-top: 1px solid var(--line-2); font-variant-numeric: tabular-nums; border-radius: 10px; }
+.ec-row:hover { background: var(--line-2); }
+.ec-time { font-weight: 700; color: var(--navy-3); font-size: 13.5px; }
+@media (prefers-color-scheme: dark) { .ec-time { color: var(--accent); } }
+.ec-soon .ec-time::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-left: 6px; vertical-align: 2px; }
+.ec-ev { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ec-name { min-width: 0; display: flex; flex-direction: column; }
+.ec-name b { font-weight: 700; font-size: 14.5px; line-height: 1.3; }
+.ec-key .ec-name b { font-weight: 800; }
+.ec-name em { font-style: normal; font-size: 12px; color: var(--muted); }
+.ec-imp { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; margin-left: auto; flex: none; }
+.ec-imp i { width: 4px; border-radius: 1.5px; background: var(--line); }
+.ec-imp i:nth-child(1) { height: 6px; } .ec-imp i:nth-child(2) { height: 10px; } .ec-imp i:nth-child(3) { height: 14px; }
+.ec-imp.lvl1 i:nth-child(1), .ec-imp.lvl2 i:nth-child(-n+2), .ec-imp.lvl3 i { background: var(--red); }
+.ec-v { font-size: 14px; }
+.ec-v small { display: none; }
+.ec-act b { font-size: 16px; font-weight: 800; color: var(--text); }
+.ec-act b.up, .ec-act b.down { padding: 2px 8px; border-radius: 7px; background: var(--accent-soft); }
+.ec-act b.down { background: color-mix(in srgb, var(--amber) 14%, transparent); }
+.ec-vs { display: block; font-style: normal; font-size: 11px; color: var(--muted); margin-top: 3px; }
+.ec-note { max-width: 70ch; margin: 4px 2px 24px; }
+@media (max-width: 760px) {
+  .ec-filters { flex-direction: column; }
+  .ec-filters .filters:first-child { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .ec-filters .filters a { white-space: nowrap; }
+  .ec-head { display: none; }
+  .ec-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; padding: 12px 6px; }
+  .ec-time { grid-column: 1 / -1; font-size: 12.5px; margin-bottom: -4px; }
+  .ec-ev { grid-column: 1 / -1; }
+  .ec-v { text-align: left; }
+  .ec-v small { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .ec-act b { font-size: 15px; }
+  .ec-vs { font-size: 10.5px; }
+}

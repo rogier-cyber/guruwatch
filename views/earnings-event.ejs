@@ -1,7 +1,7 @@
 <%- include('partials/head') %>
 <div class="page-head">
   <div>
-    <p class="small muted mb0"><a href="/cijfers?tab=reacties">Cijfers</a> · Earnings Reaction Monitor</p>
+    <p class="small muted mb0"><a href="/kalender?tab=reacties">Kalender</a> · Earnings Reaction Monitor</p>
     <h1 class="page-title"><a href="/aandeel/<%= encodeURIComponent(symbol) %>" class="plain"><%= company && company.name ? company.name : symbol %></a> <span class="muted"><%= symbol %></span></h1>
     <p class="muted">Cijfers van <%= fmt.date(date) %></p>
   </div>

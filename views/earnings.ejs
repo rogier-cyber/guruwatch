@@ -7,9 +7,21 @@
 <section class="hero hero-sm">
   <div class="hero-in">
     <div>
+      <% if (tab === 'economie') { %>
+      <h1>Economische <b>kalender</b></h1>
+      <p>Banen, inflatie en rentebesluiten: wat verwachten economen, wat was de vorige keer en wat kwam eruit?</p>
+      <% } else { %>
       <h1>Kwartaal<b>cijfers</b></h1>
       <p>Wanneer rapporteren de bedrijven, hoe reageerde de koers, en wie paste als eerste zijn koersdoel aan?</p>
+      <% } %>
     </div>
+    <% if (tab === 'economie' && hasData) { %>
+    <div class="gk-hero-kpis">
+      <div><strong><%= todayCount %></strong><span>belangrijke cijfers vandaag</span></div>
+      <div><strong><%= weekCount %></strong><span>belangrijke cijfers, komende 7 dagen</span></div>
+      <div><strong><%= next ? next.time : '–' %></strong><span><%= next ? (next.day === today ? 'vandaag: ' : dayName(next.day).split(' ')[0] + ': ') + next.name : 'geen belangrijke cijfers gepland' %></span></div>
+    </div>
+    <% } %>
     <% if (tab === 'kalender' && days.length) { var wk = days.slice(0, 5); var wkN = wk.reduce(function (t, d) { return t + d.list.length; }, 0); var wkCap = wk.reduce(function (t, d) { return t + d.list.reduce(function (u, r) { return u + (r.market_cap || 0); }, 0); }, 0); var biggest = wk.map(function (d) { return d.list[0]; }).filter(Boolean).sort(function (a, b) { return (b.market_cap || 0) - (a.market_cap || 0); })[0]; %>
     <div class="gk-hero-kpis">
       <div><strong><%= fmt.num(wkN) %></strong><span>bedrijven, komende <%= wk.length %> dagen</span></div>
@@ -21,7 +33,8 @@
 </section>
 
 <nav class="tabs">
-  <a href="?tab=kalender" class="<%= tab === 'kalender' ? 'on' : '' %>">Kalender</a>
+  <a href="?tab=kalender" class="<%= tab === 'kalender' ? 'on' : '' %>">Bedrijfscijfers</a>
+  <a href="?tab=economie" class="<%= tab === 'economie' ? 'on' : '' %>">Economie</a>
   <a href="?tab=reacties" class="<%= tab === 'reacties' ? 'on' : '' %>">Reacties na cijfers</a>
   <a href="?tab=herzieningen" class="<%= tab === 'herzieningen' ? 'on' : '' %>">Winstherzieningen</a>
 </nav>
@@ -63,6 +76,53 @@
     </section>
   <% }) %>
   </div>
+<% } %>
+
+<% if (tab === 'economie') {
+  const ecoHref = function (o) { var p = { tab: 'economie', land: land, niveau: niveau }; Object.keys(o).forEach(function (k) { p[k] = o[k]; }); return '?' + Object.keys(p).filter(function (k) { return p[k] && !(k === 'niveau' && p[k] === 'hoog'); }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&'); };
+  const bars = function (lvl) { return '<span class="ec-imp lvl' + lvl + '" title="Belang: ' + ({ 3: 'hoog', 2: 'middel', 1: 'laag' })[lvl] + '"><i></i><i></i><i></i></span>'; };
+%>
+  <div class="ec-filters">
+    <div class="filters">
+      <a href="<%= ecoHref({ land: '' }) %>" class="<%= !land ? 'on' : '' %>">Alle landen</a>
+      <% countries.forEach(function (c) { %><a href="<%= ecoHref({ land: c.code }) %>" class="<%= land === c.code ? 'on' : '' %>"><span class="ec-flag" aria-hidden="true"><%= c.flag %></span> <%= c.short || c.name %></a><% }) %>
+    </div>
+    <% if (!land) { %>
+    <div class="filters ec-level">
+      <a href="<%= ecoHref({ niveau: 'hoog' }) %>" class="<%= niveau === 'hoog' ? 'on' : '' %>">Belangrijkste</a>
+      <a href="<%= ecoHref({ niveau: 'alles' }) %>" class="<%= niveau === 'alles' ? 'on' : '' %>">Meer cijfers</a>
+    </div>
+    <% } %>
+  </div>
+
+  <% if (!hasData) { %>
+  <section class="card"><p class="empty">De economische kalender wordt nu opgehaald. Kijk over een paar minuten nog eens.</p></section>
+  <% } else if (!days.length) { %>
+  <section class="card"><p class="empty">Geen <%= land ? '' : 'belangrijke ' %>publicaties<%= land ? ' voor ' + countries.find(function (c) { return c.code === land; }).name : '' %> in de afgelopen 3 en komende 10 dagen.</p></section>
+  <% } %>
+
+  <div class="ec">
+  <% days.forEach(function (d) { var isToday = d.date === today; var isPast = d.date < today; %>
+    <section class="card ec-day<%= isToday ? ' ec-today' : '' %><%= isPast ? ' ec-past' : '' %>">
+      <div class="card-h"><h2><%= isToday ? 'Vandaag, ' : '' %><%= dayName(d.date) %></h2><span class="small muted"><%= d.list.length %> <%= d.list.length === 1 ? 'publicatie' : 'publicaties' %></span></div>
+      <div class="ec-head" aria-hidden="true"><span>Tijd</span><span>Publicatie</span><span class="r">Actueel</span><span class="r">Verwachting</span><span class="r">Vorige</span></div>
+      <% d.list.forEach(function (r) { %>
+      <div class="ec-row<%= r.level === 3 ? ' ec-key' : '' %><%= !r.past ? ' ec-soon' : '' %>">
+        <span class="ec-time"><%= r.time %></span>
+        <span class="ec-ev">
+          <span class="ec-flag" title="<%= r.country.name %>"><%= r.country.flag || r.country.code %></span>
+          <span class="ec-name"><b><%= r.name %></b><em><%= r.country.short || r.country.name %><%= r.period ? ' · ' + r.period : '' %></em></span>
+          <%- bars(r.level) %>
+        </span>
+        <span class="ec-v ec-act r"><small>Actueel</small><% if (r.actual !== null) { %><b class="<%= r.vs ? (r.vs.dir > 0 ? 'up' : r.vs.dir < 0 ? 'down' : 'eq') : '' %>"><%= r.fmt.actual %></b><% if (r.vs && r.vs.dir !== 0) { %><i class="ec-vs" title="<%= r.vs.label %>"><%= r.vs.dir > 0 ? '▲' : '▼' %> <%= r.vs.label %></i><% } %><% } else { %><span class="muted"><%= r.past && (r.estimate !== null || r.previous !== null) ? 'volgt' : '–' %></span><% } %></span>
+        <span class="ec-v r"><small>Verwachting</small><%= r.fmt.estimate %></span>
+        <span class="ec-v r muted"><small>Vorige</small><%= r.fmt.previous %></span>
+      </div>
+      <% }) %>
+    </section>
+  <% }) %>
+  </div>
+  <% if (hasData) { %><p class="small muted ec-note">Tijden in Nederlandse tijd. Verwachting is de consensus van economen. ▲/▼ geeft aan of de uitkomst hoger of lager was dan verwacht; dat is niet per se goed of slecht nieuws.</p><% } %>
 <% } %>
 
 <% if (tab === 'reacties') { %>

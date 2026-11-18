@@ -976,6 +976,7 @@ pub.get('/sitemap.xml', wrap(async (req, res) => {
   const urls = [
     ...indexes.ALL.filter((i) => i.endpoint).map((i) => `<url><loc>${base}/aandelen?index=${i.key}</loc><changefreq>daily</changefreq></url>`),
     `<url><loc>${base}/gurus</loc><changefreq>weekly</changefreq></url>`,
+    `<url><loc>${base}/kalender?tab=economie</loc><changefreq>daily</changefreq></url>`,
     `<url><loc>${base}/community</loc><changefreq>daily</changefreq></url>`,
     ...(await safe(q.fundsList(), [])).filter((f) => f.latest_period).map((f) => `<url><loc>${base}/guru/${f.slug}</loc><changefreq>weekly</changefreq></url>`),
     ...syms.map((s) => `<url><loc>${base}/aandeel/${encodeURIComponent(s.symbol)}</loc><lastmod>${new Date(s.last).toISOString().slice(0, 10)}</lastmod><changefreq>daily</changefreq></url>`),
@@ -1142,9 +1143,58 @@ const withReaction = (r) => {
   return { ...r, surprise: er.surprise(r.eps_actual, r.eps_estimated), revSurprise: er.surprise(r.revenue_actual, r.revenue_estimated), reaction, verdict: er.verdict(reaction, r.avg_change) };
 };
 
-router.get('/cijfers', wrap(async (req, res) => {
-  const tab = ['kalender', 'reacties', 'herzieningen'].includes(req.query.tab) ? req.query.tab : 'kalender';
+// Menu-item heet sinds 18 nov "Kalender"; oude links blijven werken.
+router.get('/cijfers', (req, res) => {
+  const qs = new URLSearchParams(req.query).toString();
+  res.redirect(301, `/kalender${qs ? `?${qs}` : ''}`);
+});
+
+const eco = require('../lib/economy');
+const ECO_PAST_DAYS = 3;
+const ECO_AHEAD_DAYS = 10;
+
+async function economyData(req) {
+  const land = eco.COUNTRY[String(req.query.land || '').toUpperCase()] ? String(req.query.land).toUpperCase() : '';
+  const niveau = req.query.niveau === 'alles' ? 'alles' : 'hoog';
+  const now = new Date();
+  const from = new Date(now.getTime() - (ECO_PAST_DAYS + 1) * 86400000);
+  const to = new Date(now.getTime() + (ECO_AHEAD_DAYS + 1) * 86400000);
+  const rows = (await safe(require('../economy').events({ from, to }), [])).map((r) => eco.present(r, now));
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Amsterdam' }).format(now);
+  const addDays = (d, k) => new Date(new Date(`${d}T12:00:00Z`).getTime() + k * 86400000).toISOString().slice(0, 10);
+  const first = addDays(today, -ECO_PAST_DAYS);
+  const last = addDays(today, ECO_AHEAD_DAYS);
+  const inWindow = rows.filter((r) => r.day >= first && r.day <= last);
+  // Zonder landfilter: alleen belangrijke publicaties (hoog, of hoog + middel); met landfilter alles van dat land.
+  const minLevel = land ? 1 : niveau === 'alles' ? 2 : 3;
+  const list = inWindow.filter((r) => (!land || r.country.code === land) && r.level >= minLevel);
+  const days = new Map();
+  for (const r of list) {
+    if (!days.has(r.day)) days.set(r.day, []);
+    days.get(r.day).push(r);
+  }
+  const key = inWindow.filter((r) => r.level === 3);
+  const next = key.find((r) => !r.past) || null;
+  const todayKey = key.filter((r) => r.day === today);
+  const lastReleased = [...key].reverse().find((r) => r.past && r.actual !== null) || null;
+  return {
+    land, niveau, today, next, lastReleased,
+    days: [...days.entries()].map(([date, items]) => ({ date, list: items })),
+    todayCount: todayKey.length,
+    weekCount: key.filter((r) => r.day >= today && r.day <= addDays(today, 6)).length,
+    total: list.length,
+    hasData: rows.length > 0,
+    countries: eco.COUNTRIES,
+  };
+}
+
+router.get('/kalender', wrap(async (req, res) => {
+  const tab = ['kalender', 'economie', 'reacties', 'herzieningen'].includes(req.query.tab) ? req.query.tab : 'kalender';
   const data = { tab };
+  if (tab === 'economie') {
+    Object.assign(data, await economyData(req));
+    return res.render('earnings', { title: 'Economische kalender', seo: { description: 'Economische kalender met verwachting, vorige en actuele waarde van de belangrijkste cijfers uit de VS, de eurozone, Nederland en Azië.', canonical: `${config.publicUrl.replace(/\/$/, '')}/kalender?tab=economie` }, ...data, watched: new Set() });
+  }
   const watched = req.user ? (await q.watchlist(req.user.id)).filter((i) => i.kind === 'stock').map((i) => i.ref) : [];
   data.watched = new Set(watched);
   if (tab === 'kalender') {
@@ -1188,7 +1238,7 @@ router.get('/cijfers', wrap(async (req, res) => {
       total: valid.length,
     });
   }
-  res.render('earnings', { title: 'Cijfers', ...data });
+  res.render('earnings', { title: 'Kalender', ...data });
 }));
 
 // ---------- Earnings calls (transcripts) ----------
