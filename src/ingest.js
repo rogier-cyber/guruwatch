@@ -213,6 +213,11 @@ async function refreshBlog() {
   return job('blog', () => require('./blog').refreshBlog());
 }
 
+// Dekkingsmeting FMP voor NL, BE, CA en AU (zie /status/dekking).
+async function refreshCoverage() {
+  return job('dekking', () => require('./coverage').runCoverage());
+}
+
 async function refreshSiteTexts() {
   return job('sitetexts', () => require('./siteTexts').refreshSiteTexts());
 }
@@ -261,6 +266,9 @@ function startScheduler() {
   setTimeout(refreshBlog, 35 * 1000);
   setInterval(refreshBlog, 3 * 60 * min);
   setInterval(refreshSiteTexts, 24 * 60 * min);
+  // Dekkingsmeting: eenmaal kort na het opstarten en daarna wekelijks.
+  setTimeout(refreshCoverage, 3 * min);
+  setInterval(refreshCoverage, 7 * 24 * 60 * min);
   setInterval(refreshRadar, 60 * min);
   // Weekoverzicht: elke 5 minuten kijken of het zaterdagochtend (Amsterdam) is.
   setInterval(briefings, 5 * min);
@@ -270,7 +278,7 @@ function startScheduler() {
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshEconomy, refreshBlog, refreshSiteTexts, refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, backfillInsiders, startScheduler };
+module.exports = { refreshCoverage, refreshEconomy, refreshBlog, refreshSiteTexts, refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, backfillInsiders, startScheduler };
 
 if (require.main === module) {
   (async () => {
