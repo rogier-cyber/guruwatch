@@ -1,0 +1,57 @@
+<%- include('partials/head') %>
+<h1 class="page-title">FMP-dekking</h1>
+<% if (!cov) { %>
+<section class="card"><p class="empty">De meting heeft nog niet gedraaid. Ze start een paar minuten na het opstarten en duurt enkele minuten.</p></section>
+<% } else {
+  const groups = cov.countries.concat([{ code: 'VS', name: 'VS-noteringen (ter vergelijking)' }]);
+  const cell = (r) => r ? (r.error ? { cls: 'neg', txt: '×', title: r.error } : r.n > 0 ? { cls: 'pos', txt: r.n + (r.latest ? ' · ' + r.latest : ''), title: '' } : { cls: 'muted', txt: '–', title: 'leeg' }) : { cls: 'muted', txt: '', title: '' };
+%>
+<p class="muted">Gemeten <%= fmt.dateTime(row.ran_at) %>. Per cel: aantal regels en de meest recente datum. – is leeg, × is een fout.</p>
+
+<section class="card">
+  <h2>Aantal aandelen</h2>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Land</th><th>Actief (screener)</th><th>Per beurs</th><th>&gt;10 mld</th><th>1-10 mld</th><th>&lt;1 mld</th><th>Symbolen (alle)</th><th>Met jaarcijfers</th></tr></thead><tbody>
+  <% cov.countries.forEach(function (c) { const u = cov.universe.countries[c.code] || {}; %>
+    <tr><td class="strong"><%= c.name %></td><td><%= fmt.num(u.screenerTotal) %></td>
+    <td class="small"><%= Object.entries(u.byExchange || {}).map(function (e) { return e[0] + ' ' + e[1]; }).join(', ') %></td>
+    <td><%= u.capBands ? u.capBands['>10 mld'] : '' %></td><td><%= u.capBands ? u.capBands['1-10 mld'] : '' %></td><td><%= u.capBands ? u.capBands['<1 mld'] : '' %></td>
+    <td class="small"><%= Object.entries(u.bySuffix || {}).map(function (e) { return e[0] + ' ' + e[1]; }).join(', ') %></td><td><%= fmt.num(u.withStatements) %></td></tr>
+  <% }) %>
+  </tbody></table></div>
+  <p class="small muted">Totaal bij FMP: <%= fmt.num(cov.universe.totalSymbols) %> symbolen, <%= fmt.num(cov.universe.totalWithStatements) %> met jaarcijfers.</p>
+</section>
+
+<section class="card">
+  <h2>Wereldwijde lijsten</h2>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Lijst</th><th>Totaal</th><% cov.countries.forEach(function (c) { %><th><%= c.code %></th><% }) %></tr></thead><tbody>
+  <% Object.entries(cov.feeds).forEach(function (e) { const f = e[1]; %>
+    <tr><td class="strong"><%= e[0] %></td><% if (f.error) { %><td class="neg" colspan="<%= cov.countries.length + 1 %>"><%= f.error %></td><% } else { %><td><%= fmt.num(f.total) %></td><% cov.countries.forEach(function (c) { %><td><%= f[c.code] %></td><% }) %><% } %></tr>
+  <% }) %>
+  </tbody></table></div>
+</section>
+
+<% groups.forEach(function (g) {
+  const rows = cov.results.filter(function (r) { return r.country === g.code; });
+  const syms = [...new Set(rows.map(function (r) { return r.symbol; }))];
+  if (!syms.length) return;
+%>
+<section class="card">
+  <h2><%= g.name %></h2>
+  <div class="tbl-wrap"><table class="tbl small"><thead><tr><th>Datatype</th><th>Dekking</th><% syms.forEach(function (s) { %><th class="mono"><%= s %></th><% }) %></tr></thead><tbody>
+  <% cov.checks.forEach(function (ch) {
+    const hits = syms.filter(function (s) { const r = rows.find(function (x) { return x.symbol === s && x.label === ch.label; }); return r && r.n > 0; }).length;
+  %>
+    <tr><td class="strong"><%= ch.label %></td><td class="<%= hits === syms.length ? 'pos' : hits === 0 ? 'neg' : '' %>"><%= hits %>/<%= syms.length %></td>
+    <% syms.forEach(function (s) { const c = cell(rows.find(function (x) { return x.symbol === s && x.label === ch.label; })); %><td class="<%= c.cls %>" title="<%= c.title %>"><%= c.txt %></td><% }) %></tr>
+  <% }) %>
+  </tbody></table></div>
+</section>
+<% }) %>
+
+<section class="card">
+  <h2>Beurzen en landen bij FMP</h2>
+  <p class="small"><%= Array.isArray(cov.available.exchanges) ? cov.available.exchanges.map(function (e) { return e.exchange || e.name || JSON.stringify(e); }).join(', ') : 'niet beschikbaar' %></p>
+  <p class="small muted"><%= Array.isArray(cov.available.countries) ? cov.available.countries.map(function (e) { return e.country || e; }).join(', ') : '' %></p>
+</section>
+<% } %>
+<%- include('partials/foot') %>

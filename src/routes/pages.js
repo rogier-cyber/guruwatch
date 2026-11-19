@@ -1478,5 +1478,11 @@ router.get('/status', wrap(async (req, res) => {
   res.render('status', { title: 'Status', jobs, counts });
 }));
 
+router.get('/status/dekking', wrap(async (req, res) => {
+  const coverage = require('../coverage');
+  const row = await coverage.latestCoverage();
+  res.render('coverage', { title: 'FMP-dekking', row, cov: row ? row.result : null });
+}));
+
 module.exports = router;
 module.exports.publicRouter = pub;
