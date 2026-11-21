@@ -10,7 +10,7 @@ const COUNTRIES = [
   { code: 'NL', name: 'Nederland', suffix: ['.AS'], large: ['ASML.AS', 'SHELL.AS', 'INGA.AS', 'ADYEN.AS', 'PHIA.AS'], small: ['BESI.AS', 'SBMO.AS', 'AMG.AS', 'FAST.AS', 'NEDAP.AS'] },
   { code: 'BE', name: 'België', suffix: ['.BR'], large: ['KBC.BR', 'ABI.BR', 'UCB.BR', 'SOLB.BR'], small: ['BEKB.BR', 'MELE.BR', 'EVS.BR', 'KIN.BR'] },
   { code: 'CA', name: 'Canada', suffix: ['.TO', '.V', '.NE', '.CN'], large: ['RY.TO', 'SHOP.TO', 'ENB.TO', 'CNR.TO'], small: ['ATZ.TO', 'GSY.TO', 'DND.TO', 'LSPD.TO'] },
-  { code: 'AU', name: 'Australië', suffix: ['.AX'], large: ['BHP.AX', 'CBA.AX', 'CSL.AX', 'WES.AX'], small: ['PME.AX', 'JBH.AX', 'NHC.AX', 'CTD.AX'] },
+  { code: 'AU', name: 'Australië', suffix: ['.AX'], large: ['BHP.AX', 'CBA.AX', 'CSL.AX', 'WES.AX'], small: ['PME.AX', 'JBH.AX', 'NHC.AX', 'CTD.AX', 'KAU.AX', 'LRV.AX', 'DLI.AX'] },
 ];
 // Ter vergelijking: VS-noteringen (ADR) van Europese en Canadese namen.
 const REFERENCE = ['ASML', 'ING', 'SHEL', 'BUD', 'SHOP', 'RY', 'BHP'];
