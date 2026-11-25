@@ -42,6 +42,17 @@ app.get('/health', async (req, res) => {
 });
 
 app.use(auth.loadUser);
+
+// Edge-cache (Render, instelling "All files"): openbare pagina's voor niet-ingelogde bezoekers
+// 60 seconden op de CDN bewaren. Ingelogd, formulieren, persoonlijke paden en ?u=1 nooit.
+// Browsers slaan de HTML niet op (max-age=0), zodat terugknop en verversen altijd vers zijn.
+const EDGE_TTL = Number(process.env.EDGE_TTL || 60);
+const NO_EDGE = /^\/(login|logout|uit|health|mijn|volglijst|volg|status|community\/(nieuw|voorspelling|profiel|intrekken))(\/|$)/;
+app.use((req, res, next) => {
+  const cacheable = (req.method === 'GET' || req.method === 'HEAD') && !req.user && req.query.u === undefined && !NO_EDGE.test(req.path) && EDGE_TTL > 0;
+  res.set('Cache-Control', cacheable ? `public, max-age=0, s-maxage=${EDGE_TTL}, stale-while-revalidate=60` : 'private, no-store');
+  next();
+});
 app.use((req, res, next) => {
   res.locals.fmt = fmt;
   res.locals.charts = charts;
@@ -129,6 +140,7 @@ app.use((req, res) => res.status(404).render('error', { title: 'Niet gevonden', 
 app.use((err, req, res, next) => {
   console.error('[error]', req.method, req.originalUrl, err);
   if (res.headersSent) return next(err);
+  res.set('Cache-Control', 'private, no-store');
   res.status(500).render('error', { title: 'Er ging iets mis', message: config.isProd ? 'Er ging iets mis. Probeer het zo opnieuw.' : err.message });
 });
 

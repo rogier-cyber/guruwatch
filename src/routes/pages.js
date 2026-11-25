@@ -1006,7 +1006,8 @@ router.get('/zoek', wrap(async (req, res) => {
 const US_EX = /^(NASDAQ|NYSE|AMEX|NYSE ?ARCA|NYSEARCA|CBOE|BATS)$/i;
 router.get('/zoek/suggesties', wrap(async (req, res) => {
   const term = String(req.query.q || '').trim().slice(0, 40);
-  res.set('Cache-Control', 'private, max-age=60');
+  // Zelfde suggesties voor iedereen: mag op de edge-cache (5 min) en 1 minuut in de browser.
+  res.set('Cache-Control', 'public, max-age=60, s-maxage=300');
   if (!term) return res.json({ stocks: [], analysts: [], gurus: [] });
   const up = term.toUpperCase();
   const lower = term.toLowerCase();
