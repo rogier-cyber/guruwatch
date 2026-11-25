@@ -2,6 +2,9 @@
 
 // Leesqueries voor de pagina's.
 const db = require('../db');
+const { TtlCache } = require('./cache');
+
+const memo = new TtlCache(20);
 
 // Een koersdoel telt mee voor de score als het tussen 30 en 365 dagen oud is.
 // Extreme uitschieters (vaak door splits) worden uitgesloten.
@@ -432,8 +435,9 @@ async function dailyInsiderFlows(days = 30) {
 }
 
 // Koersdoelen per dag: verhoogd vs verlaagd t.o.v. vorig doel van dezelfde analist/bank.
+// Zwaar (~0,1 s) en verandert alleen met nieuwe koersdoelen: 5 minuten in het geheugen.
 async function dailyTargetRevisions(days = 30) {
-  return db.many(
+  return memo.wrap(`dailyTargetRevisions:${days}`, 5 * 60e3, () => db.many(
     `WITH t AS (
        SELECT published_at, price_target,
               lag(price_target) OVER (PARTITION BY symbol, coalesce(analyst_id::text, analyst_firm) ORDER BY published_at) AS prev
@@ -446,7 +450,7 @@ async function dailyTargetRevisions(days = 30) {
      LEFT JOIN t ON t.published_at >= d AND t.published_at < d + interval '1 day'
      GROUP BY d ORDER BY d`,
     [days]
-  );
+  ));
 }
 
 async function scoreDistribution() {

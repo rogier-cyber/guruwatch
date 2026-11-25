@@ -2,6 +2,10 @@
 
 // Queries voor de gurupagina's (13F-historie, sectoren, koersen, analistendoelen).
 const db = require('../db');
+const { TtlCache } = require('./cache');
+
+// 13F-data verandert hooguit een paar keer per dag: zware overzichten kort in het geheugen bewaren.
+const memo = new TtlCache(20);
 
 // Alle longposities van een fonds over de laatste kwartalen (per kwartaal de grootste `perPeriod`).
 async function fundHistory(cik, { periods = 12, perPeriod = 150 } = {}) {
@@ -76,7 +80,7 @@ async function overview() {
 
 // Wat kochten de guru's samen het laatste kwartaal? (nieuwe posities en bijkopen, aantal guru's)
 async function consensusMoves(limit = 12) {
-  return db.many(
+  return memo.wrap(`consensusMoves:${limit}`, 15 * 60e3, () => db.many(
     `WITH last2 AS (
        SELECT f.cik, f.latest_period AS cur,
               (SELECT max(period) FROM fund_holdings x WHERE x.cik = f.cik AND x.period < f.latest_period) AS prev
@@ -94,7 +98,7 @@ async function consensusMoves(limit = 12) {
      GROUP BY mv.symbol HAVING count(*) >= 2
      ORDER BY count(*) DESC, sum(mv.weight) DESC LIMIT $1`,
     [limit]
-  );
+  ));
 }
 
 module.exports = { fundTotals, fundHistory, companiesFor, pricesFor, quotesAndTargets, overview, consensusMoves };

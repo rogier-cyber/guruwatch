@@ -194,6 +194,11 @@ async function refreshRadar(opts) {
   return job('radar', () => radar.runRadar(opts));
 }
 
+// Smart Money Radar vooraf berekenen (homepage, radar, Mijn GuruWatch lezen deze uitkomst).
+async function refreshMomentum() {
+  return job('radar-momentum', () => require('./lib/radarQueries').refreshMomentum());
+}
+
 async function refreshEarnings() {
   const earnings = require('./earnings');
   return job('earnings', () => earnings.runEarnings());
@@ -270,6 +275,8 @@ function startScheduler() {
   setTimeout(refreshCoverage, 3 * min);
   setInterval(refreshCoverage, 7 * 24 * 60 * min);
   setInterval(refreshRadar, 60 * min);
+  setTimeout(refreshMomentum, 10 * 1000);
+  setInterval(refreshMomentum, 15 * min);
   // Weekoverzicht: elke 5 minuten kijken of het zaterdagochtend (Amsterdam) is.
   setInterval(briefings, 5 * min);
   setInterval(refreshScores, 30 * min);
@@ -278,7 +285,7 @@ function startScheduler() {
   setInterval(refreshFunds, 12 * 60 * min);
 }
 
-module.exports = { refreshCoverage, refreshEconomy, refreshBlog, refreshSiteTexts, refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, backfillInsiders, startScheduler };
+module.exports = { refreshCoverage, refreshEconomy, refreshBlog, refreshSiteTexts, refreshTranscripts, refreshIndexes, refreshEarnings, refreshScores, refreshRadar, refreshMomentum, refreshAlerts, briefings, ingestAnalysts, ingestInsiders, refreshQuotes, refreshFunds, refreshFund, backfillSymbol, backfillInsiders, startScheduler };
 
 if (require.main === module) {
   (async () => {
