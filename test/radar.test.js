@@ -58,3 +58,19 @@ test('capRange', () => {
   assert.strictEqual(capRange('mega').min, 200e9);
   assert.strictEqual(capRange('nope'), null);
 });
+
+test('filterMomentum filtert vooraf berekende radar zoals de SQL-filters', () => {
+  const { filterMomentum } = require('../src/lib/radarQueries');
+  const rows = [
+    { symbol: 'A', sector: 'Technology', market_cap: 300e9 },
+    { symbol: 'B', sector: 'Technology', market_cap: 5e9 },
+    { symbol: 'C', sector: 'Energy', market_cap: 50e9 },
+    { symbol: 'D', sector: null, market_cap: null },
+  ];
+  assert.strictEqual(filterMomentum(rows, {}), rows);
+  assert.deepStrictEqual(filterMomentum(rows, { sector: 'Technology' }).map((r) => r.symbol), ['A', 'B']);
+  assert.deepStrictEqual(filterMomentum(rows, { cap: 'mega' }).map((r) => r.symbol), ['A']);
+  assert.deepStrictEqual(filterMomentum(rows, { cap: 'large' }).map((r) => r.symbol), ['C']);
+  assert.deepStrictEqual(filterMomentum(rows, { cap: 'small' }).map((r) => r.symbol), []);
+  assert.deepStrictEqual(filterMomentum(rows, { sector: 'Technology', cap: 'mid' }).map((r) => r.symbol), ['B']);
+});

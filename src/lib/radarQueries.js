@@ -34,7 +34,8 @@ async function sectors() {
 }
 
 // Smart Money Radar: wie krijgt er de laatste N dagen favoriet bij analisten?
-async function momentum({ days = 30, sector, cap } = {}) {
+// Zware query (~1 s): draait in de achtergrond (refreshMomentum), pagina's lezen de vooraf berekende uitkomst.
+async function momentumLive({ days = 30, sector, cap } = {}) {
   const params = [days];
   const filter = companyFilter({ sector, cap }, params);
   return db.many(
@@ -214,4 +215,75 @@ async function watchHealth(symbols) {
   );
 }
 
-module.exports = { watchHealth, sectors, momentum, consensusShift, upside, ratingSnapshot, ratingHistory, cached };
+// ---------- Vooraf berekende radar ----------
+// De radar wordt elke 15 minuten vooraf berekend voor 7, 30 en 90 dagen (zonder filters) en bewaard
+// in het geheugen en in kv_cache (overleeft een herstart). Filters op sector en beurswaarde passen we
+// daarna in JavaScript toe; dat geeft precies dezelfde uitkomst als de SQL-filters.
+const MOMENTUM_DAYS = [7, 30, 90];
+const MOMENTUM_MAX_AGE = 2 * 3600e3; // ouder dan 2 uur (achtergrondtaak hangt): opnieuw live berekenen
+const momentumMem = new Map(); // days -> { rows, at }
+const momentumInflight = new Map();
+
+function filterMomentum(rows, { sector, cap } = {}) {
+  const range = capRange(cap);
+  if (!sector && !range) return rows;
+  return rows.filter((r) => {
+    if (sector && r.sector !== sector) return false;
+    if (range) {
+      const mc = r.market_cap === null || r.market_cap === undefined ? NaN : Number(r.market_cap);
+      if (!Number.isFinite(mc) || mc < range.min) return false;
+      if (Number.isFinite(range.max) && mc >= range.max) return false;
+    }
+    return true;
+  });
+}
+
+async function storeMomentum(days, rows) {
+  momentumMem.set(days, { rows, at: Date.now() });
+  await db.query(
+    `INSERT INTO kv_cache (key, data, updated_at) VALUES ($1, $2, now())
+     ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+    [`momentum_${days}`, JSON.stringify(rows)]
+  );
+}
+
+// Achtergrondtaak: alle varianten opnieuw berekenen.
+async function refreshMomentum() {
+  const out = {};
+  for (const days of MOMENTUM_DAYS) {
+    const rows = await momentumLive({ days });
+    await storeMomentum(days, rows);
+    out[`d${days}`] = rows.length;
+  }
+  return out;
+}
+
+async function precomputed(days) {
+  const mem = momentumMem.get(days);
+  if (mem && Date.now() - mem.at < MOMENTUM_MAX_AGE) return mem.rows;
+  if (momentumInflight.has(days)) return momentumInflight.get(days);
+  const p = (async () => {
+    // Na een herstart: uit kv_cache, anders eenmalig live berekenen.
+    const row = await db.one('SELECT data, updated_at FROM kv_cache WHERE key = $1', [`momentum_${days}`]).catch(() => null);
+    if (row && Array.isArray(row.data) && Date.now() - new Date(row.updated_at).getTime() < MOMENTUM_MAX_AGE) {
+      momentumMem.set(days, { rows: row.data, at: new Date(row.updated_at).getTime() });
+      return row.data;
+    }
+    const rows = await momentumLive({ days });
+    await storeMomentum(days, rows).catch(() => {});
+    return rows;
+  })();
+  momentumInflight.set(days, p);
+  try {
+    return await p;
+  } finally {
+    momentumInflight.delete(days);
+  }
+}
+
+async function momentum({ days = 30, sector, cap } = {}) {
+  if (!MOMENTUM_DAYS.includes(days)) return momentumLive({ days, sector, cap });
+  return filterMomentum(await precomputed(days), { sector, cap });
+}
+
+module.exports = { watchHealth, sectors, momentum, momentumLive, refreshMomentum, filterMomentum, consensusShift, upside, ratingSnapshot, ratingHistory, cached };
