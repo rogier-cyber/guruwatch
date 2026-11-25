@@ -103,6 +103,13 @@ async function verifyCode(rawEmail, rawCode) {
   return { ok: true, token, user };
 }
 
+// gw_in=1 is een leesbaar vlaggetje (geen geheim) waaraan de browser ziet dat je ingelogd bent,
+// zodat hij de edge-cache van openbare pagina's overslaat. De sessie zelf blijft httpOnly.
+const FLAG = 'gw_in';
+function setFlagCookie(res) {
+  res.cookie(FLAG, '1', { httpOnly: false, secure: config.isProd, sameSite: 'lax', maxAge: SESSION_DAYS * 24 * 3600 * 1000, path: '/' });
+}
+
 function setSessionCookie(res, token) {
   res.cookie(COOKIE, token, {
     httpOnly: true,
@@ -111,6 +118,7 @@ function setSessionCookie(res, token) {
     maxAge: SESSION_DAYS * 24 * 3600 * 1000,
     path: '/',
   });
+  setFlagCookie(res);
 }
 
 async function loadUser(req, res, next) {
@@ -129,6 +137,7 @@ async function loadUser(req, res, next) {
         setSessionCookie(res, token);
       }
       if (req.user) delete req.user.renew;
+      if (req.user && !(req.cookies && req.cookies[FLAG])) setFlagCookie(res);
     } catch (err) {
       console.error('[auth] sessie laden mislukt', err.message);
     }
@@ -148,6 +157,7 @@ async function logout(req, res) {
   const token = req.cookies && req.cookies[COOKIE];
   if (token) await db.query('DELETE FROM sessions WHERE token_hash = $1', [sha(token)]).catch(() => {});
   res.clearCookie(COOKIE, { path: '/' });
+  res.clearCookie(FLAG, { path: '/' });
 }
 
 async function cleanup() {

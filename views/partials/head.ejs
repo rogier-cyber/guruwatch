@@ -1,7 +1,32 @@
 <!doctype html>
-<html lang="nl">
+<html lang="nl"<% if (!locals.user) { %> data-anon<% } %>>
 <head>
   <meta charset="utf-8">
+  <script>
+    // Openbare pagina's komen uit de edge-cache (zonder inlog). Ingelogd (cookie gw_in)? Dan vragen we
+    // pagina's op met ?u=1: die slaat de cache over, zodat je je eigen volglijst en menu ziet.
+    (function () { try {
+      var d = document.documentElement, anon = d.hasAttribute('data-anon'), inC = /(?:^|; )gw_in=1/.test(document.cookie);
+      if (!inC) return;
+      var u = new URL(location.href);
+      if (anon) {
+        if (!u.searchParams.has('u')) { u.searchParams.set('u', '1'); location.replace(u.toString()); }
+        else document.cookie = 'gw_in=; Max-Age=0; path=/';
+        return;
+      }
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest && e.target.closest('a[href]');
+        if (!a || a.target || a.origin !== location.origin || a.pathname.indexOf('/static/') === 0) return;
+        var x = new URL(a.href);
+        if (!x.searchParams.has('u')) { x.searchParams.set('u', '1'); a.href = x.toString(); }
+      }, true);
+      document.addEventListener('submit', function (e) {
+        var f = e.target;
+        if ((f.method || 'get').toLowerCase() !== 'get' || f.querySelector('input[name="u"]')) return;
+        var i = document.createElement('input'); i.type = 'hidden'; i.name = 'u'; i.value = '1'; f.appendChild(i);
+      }, true);
+    } catch (e) {} })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %><%= locals.fullTitle ? "" : " · Guruwatch" %></title>
   <% if (locals.seo) { %>
